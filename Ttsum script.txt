@@ -1,0 +1,241 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+## Read met file.
+## Read Observed data
+## calculate Tt and Ttsum
+
+```{r Load, warning=FALSE, fig.height=8, fig.width=8}
+# install.packages("zoo")
+library(dplyr)
+library(ggplot2)
+library(lubridate)   
+library(hydroGOF)
+library(xtable)
+library(knitr)
+library(tidyr)
+library(RSQLite)
+library(agricolae)
+library(scales)
+library(zoo)
+
+
+```
+
+# load data
+```{r, echo=FALSE}
+upDir <- "D:\\APSIMX2\\Prototypes\\Lucerne\\"
+obsF <- "D:\\Model work\\APSIMX\\"
+obs <- read.table(paste0(obsF, "ObsDataForStats.txt"), 
+                      header = TRUE)
+
+obs<-obs%>%
+  mutate(Rotation = factor(Rotation))
+obs <- obs %>% mutate(Clock.Today = dmy(Clock.Today))
+head(obs)
+```
+
+```{r}
+# get time format right
+obsData <- obs %>% mutate(Clock.Today = dmy(Clock.Today))
+str(obsData)
+head(obsData)
+summary(obsData)
+```
+
+```{r}
+
+```
+
+## Load met file
+```{r LoadSim, include = FALSE, echo=FALSE, warning=FALSE, fig.height=8, fig.width=8}
+
+met.address <- "D:\\R\\"
+met <- read.table(paste0(met.address, "lincolnmet.txt"), 
+                      header = TRUE)
+metData <- met %>% mutate(Clock.Today = dmy(Clock.Today))
+metData$Tt5<-(metData$maxt-metData$mint)/2-metData$Tb5
+str(metData)
+
+
+```
+## graph
+
+```{r, fig.height=10, fig.width=10}
+
+metData %>%
+  ggplot(aes(x=Clock.Today,y=maxt)) +
+  geom_point()
+
+```
+## load function
+## Define Tt cardinal temperatures
+#Create Thermal time cardinal temperatures (lucerne.xml in APSIM line 206)
+Considered an overall average the following references:
+Tb: 0.0
+Top range:18-25
+Tmax: 40
+
+```{r}
+tt_card <- data.frame(temp=c(1.0,  5.0,  10,  15,  30,  40),
+                      TT=c(0.0,  3.0,  6.5, 10,  25,  0.0))
+tt_card %>%
+  ggplot(aes(x=temp, y=TT))+
+  labs(x="Temperature (degree Celsius)")+
+  labs(y="Thermal Time (oCd)") +
+  geom_line()
+
+```
+# Create and test interpolation function 
+```{r}
+
+temp_ref  <- 25 # x-axes reference
+temp <- tt_card$temp # x-axes
+TT <- tt_card$TT # y-axes
+
+
+int_func <- function(temp,TT,temp_ref){
+
+# if temp is too low or too high give extreme TT values
+ if(temp_ref>temp[length(temp)]) {
+   
+   out <- TT[length(TT)] 
+   
+ } else if (temp_ref<temp[1]) {
+   
+   out <- TT[1]
+   
+ } else {
+   
+# else interpolate
+   
+   tryCatch(  
+   
+  out <- approx(temp, TT, xout = temp_ref, 
+         method="linear", 
+         rule = 2)$y,
+  error = function(e) 
+  {
+  out <- NA
+  }
+) 
+  
+} # end if check
+
+  return(out)  
+  
+ }
+  
+int_func(temp,TT,temp_ref)
+
+```
+#create REF Jones CA, Ritchie JT, Kiniry JR, Godwin DC (1986) Subroutine structure.In 'CERES-Maize: A simulation model of maize growth anddevelopment'. (Eds CA Jones, JR Kiniry) pp. 49-194. (Texas A&M University Press: Texas, USA
+
+```{r}
+
+TTfunc <- function(Tmin ,Tmax){         
+ 
+  if (Tmin>Tmax){
+   print("Tmin>Tmax")
+   break
+ } 
+  
+  TTav  <- 0
+  TTsum <- 0
+  
+  for(n in 1:8){ 
+    
+    tn <- 0
+    
+    TT_tn <- 0
+    
+    tn <- ((0.931 +  0.114*n - 0.0703 * n^2
+            + 0.0053 * n^3) * (Tmax-Tmin)) + 
+      Tmin # 8-h temperature
+    
+    TT_tn <- int_func(tt_card$temp, tt_card$T,tn) 
+    
+    TTsum <- max(TT_tn,0) + TTsum
+    
+ #   print(TT_tn)
+    
+    }
+  TTav <- TTsum/8
+  
+  return(TTav)
+  }
+
+TTfunc(10,30)
+
+```
+```{r ReadCalcTt}
+
+Tb=5 # assuming a base temperature of 8 for the simple calculation
+
+metTT <- metData %>%
+   filter(Clock.Today>"1998-01-01") %>%
+  rowwise() %>%
+  mutate(TTday=TTfunc(mint,maxt), TTday_s=max(((mint+maxt)/2)-Tb,0), diff=(TTday_s/TTday)*100)
+```
+
+
+
+```{r}
+metTT %>% 
+ggplot(aes(x=TTday_s, y= TTday)) +
+    geom_point(shape=21,alpha=0.2) +
+  geom_abline(intercept = 0, slope = 1)
+
+
+```
+
+## creat TTsum
+```{r}
+
+metTT$TTsum<-cumsum(metTT$TTday)
+
+```
+
+## Merge TTsum with Observed Data
+```{r}
+dfTp <- metTT %>% dplyr::select(Clock.Today, TTsum, Pp)%>%
+  mutate(Clock.Today=ymd(Clock.Today))
+
+obscom<-merge(obs,dfTp, by=c("Clock.Today")) 
+
+```
+
+
+## calculate phyllo
+
+```{r}
+
+nodes <- obscom %>%dplyr::filter(Variable=="NodeNumber")
+
+nodes %>%
+  group_by(Name,GrowthSeason,Rotation) %>%
+  do(mod = lm(TTsum ~Observed,data=.)) %>%
+  mutate(Slope = summary(mod)$coeff[2]) %>%
+  dplyr::select(-mod)
+  #nodes$GrowthRotation<-factor(paste(nodes$GrowthSeason,nodes$Rotation))
+  #ggplot(nodes, x=GrowthRotation, y=Slope)+geom_line(size=2)
+  
+
+```
+
+
+
+```{r}
+df <- data.frame(Photoperiod=c(10.5,12.5),Phyollchron = c(51,34))
+
+ 
+df %>%
+  ggplot(aes(x=Photoperiod, y=Phyollchron)) +theme_bw()+
+  geom_line() 
+```
+
+ 
+
+
