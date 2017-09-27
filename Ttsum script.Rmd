@@ -1,0 +1,328 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+## Read met file.
+## Read Observed data
+## calculate Tt and Ttsum
+
+```{r Load, warning=FALSE, fig.height=8, fig.width=8}
+# install.packages("zoo")
+library(dplyr)
+library(ggplot2)
+library(lubridate)   
+library(hydroGOF)
+library(xtable)
+library(knitr)
+library(tidyr)
+library(RSQLite)
+library(agricolae)
+library(scales)
+library(zoo)
+
+
+```
+
+# load data
+```{r, echo=FALSE}
+upDir <- "D:\\APSIMX2\\Prototypes\\Lucerne\\"
+obsF <- "D:\\Model work\\APSIMX\\"
+obs <- read.table(paste0(obsF, "ObsDataForStats.txt"), 
+                      header = TRUE)
+
+obs<-obs%>%
+  mutate(Rotation = factor(Rotation))
+obs <- obs %>% mutate(Clock.Today = dmy(Clock.Today))
+head(obs)
+```
+
+```{r}
+# get time format right
+obsData <- obs %>% mutate(Clock.Today = dmy(Clock.Today))
+str(obsData)
+head(obsData)
+summary(obsData)
+```
+
+
+## Load met file
+```{r LoadSim, include = FALSE, echo=FALSE, warning=FALSE, fig.height=8, fig.width=8}
+
+met.address <- "D:\\R\\"
+met <- read.table(paste0(met.address, "lincolnmet.txt"), 
+                      header = TRUE)
+metData <- met %>% mutate(Clock.Today = dmy(Clock.Today))
+metData$Tt5<-(metData$maxt-metData$mint)/2-metData$Tb5
+str(metData)
+
+
+```
+## graph
+
+```{r, fig.height=10, fig.width=10}
+
+metData %>%
+  ggplot(aes(x=Clock.Today,y=maxt)) +
+  geom_point()
+
+```
+## load function
+## Define Tt cardinal temperatures
+#Create Thermal time cardinal temperatures (lucerne.xml in APSIM line 206)
+Considered an overall average the following references:
+Tb: 0.0
+Top range:18-25
+Tmax: 40
+```{r,fig.height=4, fig.width=6}
+Thermaltime <-data.frame(a=c(5, 30, 40),b=c(0, 25, 0))
+Thermaltime%>%
+  ggplot(aes(x=a, y=b))+
+  labs(x="Mean air temperature (°C)")+
+  labs(y="Thermal Time (°Cd/day)") +
+  theme_bw()+
+  geom_line(size=1)+
+  theme(legend.title=element_blank(),legend.position = "blank")+
+ theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
+ theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
+
+```
+
+
+```{r,fig.height=4, fig.width=6}
+tt_card <- data.frame(temp=c(1.0,  5.0,  10,  15,  30,  40),
+                      TT=c(0.0,  3.0,  6.5, 10,  25,  0.0))
+tt_card %>%
+  ggplot(aes(x=temp, y=TT))+
+  labs(x="Mean air temperature (°C)")+
+  labs(y="Thermal Time (°Cd/day)") +
+  theme_bw()+
+  geom_line(size=1)+
+  theme(legend.title=element_blank(),legend.position = "blank")+
+ theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
+ theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
+
+```
+# Create and test interpolation function 
+```{r}
+
+temp_ref  <- 25 # x-axes reference
+temp <- tt_card$temp # x-axes
+TT <- tt_card$TT # y-axes
+
+
+int_func <- function(temp,TT,temp_ref){
+
+# if temp is too low or too high give extreme TT values
+ if(temp_ref>temp[length(temp)]) {
+   
+   out <- TT[length(TT)] 
+   
+ } else if (temp_ref<temp[1]) {
+   
+   out <- TT[1]
+   
+ } else {
+   
+# else interpolate
+   
+   tryCatch(  
+   
+  out <- approx(temp, TT, xout = temp_ref, 
+         method="linear", 
+         rule = 2)$y,
+  error = function(e) 
+  {
+  out <- NA
+  }
+) 
+  
+} # end if check
+
+  return(out)  
+  
+ }
+  
+int_func(temp,TT,temp_ref)
+
+```
+#create REF Jones CA, Ritchie JT, Kiniry JR, Godwin DC (1986) Subroutine structure.In 'CERES-Maize: A simulation model of maize growth anddevelopment'. (Eds CA Jones, JR Kiniry) pp. 49-194. (Texas A&M University Press: Texas, USA
+
+```{r}
+
+TTfunc <- function(Tmin ,Tmax){         
+ 
+  if (Tmin>Tmax){
+   print("Tmin>Tmax")
+   break
+ } 
+  
+  TTav  <- 0
+  TTsum <- 0
+  
+  for(n in 1:8){ 
+    
+    tn <- 0
+    
+    TT_tn <- 0
+    
+    tn <- ((0.931 +  0.114*n - 0.0703 * n^2
+            + 0.0053 * n^3) * (Tmax-Tmin)) + 
+      Tmin # 8-h temperature
+    
+    TT_tn <- int_func(tt_card$temp, tt_card$T,tn) 
+    
+    TTsum <- max(TT_tn,0) + TTsum
+    
+ #   print(TT_tn)
+    
+    }
+  TTav <- TTsum/8
+  
+  return(TTav)
+  }
+
+TTfunc(10,30)
+
+```
+```{r ReadCalcTt}
+
+Tb=5 # assuming a base temperature of 8 for the simple calculation
+
+metTT <- metData %>%
+   filter(Clock.Today>"1998-01-01") %>%
+  rowwise() %>%
+  mutate(TTday=TTfunc(mint,maxt), TTday_s=max(((mint+maxt)/2)-Tb,0), diff=(TTday_s/TTday)*100)
+```
+
+
+
+```{r}
+metTT %>% 
+ggplot(aes(x=TTday_s, y= TTday)) +
+    geom_point(shape=21,alpha=0.2) +
+  geom_abline(intercept = 0, slope = 1)
+
+
+```
+
+## creat TTsum
+```{r}
+
+metTT$TTsum<-cumsum(metTT$TTday)
+
+```
+
+## Merge TTsum with Observed Data
+```{r}
+dfTp <- metTT %>% dplyr::select(Clock.Today, TTsum, Pp)%>%
+  mutate(Clock.Today=ymd(Clock.Today))
+
+obscom<-merge(dfTp,obs, by=c("Clock.Today")) 
+
+write.csv(metTT,"D:/R/Data statistic/metTT.csv", row.names = FALSE)
+
+```
+
+
+## calculate phyllo
+
+```{r}
+
+nodes <- obscom %>%dplyr::filter(Variable=="NodeNumber")
+
+phylloData <- nodes %>%
+  group_by(Name,GrowthSeason,Rotation,Collection) %>%
+  do(mod = lm(TTsum ~Observed,data=.)) %>%
+  mutate(Slope = summary(mod)$coeff[2]) %>%
+  dplyr::select(-mod)
+  #nodes$GrowthRotation<-factor(paste(nodes$GrowthSeason,nodes$Rotation))
+  #ggplot(nodes, x=GrowthRotation, y=Slope)+geom_line(size=2)
+
+write.csv(phylloData,"D:/R/Data statistic/Data.csv", row.names = FALSE)
+phylloData
+  
+
+```
+### load phyllochron data
+### check met file
+```{r}
+phyllo.address <- "D:\\R\\Data statistic\\"
+phyllo <- read.table(paste0(phyllo.address, "Phyllochron.txt"), 
+                       header = TRUE)
+phyllo
+phyllo1 <- phyllo %>% mutate(Clock.Today = dmy(Clock.Today))
+
+phyllo1
+summary(metTT)
+
+```
+
+##merge with met file for photoperiod
+```{r}
+phyphoto<-merge(phyllo1,metTT,by=c("Clock.Today"))
+
+
+phyphoto
+
+```
+
+
+
+
+```{r,fig.height=8, fig.width=8,warning=FALSE}
+df <- data.frame(Photoperiod=c(8.5,10.5,12.5,16.5),Phyollchron = c(51,51,34,34))
+df%>%
+  ggplot(aes(x=Photoperiod,y=Phyollchron))+theme_bw()+geom_line(size=1)+
+  theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
+  theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
+
+phyphoto1<-phyphoto %>%
+  dplyr::filter(Water=="irr")%>%
+  dplyr::filter(Collection!="2002_2004")%>%
+  dplyr::filter(Name!="Iversen_91DefoliationLL")
+ 
+  
+ 
+df %>%
+  ggplot(aes(x=Photoperiod, y=Phyollchron)) +theme_bw()+geom_line(size=1)+
+ geom_point(data=phyphoto1, aes(x=Pp, y=Phyllochron),colour="black",size=3)+
+  facet_wrap(~Name, ncol=2)+
+  #facet_wrap(~Stage, ncol=2)+
+ theme(legend.title=element_blank(),legend.position = "blank")+xlab("Photoperiod")+ylab("Phyollchron")+
+ theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
+ theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
+```
+
+##use lm for linear regression model between photoperiod and phyllochron 
+```{r,fig.height=5, fig.width=8,warning=FALSE}
+phyphoto1%>%
+  ggplot(aes(x=Pp, y=Phyllochron),colour= factor(Name)) +theme_bw()+geom_point(size=2)+
+  facet_wrap(~Stage,ncol = 2)+
+  geom_smooth(method="lm",forumula=Pp~Phyllochron)+
+  theme(legend.title=element_blank(),legend.position = "blank")+xlab("Photoperiod")+ylab("Phyllochron")+
+  theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
+  theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
+
+  
+
+
+```
+
+##ANOVA analysis
+```{r}
+phyphoto2<- phyphoto1%>%
+  dplyr::filter(Stage=="Seedling")
+AnovaResult <- aov(Phyllochron~Pp, data=phyphoto2)
+summary(AnovaResult)
+
+```
+
+```{r}
+phyphoto2<- phyphoto1%>%
+  dplyr::filter(Stage=="Regrowth")
+AnovaResult <- aov(Pp~Phyllochron, data=phyphoto2)
+summary(AnovaResult)
+
+```
+

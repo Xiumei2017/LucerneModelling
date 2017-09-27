@@ -1,0 +1,361 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r Load,echo=TRUE, include = TRUE, warning=FALSE, fig.height=8, fig.width=8}
+library(dplyr)
+library(ggplot2)
+library(lubridate)   
+library(hydroGOF)
+library(xtable)
+library(knitr)
+library(tidyr)
+library(RSQLite)
+
+```
+# load data
+```{r, echo=FALSE}
+upDir <- "D:\\APSIMX2\\Prototypes\\Lucerne\\"
+obsF <- "D:\\Model work\\APSIMX\\"
+rawObs <- read.table(paste0(obsF, "ObsDataForStats.txt"), 
+                      header = TRUE)
+unique(rawObs$Name)
+```
+## Tidy up data
+```{r, echo=FALSE}
+head(rawObs)
+```
+
+* Sort out formats
+* Create factor labels
+```{r}
+# get time format right
+obsData <- rawObs %>% mutate(Clock.Today = dmy(Clock.Today))
+str(obsData)
+head(obsData)
+summary(obsData)
+```
+## Define stats function
+
+* Using Gauch et al. 2003 (Model evaluation by comparison of model-based predictions and measured values. Agron. J. 95, 1442-1446) 
+```{r Stats, include = TRUE, echo=FALSE, warning=FALSE, fig.height=8, fig.width=8}
+
+# # R2
+# testDF <- data.frame(a=c(1,2,3,4,5), b=c(10,20,10,40,50))
+# 
+# myR2 <- function(p,o) {
+#  return(summary(lm(p~o, na.action=na.exclude))$r.squared) 
+# }
+# 
+# testDF %>%
+#   summarise(thisR2 = myR2(a,b))
+
+# gauch MSE components
+gauchStats <- function(sim, meas) {
+
+  n_s <- length(sim)
+  n_m <- length(meas)
+  model <- lm(meas~sim)
+  sim_sq <- sum((sim - mean(sim))^2)
+  mes_sq <- sum((meas - mean(meas))^2)
+  r2 <- summary(model)$r.squared
+  slope <- model$coefficients[[2]]
+
+  sb <- (sum(mean(meas)) - sum(mean(sim)))^2
+  nu <- (1-slope)^2 * (sim_sq/n_s)
+  lc <- (1-r2) * (mes_sq/n_m)
+  msd <- sb+nu+lc
+
+  sb_r <- round((sb/msd)*100,1)
+  nu_r <- round((nu/msd)*100,1)
+  lc_r <- round((lc/msd)*100,1)
+
+  msd_r <- sb_r+nu_r+lc_r
+
+  # select which variables to output
+  out <- c(sb_r,nu_r,lc_r, msd_r, round(r2*100,1))
+
+  return(out)
+
+}
+```
+
+## Test stats functions used
+
+```{r}
+s <- c(4231.972,3935.604,3779.652,3627.687,3363.499,3230.566,2868.114,2868.827)
+m <- c(4987.66,5636.09,4754.06,4114.53,4141.72,3704.06,5142.19,4762.03)
+
+x <- gauchStats(s,m)
+
+tempDf <- data.frame(statName=c("SB","NU","LC","r_MSD","R2"), statValue=x)
+# kable(tempDf, digits= 2)
+tempDf2 <- data.frame(Predicted=s, Observed=m)
+
+x <- tempDf2 %>%
+  summarise(
+    n = n(),
+    r2 = gauchStats(Predicted,Observed)[5],
+  #  rmse = round(rmse(Predicted,Observed),0),
+    r_rmse = round(rmse(Predicted,Observed)/mean(Observed)*100,1),
+    nse = round(NSE(Predicted,Observed),1),
+    sb = gauchStats(Predicted,Observed)[1],
+  nu = gauchStats(Predicted,Observed)[2],
+  lc = gauchStats(Predicted,Observed)[3]
+  ) %>% 
+  t() 
+
+df <- data.frame(stat = row.names(x),statvalue = x[,1])
+
+df %>%
+  kable(format = "markdown")
+```
+## Load simulated database
+## create function to read data (Justin's script)
+```{r LoadSim, include = FALSE, echo=FALSE, warning=FALSE, fig.height=8, fig.width=8}
+GetApsimNGTable <- function(dbLoc, table) 
+{
+  connection <- dbConnect(SQLite(), dbname = dbLoc, flags = SQLITE_RW)
+  table <- dbReadTable(connection, table, row.names=NULL)
+  dbDisconnect(connection)
+  return(table)
+}
+
+```
+# load address of db
+# set table to be enquierd
+# load table into an object
+# make it a dataframe
+# change date to corerct format 
+# explore the df
+```{r}
+db.address <- "D:\\APSIMX2\\Prototypes\\Lucerne\\LucerneValidation.db"
+tableName<-"Report"
+DbTable <- GetApsimNGTable(db.address,tableName)
+df <- as.data.frame(DbTable)
+df$Clock.Today <- ymd_hms(df$Clock.Today)
+str(df)
+summary(df)
+head(df) # simulation results
+```
+# get sim names (different table)
+# merge names 
+# remove unecessary variables
+```{r}
+simNameDf <- as.data.frame (GetApsimNGTable(db.address,"Simulations"))
+myDb <- merge(df, simNameDf, by.x= c("SimulationID"), by.y= c("ID"))
+
+
+#str(myDb)
+head(myDb)
+summary(myDb)
+
+# myDb %>%
+#   dplyr::select(Name) %>%
+#   unique()
+
+```
+## Prepare merge
+## Add info for merging
+## select variables that are for comparing with observed data
+
+```{r}
+simD <- myDb %>%
+  dplyr::select(Name,Clock.Today,LAI,SWC,Height,shootbiomass,RootWt, StemWt, LeafWt,NodeNumber) %>%
+  tidyr::gather("Variable","Predicted",LAI:NodeNumber) %>%
+  mutate(Name = as.factor(Name)) %>%
+  mutate(Variable = as.factor(Variable)) %>%
+  mutate(Clock.Today = ymd_hms(Clock.Today))
+
+head(simD)
+
+head(obsData)
+mergedf<-merge(obsData,simD,by=c("Clock.Today","Name","Variable"))
+summary(mergedf)
+str(mergedf)
+
+```
+
+## Node number
+#Time series
+## obs Vs Pre for each experiment
+## 1997-2001
+```{r,fig.height=4, fig.width=8}
+obsData%>%
+    mutate(Name = as.factor(Name)) %>%
+    mutate(Variable = as.factor(Variable)) %>%
+    mutate(Clock.Today = ymd_hms(Clock.Today))
+  obsData$Clock.Today1 <-as.POSIXct(paste(obsData$Clock.Today,obsData$Time),format="%Y-%m-%d %H:%M:%S")
+  obsD<-obsData%>%dplyr::filter(Variable=="NodeNumber")%>%
+  dplyr::filter(Factor1=="irr")%>%
+  mutate(Clock.Today1= ymd_hms(Clock.Today1))
+  summary(obsD)
+  obsD2<-obsD%>%dplyr::filter(Collection=="1997_2001")
+  
+ 
+ simD1<-simD%>%
+   mutate(Clock.Today = ymd_hms(Clock.Today))%>%
+   dplyr::filter(Variable=="NodeNumber")%>%
+   dplyr::filter(Name=="Iversen_8Waterirr")
+ str(simD1)
+ simD1%>%
+ ggplot(aes(x=Clock.Today,y=Predicted))+geom_line(size=1)+theme_bw()+
+ facet_wrap(~Name,ncol = 2)+
+ geom_point(data=obsD2, aes(x=Clock.Today1, y=Observed),colour="green",size=3)+
+ theme(legend.title=element_blank(),legend.position = "blank")+xlab("Date")+ylab("Node number")+
+ theme(axis.title.x=element_text(face="bold",colour="black",size = 14))+
+ theme(axis.title.y=element_text(face="bold",colour="black",size = 14))
+
+```
+
+```{r, fig.width=3, fig.height=6, warning=FALSE}
+mergedf %>%
+    dplyr::filter(Variable== "NodeNumber") %>% 
+    dplyr::filter(Collection=="1997_2001")%>%
+    dplyr::filter(Name!="Iversen_8Waterdry")%>%
+  ggplot(aes(x=Observed, y= Predicted, 
+          colour= factor(Name))) +
+  geom_point(size=3)+theme_bw() +
+   geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="darkgrey") +
+  geom_abline(intercept = 0, slope = 1) +
+  coord_fixed(ratio = 1) +
+  ggtitle("Node Number")  +
+  facet_wrap(~Name, ncol = 1)+
+  theme(legend.title=element_blank(),legend.position = "blank")+xlab("Observed")+ylab("Predicted")+
+  theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
+  theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
+```
+## 2000-2002
+```{r,  fig.height=8, fig.width=8}
+obsData%>%
+  mutate(Name = as.factor(Name)) %>%
+  mutate(Variable = as.factor(Variable)) %>%
+  mutate(Clock.Today = ymd_hms(Clock.Today))
+obsData$Clock.Today1 <-as.POSIXct(paste(obsData$Clock.Today,obsData$Time),format="%Y-%m-%d %H:%M:%S")
+obsD<-obsData%>%dplyr::filter(Variable=="NodeNumber")%>%
+  mutate(Clock.Today1= ymd_hms(Clock.Today1))
+obsD2<-obsD%>%dplyr::filter(Collection=="2000_2002")%>%
+  dplyr::filter(Name!="Iversen_9SowingDateSD1Waterdry")%>%
+  dplyr::filter(Name!="Iversen_9SowingDateSD2Waterdry")%>%
+  dplyr::filter(Name!="Iversen_9SowingDateSD3Waterdry")%>%
+  dplyr::filter(Name!="Iversen_9SowingDateSD4Waterdry")
+  
+
+simD4<-simD%>%
+  mutate(Clock.Today = ymd_hms(Clock.Today))%>%
+  dplyr::filter(Clock.Today>"2000-10-24 12:00:00")%>%
+  dplyr::filter(Clock.Today<"2002-07-01 12:00:00")%>%
+  dplyr::filter(Name!="Iversen_8Waterdry")%>%
+  dplyr::filter(Name!="Iversen_8Waterirr")%>%
+  dplyr::filter(Name!="Iversen_91DefoliationLL")%>%
+  dplyr::filter(Name!="Iversen_91DefoliationLS")%>%
+  dplyr::filter(Name!="Iversen_91DefoliationSL")%>%
+  dplyr::filter(Name!="Iversen_91DefoliationSS")%>%
+  dplyr::filter(Name!="Iversen_91DefoliationSS")%>%
+  dplyr::filter(Name!="MooraDefoliation")%>%
+  dplyr::filter(Name!="NekiaDefoliation")%>%
+  dplyr::filter(Name!="QuairadingDefoliation")%>%
+  dplyr::filter(Name!="RoseworthyWaterdry")%>%
+  dplyr::filter(Name!="RoseworthyWaterirr")%>%
+  dplyr::filter(Name!="Iversen_9SowingDateSD1Waterdry")%>%
+  dplyr::filter(Name!="Iversen_9SowingDateSD2Waterdry")%>%
+  dplyr::filter(Name!="Iversen_9SowingDateSD3Waterdry")%>%
+  dplyr::filter(Name!="Iversen_9SowingDateSD4Waterdry")%>%
+  dplyr::filter(Variable=="NodeNumber")
+  str(simD4)
+simD4%>%
+ggplot(aes(x=Clock.Today,y=Predicted))+geom_line(size=1)+theme_bw()+
+  facet_wrap(~Name,ncol = 2)+
+  geom_point(data=obsD2, aes(x=Clock.Today1, y=Observed),colour="green",size=3)+
+  facet_wrap(~Name,ncol = 2)+
+  theme(legend.title=element_blank(),legend.position = "blank")+xlab("Date")+ylab("Node number")+
+  theme(axis.title.x=element_text(face="bold",colour="black",size = 14))+
+  theme(axis.title.y=element_text(face="bold",colour="black",size = 14))
+
+```
+
+
+
+
+
+
+
+
+```{r,  fig.height=8, fig.width=10}
+mergedf
+summary(mergedf)
+str(mergedf)
+
+mergedf %>%
+    dplyr::filter(Variable== "NodeNumber") %>% 
+    dplyr::filter(Collection=="2000_2002")%>%
+  dplyr::filter(Name!="Iversen_9SowingDateSD1Waterdry")%>%
+  dplyr::filter(Name!="Iversen_9SowingDateSD2Waterdry")%>%
+  dplyr::filter(Name!="Iversen_9SowingDateSD3Waterdry")%>%
+  dplyr::filter(Name!="Iversen_9SowingDateSD4Waterdry")%>%
+  ggplot(aes(x=Observed, y= Predicted, 
+          colour= factor(Name))) +
+  geom_point(size=3)+theme_bw()+
+  geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="darkgrey") +
+  geom_abline(intercept = 0, slope = 1) +
+  coord_fixed(ratio = 1)+
+  ggtitle("Node Number")+
+  facet_wrap(~Name, ncol = 2)+
+  theme(legend.title=element_blank(),legend.position = "blank")+xlab("Observed")+ylab("Predicted")+
+  theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
+  theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
+```
+
+## 2002-2004
+```{r,  fig.height=4, fig.width=8}
+obsData%>%
+  mutate(Name = as.factor(Name)) %>%
+  mutate(Variable = as.factor(Variable)) %>%
+  mutate(Clock.Today = ymd_hms(Clock.Today))
+obsData$Clock.Today1 <-as.POSIXct(paste(obsData$Clock.Today,obsData$Time),format="%Y-%m-%d %H:%M:%S")
+obsD<-obsData%>%dplyr::filter(Variable=="NodeNumber")%>%
+  mutate(Clock.Today1= ymd_hms(Clock.Today1))
+obsD2<-obsD%>%dplyr::filter(Collection=="2002_2004")%>%
+  dplyr::filter(Name=="Iversen_91DefoliationLL")
+  
+
+simD3<-simD%>%
+  mutate(Clock.Today = ymd_hms(Clock.Today))%>%
+  dplyr::filter(Clock.Today<"2004-11-01 12:00:00")%>%
+  dplyr::filter(Clock.Today>"2002-07-02 12:00:00")%>%
+  dplyr::filter(Name=="Iversen_91DefoliationLL")%>%
+  dplyr::filter(Variable=="NodeNumber")%>%
+  dplyr::filter(Name!="NekiaDefoliation")
+str(simD3)
+simD3%>%
+ggplot(aes(x=Clock.Today,y=Predicted))+geom_line(size=1)+theme_bw()+
+  facet_wrap(~Name,ncol = 1)+
+  geom_point(data=obsD2, aes(x=Clock.Today1, y=Observed),colour="green",size=3)+
+  theme(legend.title=element_blank(),legend.position = "blank")+xlab("Date")+ylab("Node number")+
+  theme(axis.title.x=element_text(face="bold",colour="black",size = 14))+
+  theme(axis.title.y=element_text(face="bold",colour="black",size = 14))
+```
+
+
+```{r,  fig.height=4 fig.width=8}
+mergedf
+summary(mergedf)
+str(mergedf)
+
+mergedf %>%
+    dplyr::filter(Variable== "NodeNumber") %>% 
+    dplyr::filter(Collection=="2002_2004")%>%
+    dplyr::filter(Name=="Iversen_91DefoliationLL")%>%
+  ggplot(aes(x=Observed, y= Predicted, 
+          colour= factor(Name))) +
+  geom_point(size=3)+theme_bw()+
+  geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="darkgrey") +
+  geom_abline(intercept = 0, slope = 1) +
+  coord_fixed(ratio = 1)+
+  ggtitle("Node Number")+
+  facet_wrap(~Name, ncol = 3)+
+  theme(legend.title=element_blank(),legend.position = "blank")+xlab("Observed")+ylab("Predicted")+
+  theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
+  theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
+```

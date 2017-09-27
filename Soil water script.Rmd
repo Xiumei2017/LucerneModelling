@@ -1,0 +1,412 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+## soil water script
+
+```{r Load, warning=FALSE}
+library(dplyr)
+library(ggplot2)
+library(lubridate)   
+library(hydroGOF)
+library(xtable)
+library(knitr)
+library(tidyr)
+library(RSQLite)
+```
+
+##Work dir
+```{r}
+Dir <- "D:\\APSIMX2\\Prototypes\\Lucerne\\"
+obsF <- "D:\\Model work\\APSIMX\\"
+rawObs <- read.table(paste0(obsF, "ObsDataForStats.txt"), 
+                      header = TRUE)
+unique(rawObs$Name)
+
+```
+
+## create function to read data (Justin's script)
+```{r LoadSim, include = FALSE, echo=FALSE, warning=FALSE, fig.height=8, fig.width=8}
+GetApsimNGTable <- function(dbLoc, table) 
+{
+  connection <- dbConnect(SQLite(), dbname = dbLoc, flags = SQLITE_RW)
+  table <- dbReadTable(connection, table, row.names=NULL)
+  dbDisconnect(connection)
+  return(table)
+}
+
+```
+
+## Load sim data
+```{r}
+db.address <- "D:\\APSIMX2\\Prototypes\\Lucerne\\LucerneValidation.db"
+tableName<-"Report"
+DbTable <- GetApsimNGTable(db.address,tableName)
+df <- as.data.frame(DbTable)
+df$Clock.Today <- ymd_hms(df$Clock.Today)
+str(df)
+summary(df)
+head(df) # simulation results
+```
+
+# get sim names (different table)
+# merge names 
+```{r}
+simNameDf <- as.data.frame (GetApsimNGTable(db.address,"Simulations"))
+myDb <- merge(df, simNameDf, by.x= c("SimulationID"), by.y= c("ID"))
+
+
+#str(myDb)
+head(myDb)
+summary(myDb)
+```
+
+```{r}
+simD <- myDb %>%
+  dplyr::select(Name,Clock.Today,LAI,SWC,Height,shootbiomass,RootWt, StemWt, LeafWt,NodeNumber) %>%
+  tidyr::gather("Variable","Predicted",LAI:NodeNumber) %>%
+  mutate(Name = as.factor(Name)) %>%
+  mutate(Variable = as.factor(Variable)) %>%
+  mutate(Clock.Today = ymd_hms(Clock.Today))
+
+head(simD)
+obsData <- rawObs %>% mutate(Clock.Today = dmy(Clock.Today))
+str(obsData)
+head(obsData)
+summary(obsData)
+
+mergedf<-merge(obsData,simD,by=c("Clock.Today","Name","Variable"))
+summary(mergedf)
+str(mergedf)
+
+```
+
+
+## Soil water content
+#Time series
+## obs Vs Pre for each experiment
+## 2010-2012
+```{r,fig.height=10, fig.width=8}
+obsData%>%
+    mutate(Name = as.factor(Name)) %>%
+    mutate(Variable = as.factor(Variable)) %>%
+    mutate(Clock.Today = ymd_hms(Clock.Today))
+  obsData$Clock.Today1 <-as.POSIXct(paste(obsData$Clock.Today,obsData$Time),format="%Y-%m-%d %H:%M:%S")
+  obsD<-obsData%>%dplyr::filter(Variable=="SWC")%>%
+  mutate(Clock.Today1= ymd_hms(Clock.Today1))
+  summary(obsD)
+  obsD2<-obsD%>%dplyr::filter(Collection=="2010_2012")
+  
+ 
+  unique(simD$Name)
+  
+ #levOrder <- c("Iversen_12SowingDateSD1","Iversen_12SowingDateSD2","Iversen_12SowingDateSD3","Iversen_12SowingDateSD4","Iversen_12SowingDateSD5","Iversen_12SowingDateSD6","Iversen_12SowingDateSD7","Iversen_12SowingDateSD8", "Iversen_12SowingDateSD9","Iversen_12SowingDateSD10 ","Iversen_8Waterdry"," Iversen_8Waterirr"," Iversen_91DefoliationLL","Iversen_91DefoliationLS","Iversen_91DefoliationSL","Iversen_91DefoliationSS","Iversen_9SowingDateSD1Waterirr","Iversen_9SowingDateSD2Waterirr","Iversen_9SowingDateSD3Waterirr","Iversen_9SowingDateSD4Waterirr","Iversen_9SowingDateSD1Waterdry","Iversen_9SowingDateSD2Waterdry","Iversen_9SowingDateSD3Waterdry","Iversen_9SowingDateSD4Waterdry")
+ # mutate(Name=factor(Name, levels=levOrder, labels = c("Heigh (cm)"....)))
+ #mutate(simD,Name=factor(Name, levels=levOrder))
+        
+ simD1<-simD%>%
+   mutate(Clock.Today = ymd_hms(Clock.Today))%>%
+   dplyr::filter(Clock.Today>"2010-10-03 12:00:00")%>%
+   dplyr::filter(Variable=="SWC")
+ str(simD1)
+ simD1%>%
+ ggplot(aes(x=Clock.Today,y=Predicted))+geom_line(size=1)+theme_bw()+
+ facet_wrap(~Name,ncol = 2)+
+ geom_point(data=obsD2, aes(x=Clock.Today1, y=Observed),colour="brown",size=3)+
+ theme(legend.title=element_blank(),legend.position = "blank")+xlab("Date")+ylab("Soil water content")+
+ theme(axis.title.x=element_text(face="bold",colour="black",size = 14))+
+ theme(axis.title.y=element_text(face="bold",colour="black",size = 14))
+ 
+ 
+ 
+
+```
+## 1997-2001
+```{r fig.height=8, fig.width=8}
+obsData%>%
+  mutate(Name = as.factor(Name)) %>%
+  mutate(Variable = as.factor(Variable))
+obsData$Clock.Today1 <-as.POSIXct(paste(obsData$Clock.Today,obsData$Time),format="%Y-%m-%d %H:%M:%S")
+obsD<-obsData%>%dplyr::filter(Variable=="SWC")%>%
+  mutate(Clock.Today1= ymd_hms(Clock.Today1))
+obsD3<-obsD%>%dplyr::filter(Collection=="1997_2001")
+summary(obsD3)
+  
+simD2<-simD%>%
+  mutate(Clock.Today = ymd_hms(Clock.Today))%>%
+  mutate(Name = factor(Name)) %>%
+   dplyr::filter(Variable=="SWC")%>%
+  dplyr::filter(Name=="Iversen_8Waterdry"|Name=="Iversen_8Waterirr")
+str(simD2)
+simD2%>%
+ ggplot(aes(x=Clock.Today,y=Predicted))+geom_line(size=1)+theme_bw()+
+   facet_wrap(~Name,ncol = 1)+
+  geom_point(data=obsD3, aes(x=Clock.Today1, y=Observed),colour="brown",size=3)+
+ 
+  theme(legend.title=element_blank(),legend.position = "blank")+xlab("Date")+ylab("Soil water content")+
+  theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
+  theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
+
+```
+
+##2002-2004
+```{r,  fig.height=10, fig.width=8}
+obsData%>%
+  mutate(Name = as.factor(Name)) %>%
+  mutate(Variable = as.factor(Variable)) %>%
+  mutate(Clock.Today = ymd_hms(Clock.Today))
+obsData$Clock.Today1 <-as.POSIXct(paste(obsData$Clock.Today,obsData$Time),format="%Y-%m-%d %H:%M:%S")
+obsD<-obsData%>%dplyr::filter(Variable=="SWC")%>%
+  mutate(Clock.Today1= ymd_hms(Clock.Today1))
+obsD2<-obsD%>%dplyr::filter(Collection=="2002_2004")
+  
+
+simD3<-simD%>%
+  mutate(Clock.Today = ymd_hms(Clock.Today))%>%
+  dplyr::filter(Clock.Today<"2004-11-01 12:00:00")%>%
+  dplyr::filter(Clock.Today>"2002-07-02 12:00:00")%>%
+dplyr::filter(Variable=="SWC")
+str(simD3)
+simD3%>%
+ggplot(aes(x=Clock.Today,y=Predicted))+geom_line(size=1)+theme_bw()+
+  facet_wrap(~Name,ncol = 1)+
+  geom_point(data=obsD2, aes(x=Clock.Today1, y=Observed),colour="brown",size=3)+
+  theme(legend.title=element_blank(),legend.position = "blank")+xlab("Date")+ylab("Node number")+
+  theme(axis.title.x=element_text(face="bold",colour="black",size = 14))+
+  theme(axis.title.y=element_text(face="bold",colour="black",size = 14))
+  
+  
+
+
+```
+##2000-2002
+```{r,  fig.height=10, fig.width=8}
+obsData%>%
+  mutate(Name = as.factor(Name)) %>%
+  mutate(Variable = as.factor(Variable)) %>%
+  mutate(Clock.Today = ymd_hms(Clock.Today))
+obsData$Clock.Today1 <-as.POSIXct(paste(obsData$Clock.Today,obsData$Time),format="%Y-%m-%d %H:%M:%S")
+obsD<-obsData%>%dplyr::filter(Variable=="SWC")%>%
+  mutate(Clock.Today1= ymd_hms(Clock.Today1))
+obsD2<-obsD%>%dplyr::filter(Collection=="2000_2002")
+  
+
+simD4<-simD%>%
+  mutate(Clock.Today = ymd_hms(Clock.Today))%>%
+  dplyr::filter(Clock.Today>"2000-10-24 12:00:00")%>%
+  dplyr::filter(Clock.Today<"2002-07-01 12:00:00")%>%
+  dplyr::filter(Name!="Iversen_8Waterdry")%>%
+  dplyr::filter(Name!="Iversen_8Waterirr")%>%
+  dplyr::filter(Name!="Iversen_91DefoliationLL")%>%
+  dplyr::filter(Name!="Iversen_91DefoliationLS")%>%
+  dplyr::filter(Name!="Iversen_91DefoliationSL")%>%
+  dplyr::filter(Name!="Iversen_91DefoliationSS")%>%
+  dplyr::filter(Variable=="SWC")
+  str(simD4)
+simD4%>%
+ggplot(aes(x=Clock.Today,y=Predicted))+geom_line(size=1)+theme_bw()+
+  facet_wrap(~Name,ncol = 2)+
+  geom_point(data=obsD2, aes(x=Clock.Today1, y=Observed),colour="brown",size=3)+
+  facet_wrap(~Name,ncol = 2)+
+  theme(legend.title=element_blank(),legend.position = "blank")+xlab("Date")+ylab("Node number")+
+  theme(axis.title.x=element_text(face="bold",colour="black",size = 14))+
+  theme(axis.title.y=element_text(face="bold",colour="black",size = 14))
+  
+  
+
+
+```
+
+```{r,  fig.height=10, fig.width=8}
+mergedf
+summary(mergedf)
+str(mergedf)
+
+mergedf %>%
+    dplyr::filter(Variable== "SWC") %>% 
+  ggplot(aes(x=Observed, y= Predicted, 
+          colour= factor(Name))) +
+  geom_point(size=3)+theme_bw()+
+  geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="darkgrey") +
+  geom_abline(intercept = 0, slope = 1) +
+  coord_fixed(ratio = 1)+
+  ggtitle("Soil water content")+
+  facet_wrap(~Collection, ncol = 2)+
+  theme(legend.title=element_blank(),legend.position = "blank")+xlab("Observed")+ylab("Predicted")+
+  theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
+  theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+## Select SW soil water
+## convert dataframe
+
+```{r}
+SWC <- myDb %>%
+  dplyr::select(Name,Clock.Today,SWmm.1.,SWmm.2.,SWmm.3.,SWmm.4.,SWmm.5.,SWmm.6.,SWmm.7.,SWmm.8.,SWmm.9.,SWmm.10.,SWmm.11.,SWmm.12.,SWmm.13.,SWmm.14.,SWmm.15.,SWmm.16.,SWmm.17.,SWmm.18.,SWmm.19.,SWmm.20.,SWmm.21.,SWmm.22.,SWmm.23.) %>%
+  mutate(Name = as.factor(Name)) %>%
+  mutate(Clock.Today = ymd_hms(Clock.Today))
+SWC1<-SWC%>%
+  dplyr::select(Name,Clock.Today,SWmm.1.,SWmm.2.,SWmm.3.,SWmm.4.,SWmm.5.,SWmm.6.,SWmm.7.,SWmm.8.,SWmm.9.,SWmm.10.,SWmm.11.,SWmm.12.,SWmm.13.,SWmm.14.,SWmm.15.,SWmm.16.,SWmm.17.,SWmm.18.,SWmm.19.,SWmm.20.,SWmm.21.,SWmm.22.) %>%
+  tidyr::gather("Variable","Predicted",SWmm.1.:SWmm.22.) %>%
+  mutate(Variable = as.factor(Variable)) 
+
+summary(SWC1)
+str(SWC1)
+```
+
+```{r}
+obsSWC <- "D:\\R\\"
+obsSW <- read.table(paste0(obsSWC, "Soil water 97_04.txt"), 
+                          header = TRUE)%>%
+ mutate(Name = as.factor(Name)) %>%
+  mutate(Clock.Today = ymd(Clock.Today))
+obsSW$Clock.Today1 <-as.POSIXct(paste(obsSW$Clock.Today,obsSW$Time),format="%Y-%m-%d %H:%M:%S")
+obsSW%>%
+mutate(Clock.Today1 = ymd_hms(Clock.Today1))
+obsSW1<-obsSW%>%
+  dplyr::select(Name,Clock.Today1,SWmm.1.,SWmm.2.,SWmm.3.,SWmm.4.,SWmm.5.,SWmm.6.,SWmm.7.,SWmm.8.,SWmm.9.,SWmm.10.,SWmm.11.,SWmm.12.,SWmm.13.,SWmm.14.,SWmm.15.,SWmm.16.,SWmm.17.,SWmm.18.,SWmm.19.,SWmm.20.,SWmm.21.,SWmm.22.) %>%
+  tidyr::gather("Variable","Observed",SWmm.1.:SWmm.22.) %>%
+  mutate(Variable = as.factor(Variable))
+unique(obsSW1$Variable)
+str(obsSW1)
+summary(obsSW1)
+```
+
+##Irrigated simulation per layer
+
+```{r,fig.height=50, fig.width=8}
+  obsSW2<-obsSW1 %>%
+  dplyr::filter(Name=="Iversen_9SowingDateSD1Waterirr")%>%
+  dplyr::arrange(desc(Variable))
+  str(obsSW2)
+
+  SWC1%>%
+  dplyr::filter(Name=="Iversen_9SowingDateSD1Waterirr")%>%
+  dplyr::arrange(desc(Variable))%>%
+  
+  ggplot(aes(x=Clock.Today,y=Predicted))+geom_line(size=0.5)+theme_bw()+
+  facet_wrap(~Variable,ncol = 1)+
+  geom_point(data=obsSW2, aes(x=Clock.Today1, y=Observed),colour="brown",size=2)+
+  theme(legend.title=element_blank(),legend.position = "blank")+
+  ggtitle("Soil water content")
+
+```
+
+##Dryland simulation per layer
+```{r fig.height=50, fig.width=8}
+  obsSW3<-obsSW1 %>%
+  dplyr::filter(Name=="Iversen_9SowingDateSD1Waterdry")
+  str(obsSW3)
+
+  SWC1%>%
+  dplyr::filter(Name=="Iversen_9SowingDateSD1Waterdry")%>%
+  
+  ggplot(aes(x=Clock.Today,y=Predicted))+geom_line(size=0.5)+theme_bw()+
+  facet_wrap(~Variable,ncol = 1)+
+  geom_point(data=obsSW3, aes(x=Clock.Today1, y=Observed),colour="green",size=2)+
+  theme(legend.title=element_blank(),legend.position = "blank")+
+  ggtitle("Soil water content")
+
+```
+
+##Irrigated simulation per layer
+```{r fig.height=50, fig.width=8}
+  obsSW4<-obsSW1 %>%
+  dplyr::filter(Name=="Iversen_91DefoliationLL")
+  str(obsSW4)
+  obsSW4
+  
+
+  SWC1%>%
+  dplyr::filter(Name=="Iversen_91DefoliationLL")%>%
+  
+  ggplot(aes(x=Clock.Today,y=Predicted))+geom_line(size=0.5)+theme_bw()+
+  facet_wrap(~Variable, ncol =1)+
+  geom_point(data=obsSW4, aes(x=Clock.Today1, y=Observed),colour="green",size=2)+
+  theme(legend.title=element_blank(),legend.position = "blank")+
+  ggtitle("Soil water content")
+
+```
+
+
+##Irrigated simulation per layer for I8
+```{r fig.height=50, fig.width=8}
+  obsSW5<-obsSW1 %>%
+  dplyr::filter(Name=="Iversen_8Waterirr")
+  str(obsSW5)
+  obsSW5
+  
+
+  SWC1%>%
+  dplyr::filter(Name=="Iversen_8Waterirr")%>%
+  
+  ggplot(aes(x=Clock.Today,y=Predicted))+geom_line(size=0.5)+theme_bw()+
+  facet_wrap(~Variable, ncol =1)+
+  geom_point(data=obsSW5, aes(x=Clock.Today1, y=Observed),colour="green",size=2)+
+  theme(legend.title=element_blank(),legend.position = "blank")+
+  ggtitle("Soil water content")
+
+```
+
+##dryland simulation per layer for I8
+```{r fig.height=50, fig.width=8}
+  obsSW6<-obsSW1 %>%
+  dplyr::filter(Name=="Iversen_8Waterdry")
+  str(obsSW6)
+  obsSW6
+  
+
+  SWC1%>%
+  dplyr::filter(Name=="Iversen_8Waterdry")%>%
+  
+  ggplot(aes(x=Clock.Today,y=Predicted))+geom_line(size=0.5)+theme_bw()+
+  facet_wrap(~Variable, ncol =1)+
+  geom_point(data=obsSW6, aes(x=Clock.Today1, y=Observed),colour="green",size=2)+
+  theme(legend.title=element_blank(),legend.position = "blank")+
+  ggtitle("Soil water content")
+
+```
