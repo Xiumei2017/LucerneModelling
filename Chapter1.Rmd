@@ -2,7 +2,7 @@
 title: "R Notebook"
 output: html_notebook
 ---
-
+## load library
 ```{r Load,echo=TRUE, include = TRUE, warning=FALSE, fig.height=8, fig.width=8}
 library(dplyr)
 library(ggplot2)
@@ -14,7 +14,7 @@ library(tidyr)
 library(RSQLite)
 
 ```
-# load data
+##load Observed data
 ```{r, echo=FALSE}
 upDir <- "D:\\APSIMX2\\Prototypes\\Lucerne\\"
 obsF <- "D:\\Model work\\APSIMX\\"
@@ -22,7 +22,7 @@ rawObs <- read.table(paste0(obsF, "ObsDataForStats.txt"),
                       header = TRUE)
 unique(rawObs$Name)
 ```
-## Tidy up data
+## Tidy up Observed data
 ```{r, echo=FALSE}
 head(rawObs)
 ```
@@ -66,6 +66,8 @@ gauchStats <- function(sim, meas) {
   nu <- (1-slope)^2 * (sim_sq/n_s)
   lc <- (1-r2) * (mes_sq/n_m)
   msd <- sb+nu+lc
+  #nse <- 1-(sum((sim - mean(sim))^2)/sum((meas - mean(meas))^2))
+  #rsr<- sqrt(sum((sim - mean(sim))^2)/sqrt(sum((meas - mean(meas))^2)
 
   sb_r <- round((sb/msd)*100,1)
   nu_r <- round((nu/msd)*100,1)
@@ -74,7 +76,7 @@ gauchStats <- function(sim, meas) {
   msd_r <- sb_r+nu_r+lc_r
 
   # select which variables to output
-  out <- c(sb_r,nu_r,lc_r, msd_r, round(r2*100,1))
+  out <- c(sb_r,nu_r,lc_r, msd_r,round(r2*100,1))
 
   return(out)
 
@@ -130,11 +132,16 @@ GetApsimNGTable <- function(dbLoc, table)
 # change date to corerct format 
 # explore the df
 ```{r}
+
 db.address <- "D:\\APSIMX2\\Prototypes\\Lucerne\\LucerneValidation.db"
+con <- dbConnect(SQLite(), dbname = db.address, flags = SQLITE_RW)
+alltables <- dbListTables(con)
+alltables
 tableName<-"Report"
 DbTable <- GetApsimNGTable(db.address,tableName)
 df <- as.data.frame(DbTable)
 df$Clock.Today <- ymd_hms(df$Clock.Today)
+str(DbTable)
 str(df)
 summary(df)
 head(df) # simulation results
@@ -143,7 +150,7 @@ head(df) # simulation results
 # merge names 
 # remove unecessary variables
 ```{r}
-simNameDf <- as.data.frame (GetApsimNGTable(db.address,"Simulations"))
+simNameDf <- as.data.frame (GetApsimNGTable(db.address,"_Simulations"))
 myDb <- merge(df, simNameDf, by.x= c("SimulationID"), by.y= c("ID"))
 
 
@@ -156,6 +163,263 @@ summary(myDb)
 #   unique()
 
 ```
+## node appearance analysis
+## load metTT
+## Select datasets for chapter 1  
+```{r}
+obsD <- obsData %>%
+  dplyr::filter(Water=="irr")%>%
+  dplyr::filter(Name!="Iversen_91DefoliationLS")%>%
+  dplyr::filter(Name!="Iversen_91DefoliationSL")%>%
+  dplyr::filter(Name!="Iversen_91DefoliationSS")
+  
+obsD
+```
+
+## Merge TTsum with Observed Data
+```{r}
+ met <- "D:\\R\\Data statistic\\"
+ metTT <- read.table(paste0(met, "metTT.txt"), 
+                     header = TRUE)
+
+dfTp <- metTT %>% dplyr::select(Clock.Today, TTsum1, TTsum5,Pp,mean)%>%
+  mutate(Clock.Today=dmy(Clock.Today))
+dfTp
+        
+
+obscom<-merge(dfTp,obsD, by=c("Clock.Today")) 
+obscom
+
+```
+##Tb validation
+## X-intercept
+```{r,fig.height=4, fig.width=10}
+# primary leaf appearance rate (LAR,days/leaf)
+obscom%>%
+  dplyr::filter(Variable=="NodeNumber")%>%
+  ggplot(aes(x=Clock.Today,y=Observed),color= factor(Name))+
+  geom_point(size=3)+theme_bw()+
+  facet_wrap(~Name,ncol=2)
+
+  
+mainN<-obscom%>%
+  dplyr::filter(Variable=="NodeNumber")%>%
+  group_by(Name,StartDate,FinishDate,GrowthSeason,Rotation,mean)%>%
+  do(mod = lm(Observed~Interval,data=.)) %>%
+  mutate(Slope = summary(mod)$coeff[2]) %>%
+  dplyr::select(-mod)
+
+mainN
+mainN%>%
+  ggplot(aes(x=mean, y= Slope))+
+  geom_point(size=3)+theme_bw()+
+  #facet_grid(GrowthSeason~Rotation)+
+  geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="darkgrey") +
+  geom_abline(intercept = 0, slope = 1) +
+  #coord_fixed(ratio = 1) +
+  theme(legend.title=element_blank(),legend.position = "blank")+xlab("Tmean")+ylab("LAR")+
+  theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
+  theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
+
+
+
+
+
+```
+
+
+
+
+## calculate phyllo
+
+```{r}
+
+nodes <- obscom %>%dplyr::filter(Variable=="NodeNumber")
+
+phylloData <- nodes %>%
+  group_by(Name,GrowthSeason,Rotation) %>%
+  do(mod = lm(TTsum1 ~Observed,data=.)) %>%
+  mutate(Slope = summary(mod)$coeff[2]) %>%
+  dplyr::select(-mod)
+  #nodes$GrowthRotation<-factor(paste(nodes$GrowthSeason,nodes$Rotation))
+  #ggplot(nodes, x=GrowthRotation, y=Slope)+geom_line(size=2)
+
+#write.csv(phylloData,"D:/R/Data statistic/Data.csv", row.names = FALSE)
+phylloData
+   
+
+```
+##Tb=5
+```{r}
+
+nodes <- obscom %>%dplyr::filter(Variable=="NodeNumber")
+
+phylloData1 <- nodes %>%
+  group_by(Name,GrowthSeason,Rotation) %>%
+  do(mod = lm(TTsum5 ~Observed,data=.)) %>%
+  mutate(Slope1 = summary(mod)$coeff[2]) %>%
+  dplyr::select(-mod)
+  #nodes$GrowthRotation<-factor(paste(nodes$GrowthSeason,nodes$Rotation))
+  #ggplot(nodes, x=GrowthRotation, y=Slope)+geom_line(size=2)
+
+#write.csv(phylloData,"D:/R/Data statistic/Data.csv", row.names = FALSE)
+phylloData1
+
+```
+```{r}
+phyll <- "D:\\R\\Data statistic\\"
+StartGrazing <- read.table(paste0(phyll, "Phyllo.txt"), 
+                      header = TRUE)
+StartGrazing1<-StartGrazing %>%
+  mutate(Clock.Today = dmy(Clock.Today))%>%
+  mutate(DateFinish= dmy(DateFinish))
+phylloData
+StartGrazing1
+
+
+PhylloPp <- merge(StartGrazing1,phylloData,by=c("Name","GrowthSeason","Rotation"))
+PhylloPp
+PhylloPp%>%
+ggplot(aes(x=Pp,y=Slope,color=factor(Name)))+geom_point(size=2)+theme_bw()+
+   facet_wrap(~PpT,ncol=2)+
+  geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="darkgrey") +
+  geom_abline(intercept = 0, slope = 1) 
+# PpTI and PpTD
+PhylloPpI<-PhylloPp%>%
+  dplyr::filter(PpT=="I")
+PhylloPpD<-PhylloPp%>%
+  dplyr::filter(PpT=="D")
+
+  cor.test(PhylloPpI$Pp,PhylloPpI$Slope,method="spearman")
+   cor.test(PhylloPpD$Pp,PhylloPpD$Slope,method="spearman")
+   
+phyppmodelI<-lm(Pp~Slope,data=PhylloPpI)
+phyppmodelD<-lm(Pp~Slope,data=PhylloPpD)
+
+summary(phyppmodelI)
+summary(phyppmodelD)
+```
+
+
+
+
+
+
+
+```{r,warning=False}
+PhylloPp%>%
+ggplot(aes(x=Pp, y= Slope, 
+          color= factor(Name))) +
+  geom_point(size=3)+theme_bw() +
+  #ggtitle("Phyllochron")  +
+  # facet_wrap(~Name, ncol = 3)+
+  facet_wrap(~Stage, ncol=2)+
+  geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="darkgrey") +
+  geom_abline(intercept = 0, slope = 1) +
+  #coord_fixed(ratio = 1) +
+  theme(legend.title=element_blank(),legend.position = "blank")+xlab("Photoperiod")+ylab("Phyllochron")+
+  theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
+  theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
+# seedling and regrowth 
+PhylloPpS<-PhylloPp%>%
+  dplyr::filter(Stage=="seedling")
+PhylloPpR<-PhylloPp%>%
+  dplyr::filter(Stage=="regrowth")
+
+  cor.test(PhylloPpS$Pp,PhylloPpS$Slope,method="spearman")
+   cor.test(PhylloPpR$Pp,PhylloPpR$Slope,method="spearman")
+   
+phyppmodelS<-lm(Pp~Slope,data=PhylloPpS)
+phyppmodelR<-lm(Pp~Slope,data=PhylloPpR)
+
+summary(phyppmodelS)
+summary(phyppmodelR)
+   
+  
+```
+##height analysis!!!
+
+```{r}
+# obscom
+# Height <- obscom %>% dplyr::filter(
+#        mutate(Internode=Height/NodeNumber)
+# Height
+# Height%>%
+#   ggplot(aes(x=mean,y=Observed,color=factor(Name)))+theme_bw()+
+#   geom_point(size=3)+
+#   facet_wrap(~Name)+
+#   geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="darkgrey") +
+#   theme(legend.title=element_blank(),legend.position = "blank")+xlab("Height")+ylab("Date")+
+#   theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
+#   theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
+
+```
+
+
+```{r}
+HeightR <- Height %>%
+group_by(Name,GrowthSeason,Rotation,StartDate,FinishDate) %>%
+   do(mod = lm(TTsum1 ~Observed,data=.)) %>%
+   mutate(Slope = summary(mod)$coeff[2]) %>%
+   dplyr::select(-mod)
+HeightR
+Heightcom <- merge(StartGrazing1,HeightR,by=c("Name","GrowthSeason","Rotation"))
+ Heightcom%>%
+   ggplot(aes(x=Pp,y=Slope,color=factor(Name)))+geom_point(size=2)+theme_bw()+
+   facet_wrap(~PpT,ncol=2)+
+   geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="darkgrey") +
+  geom_abline(intercept = 0, slope = 1) 
+   
+
+
+```
+
+## leaf area index analysis
+## light interception and biomass 
+## partitioning
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ## Prepare merge
 ## Add info for merging
 ## select variables that are for comparing with observed data
@@ -170,8 +434,8 @@ simD <- myDb %>%
 
 head(simD)
 
-head(obsData)
-mergedf<-merge(obsData,simD,by=c("Clock.Today","Name","Variable"))
+head(obsD)
+mergedf<-merge(obsD,simD,by=c("Clock.Today","Name","Variable"))
 summary(mergedf)
 str(mergedf)
 
@@ -182,16 +446,15 @@ str(mergedf)
 ## obs Vs Pre for each experiment
 ## 1997-2001
 ```{r,fig.height=4, fig.width=8}
-obsData%>%
+obsD%>%
     mutate(Name = as.factor(Name)) %>%
     mutate(Variable = as.factor(Variable)) %>%
     mutate(Clock.Today = ymd_hms(Clock.Today))
-  obsData$Clock.Today1 <-as.POSIXct(paste(obsData$Clock.Today,obsData$Time),format="%Y-%m-%d %H:%M:%S")
-  obsD<-obsData%>%dplyr::filter(Variable=="NodeNumber")%>%
-  dplyr::filter(Factor1=="irr")%>%
+  obsD$Clock.Today1 <-as.POSIXct(paste(obsD$Clock.Today,obsD$Time),format="%Y-%m-%d %H:%M:%S")
+  obsD1<-obsD%>%dplyr::filter(Variable=="NodeNumber")%>%
   mutate(Clock.Today1= ymd_hms(Clock.Today1))
-  summary(obsD)
-  obsD2<-obsD%>%dplyr::filter(Collection=="1997_2001")
+  summary(obsD1)
+  obsD2<-obsD1%>%dplyr::filter(Collection=="1997_2001")
   
  
  simD1<-simD%>%
@@ -199,6 +462,7 @@ obsData%>%
    dplyr::filter(Variable=="NodeNumber")%>%
    dplyr::filter(Name=="Iversen_8Waterirr")
  str(simD1)
+ 
  simD1%>%
  ggplot(aes(x=Clock.Today,y=Predicted))+geom_line(size=1)+theme_bw()+
  facet_wrap(~Name,ncol = 2)+
@@ -213,7 +477,6 @@ obsData%>%
 mergedf %>%
     dplyr::filter(Variable== "NodeNumber") %>% 
     dplyr::filter(Collection=="1997_2001")%>%
-    dplyr::filter(Name!="Iversen_8Waterdry")%>%
   ggplot(aes(x=Observed, y= Predicted, 
           colour= factor(Name))) +
   geom_point(size=3)+theme_bw() +
@@ -228,21 +491,15 @@ mergedf %>%
 ```
 ## 2000-2002
 ```{r,  fig.height=8, fig.width=8}
-obsData%>%
+obsD%>%
   mutate(Name = as.factor(Name)) %>%
   mutate(Variable = as.factor(Variable)) %>%
   mutate(Clock.Today = ymd_hms(Clock.Today))
-obsData$Clock.Today1 <-as.POSIXct(paste(obsData$Clock.Today,obsData$Time),format="%Y-%m-%d %H:%M:%S")
-obsD<-obsData%>%dplyr::filter(Variable=="NodeNumber")%>%
-  mutate(Clock.Today1= ymd_hms(Clock.Today1))
-obsD2<-obsD%>%dplyr::filter(Collection=="2000_2002")%>%
-  dplyr::filter(Name!="Iversen_9SowingDateSD1Waterdry")%>%
-  dplyr::filter(Name!="Iversen_9SowingDateSD2Waterdry")%>%
-  dplyr::filter(Name!="Iversen_9SowingDateSD3Waterdry")%>%
-  dplyr::filter(Name!="Iversen_9SowingDateSD4Waterdry")
-  
+obsD2<-obsD%>%dplyr::filter(Variable=="NodeNumber")%>%
+  dplyr::filter(Collection=="2000_2002")
+obsD2
 
-simD4<-simD%>%
+simD2<-simD%>%
   mutate(Clock.Today = ymd_hms(Clock.Today))%>%
   dplyr::filter(Clock.Today>"2000-10-24 12:00:00")%>%
   dplyr::filter(Clock.Today<"2002-07-01 12:00:00")%>%
@@ -263,8 +520,8 @@ simD4<-simD%>%
   dplyr::filter(Name!="Iversen_9SowingDateSD3Waterdry")%>%
   dplyr::filter(Name!="Iversen_9SowingDateSD4Waterdry")%>%
   dplyr::filter(Variable=="NodeNumber")
-  str(simD4)
-simD4%>%
+  str(simD2)
+simD2%>%
 ggplot(aes(x=Clock.Today,y=Predicted))+geom_line(size=1)+theme_bw()+
   facet_wrap(~Name,ncol = 2)+
   geom_point(data=obsD2, aes(x=Clock.Today1, y=Observed),colour="green",size=3)+
@@ -290,10 +547,6 @@ str(mergedf)
 mergedf %>%
     dplyr::filter(Variable== "NodeNumber") %>% 
     dplyr::filter(Collection=="2000_2002")%>%
-  dplyr::filter(Name!="Iversen_9SowingDateSD1Waterdry")%>%
-  dplyr::filter(Name!="Iversen_9SowingDateSD2Waterdry")%>%
-  dplyr::filter(Name!="Iversen_9SowingDateSD3Waterdry")%>%
-  dplyr::filter(Name!="Iversen_9SowingDateSD4Waterdry")%>%
   ggplot(aes(x=Observed, y= Predicted, 
           colour= factor(Name))) +
   geom_point(size=3)+theme_bw()+
@@ -309,29 +562,25 @@ mergedf %>%
 
 ## 2002-2004
 ```{r,  fig.height=4, fig.width=8}
-obsData%>%
+obsD%>%
   mutate(Name = as.factor(Name)) %>%
   mutate(Variable = as.factor(Variable)) %>%
   mutate(Clock.Today = ymd_hms(Clock.Today))
-obsData$Clock.Today1 <-as.POSIXct(paste(obsData$Clock.Today,obsData$Time),format="%Y-%m-%d %H:%M:%S")
-obsD<-obsData%>%dplyr::filter(Variable=="NodeNumber")%>%
-  mutate(Clock.Today1= ymd_hms(Clock.Today1))
-obsD2<-obsD%>%dplyr::filter(Collection=="2002_2004")%>%
+obsD3<-obsD%>%dplyr::filter(Variable=="NodeNumber")%>%
+  dplyr::filter(Collection=="2002_2004")%>%
   dplyr::filter(Name=="Iversen_91DefoliationLL")
   
 
 simD3<-simD%>%
   mutate(Clock.Today = ymd_hms(Clock.Today))%>%
-  dplyr::filter(Clock.Today<"2004-11-01 12:00:00")%>%
-  dplyr::filter(Clock.Today>"2002-07-02 12:00:00")%>%
   dplyr::filter(Name=="Iversen_91DefoliationLL")%>%
-  dplyr::filter(Variable=="NodeNumber")%>%
-  dplyr::filter(Name!="NekiaDefoliation")
+  dplyr::filter(Variable=="NodeNumber")
+  
 str(simD3)
 simD3%>%
 ggplot(aes(x=Clock.Today,y=Predicted))+geom_line(size=1)+theme_bw()+
   facet_wrap(~Name,ncol = 1)+
-  geom_point(data=obsD2, aes(x=Clock.Today1, y=Observed),colour="green",size=3)+
+  geom_point(data=obsD3, aes(x=Clock.Today1, y=Observed),colour="green",size=3)+
   theme(legend.title=element_blank(),legend.position = "blank")+xlab("Date")+ylab("Node number")+
   theme(axis.title.x=element_text(face="bold",colour="black",size = 14))+
   theme(axis.title.y=element_text(face="bold",colour="black",size = 14))
@@ -353,7 +602,7 @@ mergedf %>%
   geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="darkgrey") +
   geom_abline(intercept = 0, slope = 1) +
   coord_fixed(ratio = 1)+
-  ggtitle("Node Number")+
+  #ggtitle("Node Number")+
   facet_wrap(~Name, ncol = 3)+
   theme(legend.title=element_blank(),legend.position = "blank")+xlab("Observed")+ylab("Predicted")+
   theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
