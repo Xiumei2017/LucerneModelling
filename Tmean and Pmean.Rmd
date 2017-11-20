@@ -1,0 +1,516 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+## Read met file.
+## Read Observed data
+## calculate Tt and Ttsum
+
+```{r Load, warning=FALSE, fig.height=8, fig.width=8}
+# install.packages("zoo")
+library(dplyr)
+library(ggplot2)
+library(lubridate)   
+library(hydroGOF)
+library(xtable)
+library(knitr)
+library(tidyr)
+library(RSQLite)
+library(agricolae)
+library(scales)
+library(zoo)
+```
+## Load met file
+```{r LoadSim, include = FALSE, echo=FALSE, warning=FALSE, fig.height=8, fig.width=8}
+
+met.address <- "D:\\R\\"
+met <- read.table(paste0(met.address, "lincolnmet.txt"), 
+                      header = TRUE)
+metData <- met %>% mutate(Clock.Today = dmy(Clock.Today))
+str(metData)
+
+```
+
+```{r ReadCalcTt}
+
+metR <- metData %>%
+   filter(Clock.Today>="1997-01-01") %>%
+  rowwise() 
+metR
+```
+
+###mean temperture for each rotation
+## creat Growth season and Rotation in metTT
+#CreatmetRGI8
+```{r}
+metRGI8<-metR%>%
+  mutate(Clock.Today= ymd(as.Date.character(Clock.Today)))
+metRGI8$GrowthRotation<-NULL
+metRGI8$GrowthRotation[metRGI8$Clock.Today>= "1997-01-01" &metRGI8$Clock.Today<= "1997-02-21" ] <-"11"
+metRGI8$GrowthRotation[metRGI8$Clock.Today>= "1997-02-22" &metRGI8$Clock.Today<= "1997-06-05" ] <-"12"
+metRGI8$GrowthRotation[metRGI8$Clock.Today>= "1997-07-01" &metRGI8$Clock.Today<= "1997-10-06" ] <-"21"
+metRGI8$GrowthRotation[metRGI8$Clock.Today>= "1997-10-07" &metRGI8$Clock.Today<= "1997-11-19" ] <-"22"
+metRGI8$GrowthRotation[metRGI8$Clock.Today>= "1997-11-20" &metRGI8$Clock.Today<= "1997-12-23" ] <-"23"
+metRGI8$GrowthRotation[metRGI8$Clock.Today>= "1997-12-24" &metRGI8$Clock.Today<= "1998-02-03" ] <-"24"
+metRGI8$GrowthRotation[metRGI8$Clock.Today>= "1998-02-04" &metRGI8$Clock.Today<= "1998-03-12" ] <-"25"
+metRGI8$GrowthRotation[metRGI8$Clock.Today>= "1998-03-13" &metRGI8$Clock.Today<= "1998-05-30" ] <-"26"
+metRGI8$GrowthRotation[metRGI8$Clock.Today>= "1998-07-01" &metRGI8$Clock.Today<= "1998-09-29" ] <-"31"
+metRGI8$GrowthRotation[metRGI8$Clock.Today>= "1998-09-30" &metRGI8$Clock.Today<= "1998-11-11" ] <-"32"
+metRGI8$GrowthRotation[metRGI8$Clock.Today>= "1998-11-12" &metRGI8$Clock.Today<= "1998-12-15" ] <-"33"
+metRGI8$GrowthRotation[metRGI8$Clock.Today>= "1998-12-16" &metRGI8$Clock.Today<= "1999-01-13" ] <-"34"
+metRGI8$GrowthRotation[metRGI8$Clock.Today>= "1999-01-14" &metRGI8$Clock.Today<= "1999-02-17" ] <-"35"
+metRGI8$GrowthRotation[metRGI8$Clock.Today>= "1999-02-18" &metRGI8$Clock.Today<= "1999-04-15" ] <-"36"
+metRGI8$GrowthRotation[metRGI8$Clock.Today>= "1999-04-16" &metRGI8$Clock.Today<= "1999-06-30" ] <-"37"
+metRGI8$GrowthRotation[metRGI8$Clock.Today>= "1999-07-01" &metRGI8$Clock.Today<= "1999-09-29" ] <-"41"
+metRGI8$GrowthRotation[metRGI8$Clock.Today>= "1999-09-30" &metRGI8$Clock.Today<= "1999-11-10" ] <-"42"
+metRGI8$GrowthRotation[metRGI8$Clock.Today>= "1999-11-11" &metRGI8$Clock.Today<= "1999-12-20" ] <-"43"
+metRGI8$GrowthRotation[metRGI8$Clock.Today>= "1999-12-21" &metRGI8$Clock.Today<= "2000-01-27" ] <-"44"
+metRGI8$GrowthRotation[metRGI8$Clock.Today>= "2000-01-28" &metRGI8$Clock.Today<= "2000-03-14" ] <-"45"
+metRGI8$GrowthRotation[metRGI8$Clock.Today>= "2000-03-15" &metRGI8$Clock.Today<= "2000-05-25" ] <-"46"
+metRGI8$GrowthRotation[metRGI8$Clock.Today>= "2000-05-26" &metRGI8$Clock.Today<= "2000-09-22" ] <-"51"
+metRGI8$GrowthRotation[metRGI8$Clock.Today>= "2000-09-23" &metRGI8$Clock.Today<= "2000-11-10" ] <-"52"
+metRGI8$GrowthRotation[metRGI8$Clock.Today>= "2000-11-11" &metRGI8$Clock.Today<= "2000-12-21" ] <-"53"
+metRGI8$GrowthRotation[metRGI8$Clock.Today>= "2000-12-22" &metRGI8$Clock.Today<= "2001-01-24" ] <-"54"
+metRGI8$GrowthRotation[metRGI8$Clock.Today>= "2001-01-25" &metRGI8$Clock.Today<= "2001-03-14" ] <-"55"
+metRGI8$GrowthRotation[metRGI8$Clock.Today>= "2001-03-15" &metRGI8$Clock.Today<= "2001-05-02" ] <-"56"
+metRGI8$GrowthRotation[metRGI8$Clock.Today>= "2001-05-03" &metRGI8$Clock.Today<= "2001-07-02" ] <-"57"
+metRGI8$GrowthRotation[metRGI8$Clock.Today>= "2001-07-03" &metRGI8$Clock.Today<= "2001-10-03" ] <-"61"
+metRGI8$GrowthRotation[metRGI8$Clock.Today>= "2001-10-12" &metRGI8$Clock.Today<= "2001-12-03" ] <-"62"
+metRGI8
+metTT2
+metTt1I8<-merge(metRGI8,metTT2,by=c("Clock.Today","year","day","rain","maxt","mint","mean","radn","wind","vp","Tb5","Tb1","Pp"))
+metI8<-metTt1I8%>%
+  mutate(GrowthRotation=as.factor(GrowthRotation))%>%
+  group_by(GrowthRotation)%>%
+  mutate(TTS2=cumsum(TTday2))
+
+
+
+metRGI8M1<-metRGI8%>%
+  mutate(GrowthRotation=as.factor(GrowthRotation))%>%
+  group_by(GrowthRotation)%>%
+  mutate(Tmean=mean(mean))%>%
+  mutate(Pmean=mean(Pp))
+
+metRGI8M<-merge(metI8,metRGI8M1,by=c("Clock.Today","year","day","rain","maxt","mint","mean","radn","wind","vp","GrowthRotation","Tb5","Tb1","Pp"))
+metRGI8M
+
+```
+```{r}
+write.csv(metRGI8M,"D:/R/TmeanRotation/metRGI8M.csv", row.names = FALSE)
+#load observed data
+upDir <- "D:\\APSIMX2\\Prototypes\\Lucerne\\"
+obsF <- "D:\\Model work\\APSIMX\\"
+obs <- read.table(paste0(obsF, "ObsDataForStats1.txt"), 
+                      header = TRUE)
+
+obs1<-obs%>%
+  mutate(Rotation = factor(Rotation))%>% 
+  mutate(GrowthSeason=factor(GrowthSeason))%>%
+  mutate(Clock.Today = dmy(Clock.Today))%>%
+  dplyr::filter(Collection=="1997_2001")
+
+
+obsI8<-merge(obs1,metRGI8M,by=c("Clock.Today"))
+
+obsI8
+
+```
+
+#CreatmetRGI9SD1
+```{r}
+metRGI9SD1<-metR%>%
+  mutate(Clock.Today= ymd(as.Date.character(Clock.Today)))
+metRGI9SD1$GrowthRotation<-NULL
+metRGI9SD1$GrowthRotation[metRGI9SD1$Clock.Today>= "2000-10-24" &metRGI9SD1$Clock.Today<= "2001-01-23" ] <-"11"
+metRGI9SD1$GrowthRotation[metRGI9SD1$Clock.Today>= "2001-01-24" &metRGI9SD1$Clock.Today<= "2001-03-06" ] <-"12"
+metRGI9SD1$GrowthRotation[metRGI9SD1$Clock.Today>= "2001-03-07" &metRGI9SD1$Clock.Today<= "2001-05-02" ] <-"13"
+metRGI9SD1$GrowthRotation[metRGI9SD1$Clock.Today>= "2001-05-03" &metRGI9SD1$Clock.Today<= "2001-07-03" ] <-"14"
+metRGI9SD1$GrowthRotation[metRGI9SD1$Clock.Today>= "2001-07-04" &metRGI9SD1$Clock.Today<= "2001-09-29" ] <-"21"
+metRGI9SD1$GrowthRotation[metRGI9SD1$Clock.Today>= "2001-09-30" &metRGI9SD1$Clock.Today<= "2001-11-14" ] <-"22"
+metRGI9SD1$GrowthRotation[metRGI9SD1$Clock.Today>= "2001-11-15" &metRGI9SD1$Clock.Today<= "2001-12-21" ] <-"23"
+metRGI9SD1$GrowthRotation[metRGI9SD1$Clock.Today>= "2001-12-22" &metRGI9SD1$Clock.Today<= "2002-02-04" ] <-"24"
+metRGI9SD1$GrowthRotation[metRGI9SD1$Clock.Today>= "2002-02-05" &metRGI9SD1$Clock.Today<= "2002-04-03" ] <-"25"
+metRGI9SD1$GrowthRotation[metRGI9SD1$Clock.Today>= "2002-04-04" &metRGI9SD1$Clock.Today<= "2002-06-14" ] <-"26"
+metRGI9SD1$GrowthRotation[metRGI9SD1$Clock.Today>= "2002-06-15" &metRGI9SD1$Clock.Today<= "2002-08-28" ] <-"27"
+metRGI9SD1
+metRGI9SD1M1<-metRGI9SD1%>%
+  mutate(GrowthRotation=as.factor(GrowthRotation))%>%
+  group_by(GrowthRotation)%>%
+  mutate(Tmean=mean(mean))%>%
+  mutate(Pmean=mean(Pp))
+
+metTt1I9SD1<-merge(metRGI9SD1,metTT2,by=c("Clock.Today","year","day","rain","maxt","mint","mean","radn","wind","vp","Tb5","Tb1","Pp"))
+metI9SD1<-metTt1I9SD1%>%
+  mutate(GrowthRotation=as.factor(GrowthRotation))%>%
+  group_by(GrowthRotation)%>%
+  mutate(TTS2=cumsum(TTday2))
+  
+
+metRGI9SD1M<-merge(metI9SD1,metRGI9SD1M1,by=c("Clock.Today","year","day","rain","maxt","mint","mean","radn","wind","vp","GrowthRotation","Tb5","Tb1","Pp"))
+
+
+metRGI9SD1M
+write.csv(metRGI9SD1M,"D:/R/TmeanRotation/metRGI9SD1M.csv", row.names = FALSE)
+
+obs2<-obs%>%
+  mutate(Rotation = factor(Rotation))%>% 
+  mutate(GrowthSeason=factor(GrowthSeason))%>%
+  mutate(Clock.Today = dmy(Clock.Today))%>%
+  dplyr::filter(Name=="Iversen_9SowingDateSD1Waterirr"|Name=="Iversen_9SowingDateSD1Waterdry")
+
+
+obsI9SD1<-merge(obs2,metRGI9SD1M,by=c("Clock.Today"))
+obsI9SD1
+
+```
+#CreatmetRGI9SD2
+```{r}
+metRGI9SD2<-metR%>%
+  mutate(Clock.Today= ymd(as.Date.character(Clock.Today)))
+metRGI9SD2$GrowthRotation<-NULL
+metRGI9SD2$GrowthRotation[metRGI9SD2$Clock.Today>= "2000-11-14" &metRGI9SD2$Clock.Today<= "2001-02-13" ] <-"11"
+metRGI9SD2$GrowthRotation[metRGI9SD2$Clock.Today>= "2001-02-14" &metRGI9SD2$Clock.Today<= "2001-05-01" ] <-"12"
+metRGI9SD2$GrowthRotation[metRGI9SD2$Clock.Today>= "2001-05-02" &metRGI9SD2$Clock.Today<= "2001-07-04" ] <-"13"
+metRGI9SD2$GrowthRotation[metRGI9SD2$Clock.Today>= "2001-07-05" &metRGI9SD2$Clock.Today<= "2001-09-27" ] <-"21"
+metRGI9SD2$GrowthRotation[metRGI9SD2$Clock.Today>= "2001-09-28" &metRGI9SD2$Clock.Today<= "2001-11-14" ] <-"22"
+metRGI9SD2$GrowthRotation[metRGI9SD2$Clock.Today>= "2001-11-15" &metRGI9SD2$Clock.Today<= "2001-12-21" ] <-"23"
+metRGI9SD2$GrowthRotation[metRGI9SD2$Clock.Today>= "2001-12-22" &metRGI9SD2$Clock.Today<= "2002-01-31" ] <-"24"
+metRGI9SD2$GrowthRotation[metRGI9SD2$Clock.Today>= "2002-02-01" &metRGI9SD2$Clock.Today<= "2002-04-02" ] <-"25"
+metRGI9SD2
+metRGI9SD2M1<-metRGI9SD2%>%
+  mutate(GrowthRotation=as.factor(GrowthRotation))%>%
+  group_by(GrowthRotation)%>%
+  mutate(Tmean=mean(mean))%>%
+  mutate(Pmean=mean(Pp))
+
+metTt1I9SD2<-merge(metRGI9SD2,metTT2,by=c("Clock.Today","year","day","rain","maxt","mint","mean","radn","wind","vp","Tb5","Tb1","Pp"))
+metI9SD2<-metTt1I9SD2%>%
+  mutate(GrowthRotation=as.factor(GrowthRotation))%>%
+  group_by(GrowthRotation)%>%
+  mutate(TTS2=cumsum(TTday2))
+
+metRGI9SD2M<-merge(metI9SD2,metRGI9SD2M1,by=c("Clock.Today","year","day","rain","maxt","mint","mean","radn","wind","vp","GrowthRotation","Tb5","Tb1","Pp"))
+
+
+metRGI9SD2M
+write.csv(metRGI9SD2M,"D:/R/TmeanRotation/metRGI9SD2M.csv", row.names = FALSE)
+
+
+
+
+obs3<-obs%>%
+  mutate(Rotation = factor(Rotation))%>% 
+  mutate(GrowthSeason=factor(GrowthSeason))%>%
+  mutate(Clock.Today = dmy(Clock.Today))%>%
+  dplyr::filter(Name=="Iversen_9SowingDateSD2Waterirr"|Name=="Iversen_9SowingDateSD2Waterdry")
+
+
+obsI9SD2<-merge(obs3,metRGI9SD2M,by=c("Clock.Today"))
+obsI9SD2
+
+```
+
+#CreatmetRGI9SD3
+```{r}
+metRGI9SD3<-metR%>%
+  mutate(Clock.Today= ymd(as.Date.character(Clock.Today)))
+metRGI9SD3$GrowthRotation<-NULL
+metRGI9SD3$GrowthRotation[metRGI9SD3$Clock.Today>= "2000-12-05" &metRGI9SD3$Clock.Today<= "2001-03-06" ] <-"11"	
+metRGI9SD3$GrowthRotation[metRGI9SD3$Clock.Today>= "2001-03-07" &metRGI9SD3$Clock.Today<= "2001-05-02" ] <-"12"	
+metRGI9SD3$GrowthRotation[metRGI9SD3$Clock.Today>= "2001-05-03" &metRGI9SD3$Clock.Today<= "2001-06-25" ] <-"13"	
+metRGI9SD3$GrowthRotation[metRGI9SD3$Clock.Today>= "2001-06-26" &metRGI9SD3$Clock.Today<= "2001-09-27" ] <-"21"	
+metRGI9SD3$GrowthRotation[metRGI9SD3$Clock.Today>= "2001-09-28" &metRGI9SD3$Clock.Today<= "2001-11-14" ] <-"22"	
+metRGI9SD3$GrowthRotation[metRGI9SD3$Clock.Today>= "2001-11-15" &metRGI9SD3$Clock.Today<= "2001-12-21" ] <-"23"	
+metRGI9SD3$GrowthRotation[metRGI9SD3$Clock.Today>= "2001-12-22" &metRGI9SD3$Clock.Today<= "2002-01-31" ] <-"24"	
+metRGI9SD3$GrowthRotation[metRGI9SD3$Clock.Today>= "2002-02-02" &metRGI9SD3$Clock.Today<= "2002-04-02" ] <-"25"		
+
+metRGI9SD3
+metRGI9SD3M1<-metRGI9SD3%>%
+  mutate(GrowthRotation=as.factor(GrowthRotation))%>%
+  group_by(GrowthRotation)%>%
+  mutate(Tmean=mean(mean))%>%
+  mutate(Pmean=mean(Pp))
+
+metTt1I9SD3<-merge(metRGI9SD3,metTT2,by=c("Clock.Today","year","day","rain","maxt","mint","mean","radn","wind","vp","Tb5","Tb1","Pp"))
+metI9SD3<-metTt1I9SD3%>%
+  mutate(GrowthRotation=as.factor(GrowthRotation))%>%
+  group_by(GrowthRotation)%>%
+  mutate(TTS2=cumsum(TTday2))
+
+metRGI9SD3M<-merge(metI9SD3,metRGI9SD3M1,by=c("Clock.Today","year","day","rain","maxt","mint","mean","radn","wind","vp","GrowthRotation","Tb5","Tb1","Pp"))
+
+
+metRGI9SD3M
+write.csv(metRGI9SD3M,"D:/R/TmeanRotation/metRGI9SD3M.csv", row.names = FALSE)
+
+
+obs4<-obs%>%
+  mutate(Rotation = factor(Rotation))%>% 
+  mutate(GrowthSeason=factor(GrowthSeason))%>%
+  mutate(Clock.Today = dmy(Clock.Today))%>%
+  dplyr::filter(Name=="Iversen_9SowingDateSD3Waterirr"|Name=="Iversen_9SowingDateSD3Waterdry")
+
+
+obsI9SD3<-merge(obs4,metRGI9SD3M,by=c("Clock.Today"))
+obsI9SD3
+```
+
+#CreatmetRGI9SD4
+```{r}
+metRGI9SD4<-metR%>%
+  mutate(Clock.Today= ymd(as.Date.character(Clock.Today)))
+metRGI9SD4$GrowthRotation<-NULL
+metRGI9SD4$GrowthRotation[metRGI9SD4$Clock.Today>= "2000-12-27" &metRGI9SD4$Clock.Today<= "2001-03-27" ] <-"11"
+metRGI9SD4$GrowthRotation[metRGI9SD4$Clock.Today>= "2001-03-28" &metRGI9SD4$Clock.Today<= "2001-05-10" ] <-"12"
+metRGI9SD4$GrowthRotation[metRGI9SD4$Clock.Today>= "2001-05-11" &metRGI9SD4$Clock.Today<= "2001-07-04" ] <-"13"
+metRGI9SD4$GrowthRotation[metRGI9SD4$Clock.Today>= "2001-07-05" &metRGI9SD4$Clock.Today<= "2001-09-27" ] <-"21"
+metRGI9SD4$GrowthRotation[metRGI9SD4$Clock.Today>= "2001-09-28" &metRGI9SD4$Clock.Today<= "2001-11-14" ] <-"22"
+metRGI9SD4$GrowthRotation[metRGI9SD4$Clock.Today>= "2001-11-15" &metRGI9SD4$Clock.Today<= "2001-12-21" ] <-"23"
+metRGI9SD4$GrowthRotation[metRGI9SD4$Clock.Today>= "2001-12-22" &metRGI9SD4$Clock.Today<= "2002-01-31" ] <-"24"
+metRGI9SD4$GrowthRotation[metRGI9SD4$Clock.Today>= "2002-02-01" &metRGI9SD4$Clock.Today<= "2002-04-02" ] <-"25"
+
+metRGI9SD4
+metRGI9SD4M1<-metRGI9SD4%>%
+  mutate(GrowthRotation=as.factor(GrowthRotation))%>%
+  group_by(GrowthRotation)%>%
+  mutate(Tmean=mean(mean))%>%
+  mutate(Pmean=mean(Pp))
+
+metTt1I9SD4<-merge(metRGI9SD4,metTT2,by=c("Clock.Today","year","day","rain","maxt","mint","mean","radn","wind","vp","Tb5","Tb1","Pp"))
+metI9SD4<-metTt1I9SD4%>%
+  mutate(GrowthRotation=as.factor(GrowthRotation))%>%
+  group_by(GrowthRotation)%>%
+  mutate(TTS2=cumsum(TTday2))
+
+metRGI9SD4M<-merge(metI9SD4,metRGI9SD4M1,by=c("Clock.Today","year","day","rain","maxt","mint","mean","radn","wind","vp","GrowthRotation","Tb5","Tb1","Pp"))
+
+
+metRGI9SD4M
+write.csv(metRGI9SD4M,"D:/R/TmeanRotation/metRGI9SD4M.csv", row.names = FALSE)
+
+obs5<-obs%>%
+  mutate(Rotation = factor(Rotation))%>% 
+  mutate(GrowthSeason=factor(GrowthSeason))%>%
+  mutate(Clock.Today = dmy(Clock.Today))%>%
+  dplyr::filter(Name=="Iversen_9SowingDateSD4Waterirr"|Name=="Iversen_9SowingDateSD4Waterdry")
+
+
+obsI9SD4<-merge(obs5,metRGI9SD4M,by=c("Clock.Today"))
+obsI9SD4
+```
+
+#CreatmetRGI91LL
+```{r}
+metRGI91LL<-metR%>%
+  mutate(Clock.Today= ymd(as.Date.character(Clock.Today)))
+metRGI91LL$GrowthRotation<-NULL
+metRGI91LL$GrowthRotation[metRGI91LL$Clock.Today>= "2002-06-14" &metRGI91LL$Clock.Today<= "2002-10-05" ] <-"11"	
+metRGI91LL$GrowthRotation[metRGI91LL$Clock.Today>= "2002-10-06" &metRGI91LL$Clock.Today<= "2002-11-16" ] <-"12"	
+metRGI91LL$GrowthRotation[metRGI91LL$Clock.Today>= "2002-11-17" &metRGI91LL$Clock.Today<= "2002-12-28" ] <-"13"	
+metRGI91LL$GrowthRotation[metRGI91LL$Clock.Today>= "2002-12-29" &metRGI91LL$Clock.Today<= "2003-02-10" ] <-"14"	
+metRGI91LL$GrowthRotation[metRGI91LL$Clock.Today>= "2003-02-11" &metRGI91LL$Clock.Today<= "2003-03-22" ] <-"15"	
+metRGI91LL$GrowthRotation[metRGI91LL$Clock.Today>= "2003-03-23" &metRGI91LL$Clock.Today<= "2003-05-04" ] <-"16"	
+metRGI91LL$GrowthRotation[metRGI91LL$Clock.Today>= "2003-05-05" &metRGI91LL$Clock.Today<= "2003-06-12" ] <-"17"	
+metRGI91LL$GrowthRotation[metRGI91LL$Clock.Today>= "2003-06-13" &metRGI91LL$Clock.Today<= "2003-10-05" ] <-"21"	
+metRGI91LL$GrowthRotation[metRGI91LL$Clock.Today>= "2003-10-06" &metRGI91LL$Clock.Today<= "2003-11-12" ] <-"22"	
+metRGI91LL$GrowthRotation[metRGI91LL$Clock.Today>= "2003-11-13" &metRGI91LL$Clock.Today<= "2003-12-28" ] <-"23"	
+metRGI91LL$GrowthRotation[metRGI91LL$Clock.Today>= "2003-12-29" &metRGI91LL$Clock.Today<= "2004-02-07" ] <-"24"	
+metRGI91LL$GrowthRotation[metRGI91LL$Clock.Today>= "2004-02-08" &metRGI91LL$Clock.Today<= "2004-03-19" ] <-"25"	
+metRGI91LL$GrowthRotation[metRGI91LL$Clock.Today>= "2004-03-20" &metRGI91LL$Clock.Today<= "2004-05-02" ] <-"26"	
+metRGI91LL$GrowthRotation[metRGI91LL$Clock.Today>= "2004-05-03" &metRGI91LL$Clock.Today<= "2004-06-11" ] <-"27"	
+metRGI91LL$GrowthRotation[metRGI91LL$Clock.Today>= "2004-06-12" &metRGI91LL$Clock.Today<= "2004-10-04" ] <-"31"	
+metRGI91LL
+
+metRGI91LLM1<-metRGI91LL%>%
+  mutate(GrowthRotation=as.factor(GrowthRotation))%>%
+  group_by(GrowthRotation)%>%
+  mutate(Tmean=mean(mean))%>%
+  mutate(Pmean=mean(Pp))
+
+metTt1I9LL<-merge(metRGI91LL,metTT2,by=c("Clock.Today","year","day","rain","maxt","mint","mean","radn","wind","vp","Tb5","Tb1","Pp"))
+metI9LL<-metTt1I9LL%>%
+  mutate(GrowthRotation=as.factor(GrowthRotation))%>%
+  group_by(GrowthRotation)%>%
+  mutate(TTS2=cumsum(TTday2))
+
+metRGI91LLM<-merge(metI9LL,metRGI91LLM1,by=c("Clock.Today","year","day","rain","maxt","mint","mean","radn","wind","vp","GrowthRotation","Tb5","Tb1","Pp"))
+
+metRGI91LLM
+write.csv(metRGI91LLM,"D:/R/TmeanRotation/metRGI91LLM.csv", row.names = FALSE)
+
+obs6<-obs%>%
+  mutate(Rotation = factor(Rotation))%>% 
+  mutate(GrowthSeason=factor(GrowthSeason))%>%
+  mutate(Clock.Today = dmy(Clock.Today))%>%
+  dplyr::filter(Name=="Iversen_91DefoliationLL")
+
+obsI91LL<-merge(obs6,metRGI91LLM,by=c("Clock.Today"))
+obsI91LL
+
+```
+
+#CreatmetRGI91LS
+```{r}
+metRGI91LS<-metR%>%
+  mutate(Clock.Today= ymd(as.Date.character(Clock.Today)))
+metRGI91LS$GrowthRotation<-NULL
+metRGI91LS$GrowthRotation[metRGI91LS$Clock.Today>= "2002-06-14" &metRGI91LS$Clock.Today<= "2002-10-05" ] <-"11"
+metRGI91LS$GrowthRotation[metRGI91LS$Clock.Today>= "2002-10-06" &metRGI91LS$Clock.Today<= "2002-11-16" ] <-"12"
+metRGI91LS$GrowthRotation[metRGI91LS$Clock.Today>= "2002-11-17" &metRGI91LS$Clock.Today<= "2002-12-27" ] <-"13"
+metRGI91LS$GrowthRotation[metRGI91LS$Clock.Today>= "2002-12-29" &metRGI91LS$Clock.Today<= "2003-02-10" ] <-"14"
+metRGI91LS$GrowthRotation[metRGI91LS$Clock.Today>= "2003-02-11" &metRGI91LS$Clock.Today<= "2003-03-07" ] <-"15"
+metRGI91LS$GrowthRotation[metRGI91LS$Clock.Today>= "2003-03-08" &metRGI91LS$Clock.Today<= "2003-04-04" ] <-"16"
+metRGI91LS$GrowthRotation[metRGI91LS$Clock.Today>= "2003-04-05" &metRGI91LS$Clock.Today<= "2003-06-12" ] <-"17"
+metRGI91LS$GrowthRotation[metRGI91LS$Clock.Today>= "2003-06-13" &metRGI91LS$Clock.Today<= "2003-10-05" ] <-"21"
+metRGI91LS$GrowthRotation[metRGI91LS$Clock.Today>= "2003-10-06" &metRGI91LS$Clock.Today<= "2003-11-12" ] <-"22"
+metRGI91LS$GrowthRotation[metRGI91LS$Clock.Today>= "2003-11-13" &metRGI91LS$Clock.Today<= "2003-12-28" ] <-"23"
+metRGI91LS$GrowthRotation[metRGI91LS$Clock.Today>= "2003-12-29" &metRGI91LS$Clock.Today<= "2004-02-07" ] <-"24"
+metRGI91LS$GrowthRotation[metRGI91LS$Clock.Today>= "2004-02-08" &metRGI91LS$Clock.Today<= "2004-03-06" ] <-"25"
+metRGI91LS$GrowthRotation[metRGI91LS$Clock.Today>= "2004-03-07" &metRGI91LS$Clock.Today<= "2004-04-03" ] <-"26"
+metRGI91LS$GrowthRotation[metRGI91LS$Clock.Today>= "2004-04-04" &metRGI91LS$Clock.Today<= "2004-05-02" ] <-"27"
+metRGI91LS$GrowthRotation[metRGI91LS$Clock.Today>= "2004-05-03" &metRGI91LS$Clock.Today<= "2004-06-11" ] <-"28"
+metRGI91LS$GrowthRotation[metRGI91LS$Clock.Today>= "2004-06-12" &metRGI91LS$Clock.Today<= "2004-10-03" ] <-"31"
+
+metRGI91LS
+metRGI91LSM1<-metRGI91LS%>%
+  mutate(GrowthRotation=as.factor(GrowthRotation))%>%
+  group_by(GrowthRotation)%>%
+  mutate(Tmean=mean(mean))%>%
+  mutate(Pmean=mean(Pp))
+
+
+metTt1I9LS<-merge(metRGI91LS,metTT2,by=c("Clock.Today","year","day","rain","maxt","mint","mean","radn","wind","vp","Tb5","Tb1","Pp"))
+metI9LS<-metTt1I9LS%>%
+  mutate(GrowthRotation=as.factor(GrowthRotation))%>%
+  group_by(GrowthRotation)%>%
+  mutate(TTS2=cumsum(TTday2))
+
+metRGI91LSM<-merge(metI9LS,metRGI91LSM1,by=c("Clock.Today","year","day","rain","maxt","mint","mean","radn","wind","vp","GrowthRotation","Tb5","Tb1","Pp"))
+
+metRGI91LSM
+write.csv(metRGI91LSM,"D:/R/TmeanRotation/metRGI91LSM.csv", row.names = FALSE)
+
+obs7<-obs%>%
+  mutate(Rotation = factor(Rotation))%>% 
+  mutate(GrowthSeason=factor(GrowthSeason))%>%
+  mutate(Clock.Today = dmy(Clock.Today))%>%
+  dplyr::filter(Name=="Iversen_91DefoliationLS")
+
+obsI91LS<-merge(obs7,metRGI91LSM,by=c("Clock.Today"))
+obsI91LS
+
+```
+
+#CreatmetRGI91SL
+```{r}
+metRGI91SL<-metR%>%
+  mutate(Clock.Today= ymd(as.Date.character(Clock.Today)))
+metRGI91SL$GrowthRotation<-NULL
+metRGI91SL$GrowthRotation[metRGI91SL$Clock.Today>= "2002-06-14" &metRGI91SL$Clock.Today<= "2002-09-19" ] <-"11"
+metRGI91SL$GrowthRotation[metRGI91SL$Clock.Today>= "2002-09-20" &metRGI91SL$Clock.Today<= "2002-10-17" ] <-"12"
+metRGI91SL$GrowthRotation[metRGI91SL$Clock.Today>= "2002-10-18" &metRGI91SL$Clock.Today<= "2002-11-13" ] <-"13"
+metRGI91SL$GrowthRotation[metRGI91SL$Clock.Today>= "2002-11-14" &metRGI91SL$Clock.Today<= "2002-12-11" ] <-"14"
+metRGI91SL$GrowthRotation[metRGI91SL$Clock.Today>= "2002-12-12" &metRGI91SL$Clock.Today<= "2003-01-08" ] <-"15"
+metRGI91SL$GrowthRotation[metRGI91SL$Clock.Today>= "2003-01-09" &metRGI91SL$Clock.Today<= "2003-02-10" ] <-"16"
+metRGI91SL$GrowthRotation[metRGI91SL$Clock.Today>= "2003-02-11" &metRGI91SL$Clock.Today<= "2003-03-22" ] <-"17"
+metRGI91SL$GrowthRotation[metRGI91SL$Clock.Today>= "2003-03-23" &metRGI91SL$Clock.Today<= "2003-05-04" ] <-"18"
+metRGI91SL$GrowthRotation[metRGI91SL$Clock.Today>= "2003-05-05" &metRGI91SL$Clock.Today<= "2003-06-12" ] <-"19"
+metRGI91SL$GrowthRotation[metRGI91SL$Clock.Today>= "2003-06-13" &metRGI91SL$Clock.Today<= "2003-09-17" ] <-"21"
+metRGI91SL$GrowthRotation[metRGI91SL$Clock.Today>= "2003-09-18" &metRGI91SL$Clock.Today<= "2003-10-18" ] <-"22"
+metRGI91SL$GrowthRotation[metRGI91SL$Clock.Today>= "2003-10-19" &metRGI91SL$Clock.Today<= "2003-11-12" ] <-"23"
+metRGI91SL$GrowthRotation[metRGI91SL$Clock.Today>= "2003-11-13" &metRGI91SL$Clock.Today<= "2003-12-12" ] <-"24"
+metRGI91SL$GrowthRotation[metRGI91SL$Clock.Today>= "2003-12-13" &metRGI91SL$Clock.Today<= "2004-01-07" ] <-"25"
+metRGI91SL$GrowthRotation[metRGI91SL$Clock.Today>= "2004-01-08" &metRGI91SL$Clock.Today<= "2004-02-07" ] <-"26"
+metRGI91SL$GrowthRotation[metRGI91SL$Clock.Today>= "2004-02-08" &metRGI91SL$Clock.Today<= "2004-03-19" ] <-"27"
+metRGI91SL$GrowthRotation[metRGI91SL$Clock.Today>= "2004-03-20" &metRGI91SL$Clock.Today<= "2004-05-02" ] <-"28"
+metRGI91SL$GrowthRotation[metRGI91SL$Clock.Today>= "2004-05-03" &metRGI91SL$Clock.Today<= "2004-06-11" ] <-"29"
+metRGI91SL$GrowthRotation[metRGI91SL$Clock.Today>= "2004-06-12" &metRGI91SL$Clock.Today<= "2004-10-03" ] <-"31"
+metRGI91SL
+metRGI91SLM1<-metRGI91SL%>%
+  mutate(GrowthRotation=as.factor(GrowthRotation))%>%
+  group_by(GrowthRotation)%>%
+  mutate(Tmean=mean(mean))%>%
+  mutate(Pmean=mean(Pp))
+
+metTt1I9SL<-merge(metRGI91SL,metTT2,by=c("Clock.Today","year","day","rain","maxt","mint","mean","radn","wind","vp","Tb5","Tb1","Pp"))
+metI9SL<-metTt1I9SL%>%
+  mutate(GrowthRotation=as.factor(GrowthRotation))%>%
+  group_by(GrowthRotation)%>%
+  mutate(TTS2=cumsum(TTday2))
+
+metRGI91SLM<-merge(metI9SL,metRGI91SLM1,by=c("Clock.Today","year","day","rain","maxt","mint","mean","radn","wind","vp","GrowthRotation","Tb5","Tb1","Pp"))
+
+metRGI91SLM
+write.csv(metRGI91SLM,"D:/R/TmeanRotation/metRGI91SLM.csv", row.names = FALSE)
+
+obs8<-obs%>%
+  mutate(Rotation = factor(Rotation))%>% 
+  mutate(GrowthSeason=factor(GrowthSeason))%>%
+  mutate(Clock.Today = dmy(Clock.Today))%>%
+  dplyr::filter(Name=="Iversen_91DefoliationSL")
+
+obsI91SL<-merge(obs8,metRGI91SLM,by=c("Clock.Today"))
+obsI91SL
+
+```
+#CreatmetRGI91SS
+```{r}
+metRGI91SS<-metR%>%
+  mutate(Clock.Today= ymd(as.Date.character(Clock.Today)))
+metRGI91SS$GrowthRotation<-NULL
+metRGI91SS$GrowthRotation[metRGI91SS$Clock.Today>= "2002-06-14" &metRGI91SS$Clock.Today<= "2002-09-13" ] <-"11"
+metRGI91SS$GrowthRotation[metRGI91SS$Clock.Today>= "2002-09-14" &metRGI91SS$Clock.Today<= "2002-10-13" ] <-"12"
+metRGI91SS$GrowthRotation[metRGI91SS$Clock.Today>= "2002-10-14" &metRGI91SS$Clock.Today<= "2002-11-08" ] <-"13"
+metRGI91SS$GrowthRotation[metRGI91SS$Clock.Today>= "2002-11-09" &metRGI91SS$Clock.Today<= "2002-12-06" ] <-"14"
+metRGI91SS$GrowthRotation[metRGI91SS$Clock.Today>= "2002-12-07" &metRGI91SS$Clock.Today<= "2003-01-03" ] <-"15"
+metRGI91SS$GrowthRotation[metRGI91SS$Clock.Today>= "2003-01-04" &metRGI91SS$Clock.Today<= "2003-02-05" ] <-"16"
+metRGI91SS$GrowthRotation[metRGI91SS$Clock.Today>= "2003-02-06" &metRGI91SS$Clock.Today<= "2003-03-06" ] <-"17"
+metRGI91SS$GrowthRotation[metRGI91SS$Clock.Today>= "2003-03-07" &metRGI91SS$Clock.Today<= "2003-04-03" ] <-"18"
+metRGI91SS$GrowthRotation[metRGI91SS$Clock.Today>= "2003-04-04" &metRGI91SS$Clock.Today<= "2003-05-02" ] <-"19"
+metRGI91SS$GrowthRotation[metRGI91SS$Clock.Today>= "2003-05-03" &metRGI91SS$Clock.Today<= "2003-06-12" ] <-"110"
+metRGI91SS$GrowthRotation[metRGI91SS$Clock.Today>= "2003-06-13" &metRGI91SS$Clock.Today<= "2003-09-17" ] <-"21"
+metRGI91SS$GrowthRotation[metRGI91SS$Clock.Today>= "2003-09-18" &metRGI91SS$Clock.Today<= "2003-10-15" ] <-"22"
+metRGI91SS$GrowthRotation[metRGI91SS$Clock.Today>= "2003-10-16" &metRGI91SS$Clock.Today<= "2003-11-11" ] <-"23"
+metRGI91SS$GrowthRotation[metRGI91SS$Clock.Today>= "2003-11-12" &metRGI91SS$Clock.Today<= "2003-12-11" ] <-"24"
+metRGI91SS$GrowthRotation[metRGI91SS$Clock.Today>= "2003-12-12" &metRGI91SS$Clock.Today<= "2004-01-03" ] <-"25"
+metRGI91SS$GrowthRotation[metRGI91SS$Clock.Today>= "2004-01-04" &metRGI91SS$Clock.Today<= "2004-02-02" ] <-"26"
+metRGI91SS$GrowthRotation[metRGI91SS$Clock.Today>= "2004-02-03" &metRGI91SS$Clock.Today<= "2004-03-03" ] <-"27"
+metRGI91SS$GrowthRotation[metRGI91SS$Clock.Today>= "2004-03-04" &metRGI91SS$Clock.Today<= "2004-03-31" ] <-"28"
+metRGI91SS$GrowthRotation[metRGI91SS$Clock.Today>= "2004-04-01" &metRGI91SS$Clock.Today<= "2004-04-27" ] <-"29"
+metRGI91SS$GrowthRotation[metRGI91SS$Clock.Today>= "2004-04-28" &metRGI91SS$Clock.Today<= "2004-06-09" ] <-"210"
+metRGI91SS$GrowthRotation[metRGI91SS$Clock.Today>= "2004-06-10" &metRGI91SS$Clock.Today<= "2004-10-04" ] <-"31"
+metRGI91SS
+metRGI91SSM1<-metRGI91SS%>%
+  mutate(GrowthRotation=as.factor(GrowthRotation))%>%
+  group_by(GrowthRotation)%>%
+  mutate(Tmean=mean(mean))%>%
+  mutate(Pmean=mean(Pp))
+
+metTt1I9SS<-merge(metRGI91SS,metTT2,by=c("Clock.Today","year","day","rain","maxt","mint","mean","radn","wind","vp","Tb5","Tb1","Pp"))
+metI9SS<-metTt1I9SS%>%
+  mutate(GrowthRotation=as.factor(GrowthRotation))%>%
+  group_by(GrowthRotation)%>%
+  mutate(TTS2=cumsum(TTday2))
+
+metRGI91SSM<-merge(metI9SS,metRGI91SSM1,by=c("Clock.Today","year","day","rain","maxt","mint","mean","radn","wind","vp","GrowthRotation","Tb5","Tb1","Pp"))
+
+metRGI91SSM
+write.csv(metRGI91SSM,"D:/R/TmeanRotation/metRGI91SSM.csv", row.names = FALSE)
+obs9<-obs%>%
+  mutate(Rotation = factor(Rotation))%>% 
+  mutate(GrowthSeason=factor(GrowthSeason))%>%
+  mutate(Clock.Today = dmy(Clock.Today))%>%
+  dplyr::filter(Name=="Iversen_91DefoliationSS")
+
+obsI91SS<-merge(obs9,metRGI91SLM,by=c("Clock.Today"))
+obsI91SS
+
+```
+### merge all the Obs data
+```{r}
+obsT<-rbind(obsI91LS,obsI91LL,obsI91SL,obsI91SS,obsI9SD1,obsI9SD2,obsI9SD3,obsI9SD4,obsI8)
+write.csv(obsT,"D:/R/TmeanRotation/obsTt.csv",row.names = FALSE)
+obsT
+```
