@@ -1,0 +1,1884 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+## Read met file.
+## Read Observed data
+## calculate Tt and Ttsum
+
+```{r Load, warning=FALSE, fig.height=8, fig.width=8}
+# install.packages("zoo")
+library(dplyr)
+library(ggplot2)
+library(lubridate)   
+library(hydroGOF)
+library(xtable)
+library(knitr)
+library(tidyr)
+library(RSQLite)
+library(agricolae)
+library(scales)
+library(zoo)
+```
+
+# load observed data
+```{r, echo=FALSE}
+upDir <- "D:\\APSIMX2\\Prototypes\\Lucerne\\"
+obsF <- "D:\\Model work\\APSIMX\\"
+obs <- read.table(paste0(obsF, "ObsDataForStats1.txt"), 
+                      header = TRUE)
+
+obs<-obs%>%
+  mutate(Rotation = factor(Rotation))
+obs <- obs %>% mutate(Clock.Today = dmy(Clock.Today))
+head(obs)
+```
+
+```{r}
+# get time format right
+obsData <- obs %>% mutate(Clock.Today = dmy(Clock.Today))%>% dplyr::filter(Water=="irr")%>% dplyr::filter(Defoliation!="LS")%>% dplyr::filter(Defoliation!="SL")
+str(obsData)
+head(obsData)
+summary(obsData)
+```
+
+
+## Load met file
+```{r LoadSim, include = FALSE, echo=FALSE, warning=FALSE, fig.height=8, fig.width=8}
+
+met.address <- "D:\\R\\Data statistic\\"
+met <- read.table(paste0(met.address, "metTT.txt"), 
+                      header = TRUE)
+metData <- met %>% mutate(Clock.Today = dmy(Clock.Today))
+metData$Tt5<-(metData$maxt-metData$mint)/2-metData$Tb5
+str(metData)
+metData
+
+```
+## graph
+
+```{r, fig.height=10, fig.width=10}
+
+metData %>%
+  ggplot(aes(x=Clock.Today,y=maxt)) +
+  geom_point()
+
+```
+## load function
+## Define Tt cardinal temperatures
+#Create Thermal time cardinal temperatures (lucerne.xml in APSIM line 206)
+Considered an overall average the following references:
+Tb: 0.0
+Top range:18-25
+Tmax: 40
+
+```{r,fig.height=4, fig.width=6}
+Thermaltime <-data.frame(a=c(5, 30, 40),b=c(0, 25, 0))
+Thermaltime%>%
+  ggplot(aes(x=a, y=b))+
+  labs(x="Mean air temperature (°C)")+
+  labs(y="Thermal Time (°Cd/day)") +
+  theme_bw()+
+  geom_line(size=1)+
+  theme(legend.title=element_blank(),legend.position = "blank")+
+ theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
+ theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
+
+```
+
+### calculate TT based on Tb (From 1 to 10)
+## Tb=1 broken stick
+```{r,fig.height=4, fig.width=6}
+tt_card <- data.frame(temp=c(1.0,  5.0,  10,  15,  30,  40),
+                      TT=c(0.0,  3.0,  6.5, 10,  25,  0.0))
+tt_card %>%
+  ggplot(aes(x=temp, y=TT))+
+  labs(x="Mean air temperature (°C)")+
+  labs(y="Thermal Time (°Cd/day)") +
+  theme_bw()+
+  geom_line(size=1)+
+  theme(legend.title=element_blank(),legend.position = "blank")+
+ theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
+ theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
+
+```
+# Create and test interpolation function 
+```{r}
+
+temp_ref  <- 25 # x-axes reference
+temp <- tt_card$temp # x-axes
+TT <- tt_card$TT # y-axes
+
+
+int_func <- function(temp,TT,temp_ref){
+
+# if temp is too low or too high give extreme TT values
+ if(temp_ref>temp[length(temp)]) {
+   
+   out <- TT[length(TT)] 
+   
+ } else if (temp_ref<temp[1]) {
+   
+   out <- TT[1]
+   
+ } else {
+   
+# else interpolate
+   
+   tryCatch(  
+   
+  out <- approx(temp, TT, xout = temp_ref, 
+         method="linear", 
+         rule = 2)$y,
+  error = function(e) 
+  {
+  out <- NA
+  }
+) 
+  
+} # end if check
+
+  return(out)  
+  
+ }
+  
+int_func(temp,TT,temp_ref)
+
+```
+#create REF Jones CA, Ritchie JT, Kiniry JR, Godwin DC (1986) Subroutine structure.In 'CERES-Maize: A simulation model of maize growth anddevelopment'. (Eds CA Jones, JR Kiniry) pp. 49-194. (Texas A&M University Press: Texas, USA
+
+```{r}
+
+TTfunc <- function(Tmin ,Tmax){         
+ 
+  if (Tmin>Tmax){
+   print("Tmin>Tmax")
+   break
+ } 
+  
+  TTav  <- 0
+  TTsum <- 0
+  
+  for(n in 1:8){ 
+    
+    tn <- 0
+    
+    TT_tn <- 0
+    
+    tn <- ((0.931 +  0.114*n - 0.0703 * n^2
+            + 0.0053 * n^3) * (Tmax-Tmin)) + 
+      Tmin # 8-h temperature
+    
+    TT_tn <- int_func(tt_card$temp, tt_card$T,tn) 
+    
+    TTsum <- max(TT_tn,0) + TTsum
+    
+ #   print(TT_tn)
+    
+    }
+  TTav <- TTsum/8
+  
+  return(TTav)
+  }
+
+TTfunc(10,30)
+
+```
+```{r}
+Tb=5 # assuming a base temperature of 8 for the simple calculation
+metTT1 <- metData %>%
+   filter(Clock.Today>"1997-01-01") %>%
+  rowwise() %>%
+  mutate(TTday1=TTfunc(mint,maxt), TTday_s=max(((mint+maxt)/2)-Tb,0), diff=(TTday_s/TTday1)*100)
+metTT1
+write.csv(metTT1,"D:/R/metTT/metTT1.csv", row.names = FALSE)
+```
+
+
+##Tb=2 broken stick
+
+```{r,fig.height=4, fig.width=6}
+tt_card2 <- data.frame(temp=c(2.0, 15,  30,  40),
+                      TT=c(0.0, 10, 25,  0.0))
+tt_card2 %>%
+  ggplot(aes(x=temp, y=TT))+
+  labs(x="Mean air temperature (°C)")+
+  labs(y="Thermal Time (°Cd/day)") +
+  theme_bw()+
+  geom_line(size=1)+
+  theme(legend.title=element_blank(),legend.position = "blank")+
+ theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
+ theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
+
+```
+# Create and test interpolation function 
+```{r}
+
+temp_ref2  <- 10 # x-axes reference
+temp2 <- tt_card2$temp # x-axes
+TT2 <- tt_card2$TT # y-axes
+
+
+int_func <- function(temp2,TT2,temp_ref2){
+
+# if temp is too low or too high give extreme TT values
+ if(temp_ref2>temp2[length(temp2)]) {
+   
+   out <- TT2[length(TT2)] 
+   
+ } else if (temp_ref2<temp2[1]) {
+   
+   out <- TT2[1]
+   
+ } else {
+   
+# else interpolate
+   
+   tryCatch(  
+   
+  out <- approx(temp2, TT2, xout = temp_ref2, 
+         method="linear", 
+         rule = 2)$y,
+  error = function(e) 
+  {
+  out <- NA
+  }
+) 
+  
+} # end if check
+
+  return(out)  
+  
+ }
+  
+int_func(temp2,TT2,temp_ref2)
+
+```
+
+
+
+#create REF Jones CA, Ritchie JT, Kiniry JR, Godwin DC (1986) Subroutine structure.In 'CERES-Maize: A simulation model of maize growth anddevelopment'. (Eds CA Jones, JR Kiniry) pp. 49-194. (Texas A&M University Press: Texas, USA
+
+```{r}
+
+TTfunc <- function(Tmin ,Tmax){         
+ 
+  if (Tmin>Tmax){
+   print("Tmin>Tmax")
+   break
+ } 
+  
+  TTav  <- 0
+  TTsum <- 0
+  
+  for(n in 1:8){ 
+    
+    tn <- 0
+    
+    TT_tn <- 0
+    
+    tn <- ((0.931 +  0.114*n - 0.0703 * n^2
+            + 0.0053 * n^3) * (Tmax-Tmin)) + 
+      Tmin # 8-h temperature
+    
+    TT_tn <- int_func(tt_card2$temp, tt_card2$T,tn) 
+    
+    TTsum <- max(TT_tn,0) + TTsum
+    
+ #   print(TT_tn)
+    
+    }
+  TTav <- TTsum/8
+  
+  return(TTav)
+  }
+
+TTfunc(10,30)
+
+```
+```{r ReadCalcTt}
+
+Tb=5 # assuming a base temperature of 8 for the simple calculation
+
+metTT2 <- metData %>%
+   filter(Clock.Today>"1997-01-01") %>%
+  rowwise() %>%
+  mutate(TTday2=TTfunc(mint,maxt), TTday_s=max(((mint+maxt)/2)-Tb,0), diff=(TTday_s/TTday2)*100)
+metTT2
+write.csv(metTT2,"D:/R/metTT/metTT2.csv", row.names = FALSE)
+```
+##Tb=3 broken stick
+
+```{r,fig.height=4, fig.width=6}
+tt_card3 <- data.frame(temp=c(3.0, 15,  30,  40),
+                      TT=c(0.0, 10, 25,  0.0))
+tt_card3 %>%
+  ggplot(aes(x=temp, y=TT))+
+  labs(x="Mean air temperature (°C)")+
+  labs(y="Thermal Time (°Cd/day)") +
+  theme_bw()+
+  geom_line(size=1)+
+  theme(legend.title=element_blank(),legend.position = "blank")+
+ theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
+ theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
+
+```
+# Create and test interpolation function 
+```{r}
+
+temp_ref3  <- 10 # x-axes reference
+temp3 <- tt_card3$temp # x-axes
+TT3 <- tt_card3$TT # y-axes
+
+
+int_func <- function(temp3,TT3,temp_ref3){
+
+# if temp is too low or too high give extreme TT values
+ if(temp_ref3>temp3[length(temp3)]) {
+   
+   out <- TT3[length(TT3)] 
+   
+ } else if (temp_ref3<temp3[1]) {
+   
+   out <- TT3[1]
+   
+ } else {
+   
+# else interpolate
+   
+   tryCatch(  
+   
+  out <- approx(temp3, TT3, xout = temp_ref3, 
+         method="linear", 
+         rule = 2)$y,
+  error = function(e) 
+  {
+  out <- NA
+  }
+) 
+  
+} # end if check
+
+  return(out)  
+  
+ }
+  
+int_func(temp3,TT3,temp_ref3)
+
+```
+#create REF Jones CA, Ritchie JT, Kiniry JR, Godwin DC (1986) Subroutine structure.In 'CERES-Maize: A simulation model of maize growth anddevelopment'. (Eds CA Jones, JR Kiniry) pp. 49-194. (Texas A&M University Press: Texas, USA
+
+```{r}
+
+TTfunc <- function(Tmin ,Tmax){         
+ 
+  if (Tmin>Tmax){
+   print("Tmin>Tmax")
+   break
+ } 
+  
+  TTav  <- 0
+  TTsum <- 0
+  
+  for(n in 1:8){ 
+    
+    tn <- 0
+    
+    TT_tn <- 0
+    
+    tn <- ((0.931 +  0.114*n - 0.0703 * n^2
+            + 0.0053 * n^3) * (Tmax-Tmin)) + 
+      Tmin # 8-h temperature
+    
+    TT_tn <- int_func(tt_card3$temp, tt_card3$T,tn) 
+    
+    TTsum <- max(TT_tn,0) + TTsum
+    
+ #   print(TT_tn)
+    
+    }
+  TTav <- TTsum/8
+  
+  return(TTav)
+  }
+
+TTfunc(10,30)
+
+```
+```{r ReadCalcTt}
+
+Tb=5 # assuming a base temperature of 8 for the simple calculation
+
+metTT3 <- metData %>%
+   filter(Clock.Today>"1997-01-01") %>%
+  rowwise() %>%
+  mutate(TTday3=TTfunc(mint,maxt), TTday_s=max(((mint+maxt)/2)-Tb,0), diff=(TTday_s/TTday3)*100)
+metTT3
+write.csv(metTT3,"D:/R/metTT/metTT3.csv", row.names = FALSE)
+
+```
+
+##Tb=4 broken stick
+```{r,fig.height=4, fig.width=6}
+tt_card4 <- data.frame(temp=c(4.0, 15,  30,  40),
+                      TT=c(0.0, 10, 25,  0.0))
+tt_card4 %>%
+  ggplot(aes(x=temp, y=TT))+
+  labs(x="Mean air temperature (°C)")+
+  labs(y="Thermal Time (°Cd/day)") +
+  theme_bw()+
+  geom_line(size=1)+
+  theme(legend.title=element_blank(),legend.position = "blank")+
+ theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
+ theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
+
+```
+# Create and test interpolation function 
+```{r}
+
+temp_ref4  <- 10 # x-axes reference
+temp4 <- tt_card4$temp # x-axes
+TT4 <- tt_card4$TT # y-axes
+
+
+int_func <- function(temp4,TT4,temp_ref4){
+
+# if temp is too low or too high give extreme TT values
+ if(temp_ref4>temp4[length(temp4)]) {
+   
+   out <- TT4[length(TT4)] 
+   
+ } else if (temp_ref4<temp4[1]) {
+   
+   out <- TT4[1]
+   
+ } else {
+   
+# else interpolate
+   
+   tryCatch(  
+   
+  out <- approx(temp4, TT4, xout = temp_ref4, 
+         method="linear", 
+         rule = 2)$y,
+  error = function(e) 
+  {
+  out <- NA
+  }
+) 
+  
+} # end if check
+
+  return(out)  
+  
+ }
+  
+int_func(temp4,TT4,temp_ref4)
+
+```
+#create REF Jones CA, Ritchie JT, Kiniry JR, Godwin DC (1986) Subroutine structure.In 'CERES-Maize: A simulation model of maize growth anddevelopment'. (Eds CA Jones, JR Kiniry) pp. 49-194. (Texas A&M University Press: Texas, USA
+
+```{r}
+
+TTfunc <- function(Tmin ,Tmax){         
+ 
+  if (Tmin>Tmax){
+   print("Tmin>Tmax")
+   break
+ } 
+  
+  TTav  <- 0
+  TTsum <- 0
+  
+  for(n in 1:8){ 
+    
+    tn <- 0
+    
+    TT_tn <- 0
+    
+    tn <- ((0.931 +  0.114*n - 0.0703 * n^2
+            + 0.0053 * n^3) * (Tmax-Tmin)) + 
+      Tmin # 8-h temperature
+    
+    TT_tn <- int_func(tt_card4$temp, tt_card4$T,tn) 
+    
+    TTsum <- max(TT_tn,0) + TTsum
+    
+ #   print(TT_tn)
+    
+    }
+  TTav <- TTsum/8
+  
+  return(TTav)
+  }
+
+TTfunc(10,30)
+
+```
+```{r ReadCalcTt}
+
+Tb=5 # assuming a base temperature of 8 for the simple calculation
+
+metTT4 <- metData %>%
+   filter(Clock.Today>"1997-01-01") %>%
+  rowwise() %>%
+  mutate(TTday4=TTfunc(mint,maxt), TTday_s=max(((mint+maxt)/2)-Tb,0), diff=(TTday_s/TTday4)*100)
+metTT4
+write.csv(metTT4,"D:/R/metTT/metTT4.csv", row.names = FALSE)
+```
+##Tb=5 Fick and onstad(1988) frame work
+```{r,fig.height=4, fig.width=6}
+tt_card5 <- data.frame(temp=c(5.0, 15,  30,  40),
+                      TT=c(0.0, 10, 25,  0.0))
+tt_card5 %>%
+  ggplot(aes(x=temp, y=TT))+
+  labs(x="Mean air temperature (°C)")+
+  labs(y="Thermal Time (°Cd/day)") +
+  theme_bw()+
+  geom_line(size=1)+
+  theme(legend.title=element_blank(),legend.position = "blank")+
+ theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
+ theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
+
+```
+# Create and test interpolation function 
+```{r}
+
+temp_ref5  <- 10 # x-axes reference
+temp5 <- tt_card5$temp # x-axes
+TT5 <- tt_card5$TT # y-axes
+
+
+int_func <- function(temp5,TT5,temp_ref5){
+
+# if temp is too low or too high give extreme TT values
+ if(temp_ref5>temp5[length(temp5)]) {
+   
+   out <- TT5[length(TT5)] 
+   
+ } else if (temp_ref5<temp5[1]) {
+   
+   out <- TT5[1]
+   
+ } else {
+   
+# else interpolate
+   
+   tryCatch(  
+   
+  out <- approx(temp5, TT5, xout = temp_ref5, 
+         method="linear", 
+         rule = 2)$y,
+  error = function(e) 
+  {
+  out <- NA
+  }
+) 
+  
+} # end if check
+
+  return(out)  
+  
+ }
+  
+int_func(temp5,TT5,temp_ref5)
+
+```
+#create REF Jones CA, Ritchie JT, Kiniry JR, Godwin DC (1986) Subroutine structure.In 'CERES-Maize: A simulation model of maize growth anddevelopment'. (Eds CA Jones, JR Kiniry) pp. 49-194. (Texas A&M University Press: Texas, USA
+
+```{r}
+
+TTfunc <- function(Tmin ,Tmax){         
+ 
+  if (Tmin>Tmax){
+   print("Tmin>Tmax")
+   break
+ } 
+  
+  TTav  <- 0
+  TTsum <- 0
+  
+  for(n in 1:8){ 
+    
+    tn <- 0
+    
+    TT_tn <- 0
+    
+    tn <- ((0.931 +  0.114*n - 0.0703 * n^2
+            + 0.0053 * n^3) * (Tmax-Tmin)) + 
+      Tmin # 8-h temperature
+    
+    TT_tn <- int_func(tt_card5$temp, tt_card5$T,tn) 
+    
+    TTsum <- max(TT_tn,0) + TTsum
+    
+ #   print(TT_tn)
+    
+    }
+  TTav <- TTsum/8
+  
+  return(TTav)
+  }
+
+TTfunc(10,30)
+
+```
+```{r ReadCalcTt}
+
+Tb=5 # assuming a base temperature of 8 for the simple calculation
+
+metTT5 <- metData %>%
+   filter(Clock.Today>"1997-01-01") %>%
+  rowwise() %>%
+  mutate(TTday5=TTfunc(mint,maxt), TTday_s=max(((mint+maxt)/2)-Tb,0), diff=(TTday_s/TTday5)*100)
+metTT5
+write.csv(metTT5,"D:/R/metTT/metTT5.csv", row.names = FALSE)
+```
+
+##TB=6 Frame work
+```{r,fig.height=4, fig.width=6}
+tt_card6 <- data.frame(temp=c(6.0,  30,  40),
+                      TT=c(0.0, 25,  0.0))
+tt_card6 %>%
+  ggplot(aes(x=temp, y=TT))+
+  labs(x="Mean air temperature (°C)")+
+  labs(y="Thermal Time (°Cd/day)") +
+  theme_bw()+
+  geom_line(size=1)+
+  theme(legend.title=element_blank(),legend.position = "blank")+
+ theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
+ theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
+
+```
+# Create and test interpolation function 
+```{r}
+
+temp_ref6  <- 10 # x-axes reference
+temp6 <- tt_card6$temp # x-axes
+TT6 <- tt_card6$TT # y-axes
+
+
+int_func <- function(temp6,TT6,temp_ref6){
+
+# if temp is too low or too high give extreme TT values
+ if(temp_ref6>temp6[length(temp6)]) {
+   
+   out <- TT6[length(TT6)] 
+   
+ } else if (temp_ref6<temp6[1]) {
+   
+   out <- TT6[1]
+   
+ } else {
+   
+# else interpolate
+   
+   tryCatch(  
+   
+  out <- approx(temp6, TT6, xout = temp_ref6, 
+         method="linear", 
+         rule = 2)$y,
+  error = function(e) 
+  {
+  out <- NA
+  }
+) 
+  
+} # end if check
+
+  return(out)  
+  
+ }
+  
+int_func(temp6,TT6,temp_ref6)
+
+```
+#create REF Jones CA, Ritchie JT, Kiniry JR, Godwin DC (1986) Subroutine structure.In 'CERES-Maize: A simulation model of maize growth anddevelopment'. (Eds CA Jones, JR Kiniry) pp. 49-194. (Texas A&M University Press: Texas, USA
+
+```{r}
+
+TTfunc <- function(Tmin ,Tmax){         
+ 
+  if (Tmin>Tmax){
+   print("Tmin>Tmax")
+   break
+ } 
+  
+  TTav  <- 0
+  TTsum <- 0
+  
+  for(n in 1:8){ 
+    
+    tn <- 0
+    
+    TT_tn <- 0
+    
+    tn <- ((0.931 +  0.114*n - 0.0703 * n^2
+            + 0.0053 * n^3) * (Tmax-Tmin)) + 
+      Tmin # 8-h temperature
+    
+    TT_tn <- int_func(tt_card6$temp, tt_card6$T,tn) 
+    
+    TTsum <- max(TT_tn,0) + TTsum
+    
+ #   print(TT_tn)
+    
+    }
+  TTav <- TTsum/8
+  
+  return(TTav)
+  }
+
+TTfunc(10,30)
+
+```
+```{r ReadCalcTt}
+
+Tb=5 # assuming a base temperature of 8 for the simple calculation
+
+metTT6 <- metData %>%
+   filter(Clock.Today>"1997-01-01") %>%
+  rowwise() %>%
+  mutate(TTday6=TTfunc(mint,maxt), TTday_s=max(((mint+maxt)/2)-Tb,0), diff=(TTday_s/TTday6)*100)
+metTT6
+write.csv(metTT6,"D:/R/metTT/metTT6.csv", row.names = FALSE)
+```
+##TB=7 Frame work
+```{r,fig.height=4, fig.width=6}
+tt_card7 <- data.frame(temp=c(7.0, 30,  40),
+                      TT=c(0.0, 25, 0.0))
+tt_card7 %>%
+  ggplot(aes(x=temp, y=TT))+
+  labs(x="Mean air temperature (°C)")+
+  labs(y="Thermal Time (°Cd/day)") +
+  theme_bw()+
+  geom_line(size=1)+
+  theme(legend.title=element_blank(),legend.position = "blank")+
+ theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
+ theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
+
+```
+# Create and test interpolation function 
+```{r}
+
+temp_ref7  <- 10 # x-axes reference
+temp7 <- tt_card7$temp # x-axes
+TT7 <- tt_card7$TT # y-axes
+
+
+int_func <- function(temp7,TT7,temp_ref7){
+
+# if temp is too low or too high give extreme TT values
+ if(temp_ref7>temp7[length(temp7)]) {
+   
+   out <- TT7[length(TT7)] 
+   
+ } else if (temp_ref7<temp7[1]) {
+   
+   out <- TT7[1]
+   
+ } else {
+   
+# else interpolate
+   
+   tryCatch(  
+   
+  out <- approx(temp7, TT7, xout = temp_ref7, 
+         method="linear", 
+         rule = 2)$y,
+  error = function(e) 
+  {
+  out <- NA
+  }
+) 
+  
+} # end if check
+
+  return(out)  
+  
+ }
+  
+int_func(temp7,TT7,temp_ref7)
+
+```
+#create REF Jones CA, Ritchie JT, Kiniry JR, Godwin DC (1986) Subroutine structure.In 'CERES-Maize: A simulation model of maize growth anddevelopment'. (Eds CA Jones, JR Kiniry) pp. 49-194. (Texas A&M University Press: Texas, USA
+
+```{r}
+
+TTfunc <- function(Tmin ,Tmax){         
+ 
+  if (Tmin>Tmax){
+   print("Tmin>Tmax")
+   break
+ } 
+  
+  TTav  <- 0
+  TTsum <- 0
+  
+  for(n in 1:8){ 
+    
+    tn <- 0
+    
+    TT_tn <- 0
+    
+    tn <- ((0.931 +  0.114*n - 0.0703 * n^2
+            + 0.0053 * n^3) * (Tmax-Tmin)) + 
+      Tmin # 8-h temperature
+    
+    TT_tn <- int_func(tt_card7$temp, tt_card7$T,tn) 
+    
+    TTsum <- max(TT_tn,0) + TTsum
+    
+ #   print(TT_tn)
+    
+    }
+  TTav <- TTsum/8
+  
+  return(TTav)
+  }
+
+TTfunc(10,30)
+
+```
+```{r ReadCalcTt}
+
+Tb=5 # assuming a base temperature of 8 for the simple calculation
+
+metTT7 <- metData %>%
+   filter(Clock.Today>"1997-01-01") %>%
+  rowwise() %>%
+  mutate(TTday7=TTfunc(mint,maxt), TTday_s=max(((mint+maxt)/2)-Tb,0), diff=(TTday_s/TTday7)*100)
+metTT7
+write.csv(metTT7,"D:/R/metTT/metTT7.csv", row.names = FALSE)
+```
+##Tb=8 Frame work
+```{r,fig.height=4, fig.width=6}
+tt_card8 <- data.frame(temp=c(8.0, 30,  40),
+                      TT=c(0.0, 25,  0.0))
+tt_card8 %>%
+  ggplot(aes(x=temp, y=TT))+
+  labs(x="Mean air temperature (°C)")+
+  labs(y="Thermal Time (°Cd/day)") +
+  theme_bw()+
+  geom_line(size=1)+
+  theme(legend.title=element_blank(),legend.position = "blank")+
+ theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
+ theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
+
+```
+# Create and test interpolation function 
+```{r}
+
+temp_ref8  <- 10 # x-axes reference
+temp8 <- tt_card8$temp # x-axes
+TT8 <- tt_card8$TT # y-axes
+
+
+int_func <- function(temp8,TT8,temp_ref8){
+
+# if temp is too low or too high give extreme TT values
+ if(temp_ref8>temp8[length(temp8)]) {
+   
+   out <- TT8[length(TT8)] 
+   
+ } else if (temp_ref8<temp8[1]) {
+   
+   out <- TT8[1]
+   
+ } else {
+   
+# else interpolate
+   
+   tryCatch(  
+   
+  out <- approx(temp8, TT8, xout = temp_ref8, 
+         method="linear", 
+         rule = 2)$y,
+  error = function(e) 
+  {
+  out <- NA
+  }
+) 
+  
+} # end if check
+
+  return(out)  
+  
+ }
+  
+int_func(temp8,TT8,temp_ref8)
+
+```
+#create REF Jones CA, Ritchie JT, Kiniry JR, Godwin DC (1986) Subroutine structure.In 'CERES-Maize: A simulation model of maize growth anddevelopment'. (Eds CA Jones, JR Kiniry) pp. 49-194. (Texas A&M University Press: Texas, USA
+
+```{r}
+
+TTfunc <- function(Tmin ,Tmax){         
+ 
+  if (Tmin>Tmax){
+   print("Tmin>Tmax")
+   break
+ } 
+  
+  TTav  <- 0
+  TTsum <- 0
+  
+  for(n in 1:8){ 
+    
+    tn <- 0
+    
+    TT_tn <- 0
+    
+    tn <- ((0.931 +  0.114*n - 0.0703 * n^2
+            + 0.0053 * n^3) * (Tmax-Tmin)) + 
+      Tmin # 8-h temperature
+    
+    TT_tn <- int_func(tt_card8$temp, tt_card8$T,tn) 
+    
+    TTsum <- max(TT_tn,0) + TTsum
+    
+ #   print(TT_tn)
+    
+    }
+  TTav <- TTsum/8
+  
+  return(TTav)
+  }
+
+TTfunc(10,30)
+
+```
+```{r ReadCalcTt}
+
+Tb=5 # assuming a base temperature of 8 for the simple calculation
+
+metTT8 <- metData %>%
+   filter(Clock.Today>"1997-01-01") %>%
+  rowwise() %>%
+  mutate(TTday8=TTfunc(mint,maxt), TTday_s=max(((mint+maxt)/2)-Tb,0), diff=(TTday_s/TTday8)*100)
+metTT8
+write.csv(metTT8,"D:/R/metTT/metTT8.csv", row.names = FALSE)
+```
+##Tb=9 Frame work
+```{r,fig.height=4, fig.width=6}
+tt_card9 <- data.frame(temp=c(9.0, 30,  40),
+                      TT=c(0.0, 25,  0.0))
+tt_card9 %>%
+  ggplot(aes(x=temp, y=TT))+
+  labs(x="Mean air temperature (°C)")+
+  labs(y="Thermal Time (°Cd/day)") +
+  theme_bw()+
+  geom_line(size=1)+
+  theme(legend.title=element_blank(),legend.position = "blank")+
+ theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
+ theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
+
+```
+# Create and test interpolation function 
+```{r}
+
+temp_ref9  <- 10 # x-axes reference
+temp9 <- tt_card9$temp # x-axes
+TT9 <- tt_card9$TT # y-axes
+
+
+int_func <- function(temp9,TT9,temp_ref9){
+
+# if temp is too low or too high give extreme TT values
+ if(temp_ref9>temp9[length(temp9)]) {
+   
+   out <- TT9[length(TT9)] 
+   
+ } else if (temp_ref9<temp9[1]) {
+   
+   out <- TT9[1]
+   
+ } else {
+   
+# else interpolate
+   
+   tryCatch(  
+   
+  out <- approx(temp9, TT9, xout = temp_ref9, 
+         method="linear", 
+         rule = 2)$y,
+  error = function(e) 
+  {
+  out <- NA
+  }
+) 
+  
+} # end if check
+
+  return(out)  
+  
+ }
+  
+int_func(temp9,TT9,temp_ref9)
+
+```
+#create REF Jones CA, Ritchie JT, Kiniry JR, Godwin DC (1986) Subroutine structure.In 'CERES-Maize: A simulation model of maize growth anddevelopment'. (Eds CA Jones, JR Kiniry) pp. 49-194. (Texas A&M University Press: Texas, USA
+
+```{r}
+
+TTfunc <- function(Tmin ,Tmax){         
+ 
+  if (Tmin>Tmax){
+   print("Tmin>Tmax")
+   break
+ } 
+  
+  TTav  <- 0
+  TTsum <- 0
+  
+  for(n in 1:8){ 
+    
+    tn <- 0
+    
+    TT_tn <- 0
+    
+    tn <- ((0.931 +  0.114*n - 0.0703 * n^2
+            + 0.0053 * n^3) * (Tmax-Tmin)) + 
+      Tmin # 8-h temperature
+    
+    TT_tn <- int_func(tt_card9$temp, tt_card9$T,tn) 
+    
+    TTsum <- max(TT_tn,0) + TTsum
+    
+ #   print(TT_tn)
+    
+    }
+  TTav <- TTsum/8
+  
+  return(TTav)
+  }
+
+TTfunc(10,30)
+
+```
+```{r ReadCalcTt}
+
+Tb=5 # assuming a base temperature of 8 for the simple calculation
+
+metTT9 <- metData %>%
+   filter(Clock.Today>"1997-01-01") %>%
+  rowwise() %>%
+  mutate(TTday9=TTfunc(mint,maxt), TTday_s=max(((mint+maxt)/2)-Tb,0), diff=(TTday_s/TTday9)*100)
+metTT9
+write.csv(metTT9,"D:/R/metTT/metTT9.csv", row.names = FALSE)
+```
+## Tb=10 frame work
+```{r,fig.height=4, fig.width=6}
+tt_card10 <- data.frame(temp=c(10, 30,  40),
+                      TT=c(0.0, 25,  0.0))
+tt_card10 %>%
+  ggplot(aes(x=temp, y=TT))+
+  labs(x="Mean air temperature (°C)")+
+  labs(y="Thermal Time (°Cd/day)") +
+  theme_bw()+
+  geom_line(size=1)+
+  theme(legend.title=element_blank(),legend.position = "blank")+
+ theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
+ theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
+
+```
+# Create and test interpolation function 
+```{r}
+
+temp_ref10  <- 10 # x-axes reference
+temp10 <- tt_card10$temp # x-axes
+TT10 <- tt_card10$TT # y-axes
+
+
+int_func <- function(temp10,TT10,temp_ref10){
+
+# if temp is too low or too high give extreme TT values
+ if(temp_ref10>temp10[length(temp10)]) {
+   
+   out <- TT10[length(TT10)] 
+   
+ } else if (temp_ref10<temp10[1]) {
+   
+   out <- TT10[1]
+   
+ } else {
+   
+# else interpolate
+   
+   tryCatch(  
+   
+  out <- approx(temp10, TT10, xout = temp_ref10, 
+         method="linear", 
+         rule = 2)$y,
+  error = function(e) 
+  {
+  out <- NA
+  }
+) 
+  
+} # end if check
+
+  return(out)  
+  
+ }
+  
+int_func(temp10,TT10,temp_ref10)
+
+```
+#create REF Jones CA, Ritchie JT, Kiniry JR, Godwin DC (1986) Subroutine structure.In 'CERES-Maize: A simulation model of maize growth anddevelopment'. (Eds CA Jones, JR Kiniry) pp. 49-194. (Texas A&M University Press: Texas, USA
+
+```{r}
+
+TTfunc <- function(Tmin ,Tmax){         
+ 
+  if (Tmin>Tmax){
+   print("Tmin>Tmax")
+   break
+ } 
+  
+  TTav  <- 0
+  TTsum <- 0
+  
+  for(n in 1:8){ 
+    
+    tn <- 0
+    
+    TT_tn <- 0
+    
+    tn <- ((0.931 +  0.114*n - 0.0703 * n^2
+            + 0.0053 * n^3) * (Tmax-Tmin)) + 
+      Tmin # 8-h temperature
+    
+    TT_tn <- int_func(tt_card10$temp, tt_card10$T,tn) 
+    
+    TTsum <- max(TT_tn,0) + TTsum
+    
+ #   print(TT_tn)
+    
+    }
+  TTav <- TTsum/8
+  
+  return(TTav)
+  }
+
+TTfunc(10,30)
+
+```
+```{r ReadCalcTt}
+Tb=5 # assuming a base temperature of 8 for the simple calculation
+
+metTT10 <- metData %>%
+   filter(Clock.Today>"1997-01-01") %>%
+  rowwise() %>%
+  mutate(TTday10=TTfunc(mint,maxt), TTday_s=max(((mint+maxt)/2)-Tb,0), diff=(TTday_s/TTday10)*100)
+metTT10
+write.csv(metTT10,"D:/R/metTT/metTT10.csv", row.names = FALSE)
+```
+
+
+
+```{r}
+metTT1 %>%
+ggplot(aes(x=TTday_s, y= TTday1)) +
+    geom_point(shape=21,alpha=0.2) +
+  geom_abline(intercept = 0, slope = 1)
+
+metTT1
+
+
+```
+##Combine metTT 
+```{r,fig.height=5, fig.width=10,warning=FALSE}
+multmerge = function(mypath){
+filenames=list.files(path=mypath, full.names=TRUE)
+datalist = lapply(filenames, function(x){read.csv(file=x,header=T)})
+Reduce(function(x,y) {merge(x,y)}, datalist)}
+
+mergemetTT=multmerge("D:/R/MetTT")
+mergemetTT
+```
+
+
+## creat TTsum
+```{r}
+metTT1$TTsum1<-cumsum(metTT1$TTday1)
+metTT2$TTsum2<-cumsum(metTT2$TTday2)
+metTT3$TTsum3<-cumsum(metTT3$TTday3)
+metTT4$TTsum4<-cumsum(metTT4$TTday4)
+metTT5$TTsum5<-cumsum(metTT5$TTday5)
+metTT6$TTsum6<-cumsum(metTT6$TTday6)
+metTT7$TTsum7<-cumsum(metTT7$TTday7)
+metTT8$TTsum8<-cumsum(metTT8$TTday8)
+metTT9$TTsum9<-cumsum(metTT9$TTday9)
+metTT10$TTsum10<-cumsum(metTT10$TTday10)
+
+
+
+```
+
+## Merge TTsum with Observed Data
+```{r}
+metTT1
+dfTp1 <- metTT1%>% dplyr::select(Clock.Today, TTsum1)%>%
+  mutate(Clock.Today=ymd(Clock.Today))
+dfTp2 <- metTT2%>% dplyr::select(Clock.Today, TTsum2)%>%
+  mutate(Clock.Today=ymd(Clock.Today))
+dfTp3 <- metTT3%>% dplyr::select(Clock.Today, TTsum3)%>%
+  mutate(Clock.Today=ymd(Clock.Today))
+dfTp4 <- metTT4%>% dplyr::select(Clock.Today, TTsum4)%>%
+  mutate(Clock.Today=ymd(Clock.Today))
+dfTp5 <- metTT5%>% dplyr::select(Clock.Today, TTsum5)%>%
+  mutate(Clock.Today=ymd(Clock.Today))
+dfTp6 <- metTT6%>% dplyr::select(Clock.Today, TTsum6)%>%
+  mutate(Clock.Today=ymd(Clock.Today))
+dfTp7 <- metTT7%>% dplyr::select(Clock.Today, TTsum7)%>%
+  mutate(Clock.Today=ymd(Clock.Today))
+dfTp8 <- metTT8%>% dplyr::select(Clock.Today, TTsum8)%>%
+  mutate(Clock.Today=ymd(Clock.Today))
+dfTp9 <- metTT9%>% dplyr::select(Clock.Today, TTsum9)%>%
+  mutate(Clock.Today=ymd(Clock.Today))
+dfTp10 <- metTT10%>% dplyr::select(Clock.Today, TTsum10)%>%
+  mutate(Clock.Today=ymd(Clock.Today))
+
+Dr<-"D:\\R\\Result\\"
+obsT<-read.table(paste0(Dr, "ObsTt.txt"), 
+                      header = TRUE)
+obsT1<-obsT%>%
+  mutate(Clock.Today=dmy(Clock.Today))
+obsT1
+
+obscom1<-merge(dfTp1,obsT1, by=c("Clock.Today"))
+obscom2<-merge(dfTp2,obsT1, by=c("Clock.Today"))
+obscom3<-merge(dfTp3,obsT1, by=c("Clock.Today"))
+obscom4<-merge(dfTp4,obsT1, by=c("Clock.Today"))
+obscom5<-merge(dfTp5,obsT1, by=c("Clock.Today"))
+obscom6<-merge(dfTp6,obsT1, by=c("Clock.Today"))
+obscom7<-merge(dfTp7,obsT1, by=c("Clock.Today"))
+obscom8<-merge(dfTp8,obsT1, by=c("Clock.Today"))
+obscom9<-merge(dfTp9,obsT1, by=c("Clock.Today"))
+obscom10<-merge(dfTp10,obsT1, by=c("Clock.Today"))
+
+write.csv(metTT1,"D:/R/Data statistic/metTT.csv", row.names = FALSE)
+obscom10
+write.csv(obscom10,"D:/R/Data statistic/obscom10.csv",row.names = FALSE)
+
+```
+
+
+## calculate phyllo
+#Tb from 1 to 10
+```{r}
+
+nodes1 <- obscom1 %>%dplyr::filter(Variable=="NodeNumber")%>%dplyr::filter(Water=="irr")%>%
+  dplyr::filter(Defoliation!="SL")%>%dplyr::filter(Defoliation!="LS")%>%dplyr::filter(Defoliation!="SS")
+nodes1
+
+phylloData1 <- nodes1 %>%
+  group_by(Name,GrowthSeason,Rotation,Collection,Water,Defoliation,SowingDate,FD,GrowthRotation,Tmean)%>%
+  do(mod = lm(TTsum1.x~Observed,data=.)) %>%
+  mutate(Slope1 = summary(mod)$coeff[2]) %>%
+  dplyr::select(-mod)
+  #nodes$GrowthRotation<-factor(paste(nodes$GrowthSeason,nodes$Rotation))
+  #ggplot(nodes, x=GrowthRotation, y=Slope)+geom_line(size=2)
+
+write.csv(phylloData1,"D:/R/Phyllochron/PhylloData1.csv", row.names = FALSE)
+phylloData1
+  
+```
+###Cv1 calcualtion
+```{r}
+cv1<-phylloData1%>%group_by(Name)%>%
+ mutate(mean1=mean(Slope1))%>%
+  mutate(SD1=sd(Slope1))%>%
+  mutate(CV1=SD1/mean1)
+cv1
+write.csv(cv1,"D:/R/TbCV/cv1.csv", row.names = FALSE)
+
+
+```
+
+
+```{r}
+
+nodes2 <- obscom2 %>%dplyr::filter(Variable=="NodeNumber")%>%dplyr::filter(Water=="irr")%>%
+  dplyr::filter(Defoliation!="SL")%>%dplyr::filter(Defoliation!="LS")%>%dplyr::filter(Defoliation!="SS")
+
+phylloData2 <- nodes2 %>%
+  group_by(Name,GrowthSeason,Rotation,Collection,Water,Defoliation,SowingDate,FD,GrowthRotation,Tmean)%>%
+  do(mod = lm(TTsum2 ~Observed,data=.)) %>%
+  mutate(Slope2 = summary(mod)$coeff[2]) %>%
+  dplyr::select(-mod)
+  #nodes$GrowthRotation<-factor(paste(nodes$GrowthSeason,nodes$Rotation))
+  #ggplot(nodes, x=GrowthRotation, y=Slope)+geom_line(size=2)
+
+write.csv(phylloData2,"D:/R/Phyllochron/PhylloData2.csv", row.names = FALSE)
+phylloData2
+  
+```
+```{r}
+cv2<-phylloData2%>%group_by(Name)%>%
+ mutate(mean2=mean(Slope2))%>%
+  mutate(SD2=sd(Slope2))%>%
+  mutate(CV2=SD2/mean2)
+cv2
+write.csv(cv2,"D:/R/TbCV/cv2.csv", row.names = FALSE)
+```
+
+```{r}
+nodes3 <- obscom3 %>%dplyr::filter(Variable=="NodeNumber")%>%dplyr::filter(Water=="irr")%>%
+  dplyr::filter(Defoliation!="SL")%>%dplyr::filter(Defoliation!="LS")%>%dplyr::filter(Defoliation!="SS")
+
+phylloData3 <- nodes3 %>%
+  group_by(Name,GrowthSeason,Rotation,Collection,GrowthRotation,Tmean) %>%
+  do(mod = lm(TTsum3 ~Observed,data=.)) %>%
+  mutate(Slope3 = summary(mod)$coeff[2]) %>%
+  dplyr::select(-mod)
+  #nodes$GrowthRotation<-factor(paste(nodes$GrowthSeason,nodes$Rotation))
+  #ggplot(nodes, x=GrowthRotation, y=Slope)+geom_line(size=2)
+
+write.csv(phylloData3,"D:/R/Phyllochron/PhylloData3.csv", row.names = FALSE)
+phylloData3
+  
+```
+
+```{r}
+cv3<-phylloData3%>%group_by(Name)%>%
+ mutate(mean3=mean(Slope3))%>%
+  mutate(SD3=sd(Slope3))%>%
+  mutate(CV3=SD3/mean3)
+cv3
+write.csv(cv3,"D:/R/TbCV/cv3.csv", row.names = FALSE)
+```
+
+```{r}
+
+nodes4 <- obscom4 %>%dplyr::filter(Variable=="NodeNumber")%>%dplyr::filter(Water=="irr")%>%
+  dplyr::filter(Defoliation!="SL")%>%dplyr::filter(Defoliation!="LS")%>%dplyr::filter(Defoliation!="SS")
+nodes4
+
+phylloData4 <- nodes4 %>%
+  group_by(Name,GrowthSeason,Rotation,Collection,GrowthRotation,Tmean) %>%
+  do(mod = lm(TTsum4 ~Observed,data=.)) %>%
+  mutate(Slope4 = summary(mod)$coeff[2]) %>%
+  dplyr::select(-mod)
+  #nodes$GrowthRotation<-factor(paste(nodes$GrowthSeason,nodes$Rotation))
+  #ggplot(nodes, x=GrowthRotation, y=Slope)+geom_line(size=2)
+
+write.csv(phylloData4,"D:/R/Phyllochron/PhylloData4.csv", row.names = FALSE)
+phylloData4
+  
+```
+```{r}
+cv4<-phylloData4%>%group_by(Name)%>%
+ mutate(mean4=mean(Slope4))%>%
+  mutate(SD4=sd(Slope4))%>%
+  mutate(CV4=SD4/mean4)
+cv4
+write.csv(cv4,"D:/R/TbCV/cv4.csv", row.names = FALSE)
+```
+
+```{r}
+
+nodes5 <- obscom5 %>%dplyr::filter(Variable=="NodeNumber")%>%dplyr::filter(Water=="irr")%>%
+  dplyr::filter(Defoliation!="SL")%>%dplyr::filter(Defoliation!="LS")%>%dplyr::filter(Defoliation!="SS")
+
+phylloData5 <- nodes5 %>%
+  group_by(Name,GrowthSeason,Rotation,Collection,GrowthRotation,Tmean) %>%
+  do(mod = lm(TTsum5 ~Observed,data=.)) %>%
+  mutate(Slope5 = summary(mod)$coeff[2]) %>%
+  dplyr::select(-mod)
+  #nodes$GrowthRotation<-factor(paste(nodes$GrowthSeason,nodes$Rotation))
+  #ggplot(nodes, x=GrowthRotation, y=Slope)+geom_line(size=2)
+
+
+write.csv(phylloData5,"D:/R/Phyllochron/PhylloData5.csv", row.names = FALSE)
+phylloData5
+  
+```
+
+```{r}
+cv5<-phylloData5%>%group_by(Name)%>%
+ mutate(mean5=mean(Slope5))%>%
+  mutate(SD5=sd(Slope5))%>%
+  mutate(CV5=SD5/mean5)
+cv5
+write.csv(cv5,"D:/R/TbCV/cv5.csv", row.names = FALSE)
+```
+
+```{r}
+
+nodes6 <- obscom6 %>%dplyr::filter(Variable=="NodeNumber")%>%dplyr::filter(Water=="irr")%>%
+  dplyr::filter(Defoliation!="SL")%>%dplyr::filter(Defoliation!="LS")%>%dplyr::filter(Defoliation!="SS")
+
+phylloData6 <- nodes6 %>%
+  group_by(Name,GrowthSeason,Rotation,Collection,GrowthRotation,Tmean) %>%
+  do(mod = lm(TTsum6 ~Observed,data=.)) %>%
+  mutate(Slope6 = summary(mod)$coeff[2]) %>%
+  dplyr::select(-mod)
+  #nodes$GrowthRotation<-factor(paste(nodes$GrowthSeason,nodes$Rotation))
+  #ggplot(nodes, x=GrowthRotation, y=Slope)+geom_line(size=2)
+
+write.csv(phylloData6,"D:/R/Phyllochron/PhylloData6.csv", row.names = FALSE)
+phylloData6
+  
+```
+```{r}
+cv6<-phylloData6%>%group_by(Name)%>%
+ mutate(mean6=mean(Slope6))%>%
+  mutate(SD6=sd(Slope6))%>%
+  mutate(CV6=SD6/mean6)
+cv6
+write.csv(cv6,"D:/R/TbCV/cv6.csv", row.names = FALSE)
+```
+
+```{r}
+
+nodes7 <- obscom7 %>%dplyr::filter(Variable=="NodeNumber")%>%dplyr::filter(Water=="irr")%>%
+  dplyr::filter(Defoliation!="SL")%>%dplyr::filter(Defoliation!="LS")%>%dplyr::filter(Defoliation!="SS")
+
+phylloData7 <- nodes7 %>%
+  group_by(Name,GrowthSeason,Rotation,Collection,GrowthRotation,Tmean) %>%
+  do(mod = lm(TTsum7 ~Observed,data=.)) %>%
+  mutate(Slope7 = summary(mod)$coeff[2]) %>%
+  dplyr::select(-mod)
+  #nodes$GrowthRotation<-factor(paste(nodes$GrowthSeason,nodes$Rotation))
+  #ggplot(nodes, x=GrowthRotation, y=Slope)+geom_line(size=2)
+
+write.csv(phylloData7,"D:/R/Phyllochron/PhylloData7.csv", row.names = FALSE)
+phylloData7
+  
+```
+
+```{r}
+cv7<-phylloData7%>%group_by(Name)%>%
+ mutate(mean7=mean(Slope7))%>%
+  mutate(SD7=sd(Slope7))%>%
+  mutate(CV7=SD7/mean7)
+cv7
+write.csv(cv7,"D:/R/TbCV/cv7.csv", row.names = FALSE)
+```
+
+```{r}
+
+nodes8 <- obscom8 %>%dplyr::filter(Variable=="NodeNumber")%>%dplyr::filter(Water=="irr")%>%
+  dplyr::filter(Defoliation!="SL")%>%dplyr::filter(Defoliation!="LS")%>%dplyr::filter(Defoliation!="SS")
+
+phylloData8 <- nodes8 %>%
+  group_by(Name,GrowthSeason,Rotation,Collection,GrowthRotation,Tmean) %>%
+  do(mod = lm(TTsum8 ~Observed,data=.)) %>%
+  mutate(Slope8 = summary(mod)$coeff[2]) %>%
+  dplyr::select(-mod)
+  #nodes$GrowthRotation<-factor(paste(nodes$GrowthSeason,nodes$Rotation))
+  #ggplot(nodes, x=GrowthRotation, y=Slope)+geom_line(size=2)
+
+write.csv(phylloData8,"D:/R/Phyllochron/PhylloData8.csv", row.names = FALSE)
+phylloData8
+  
+```
+
+```{r}
+cv8<-phylloData8%>%group_by(Name)%>%
+ mutate(mean8=mean(Slope8))%>%
+  mutate(SD8=sd(Slope8))%>%
+  mutate(CV8=SD8/mean8)
+cv8
+write.csv(cv8,"D:/R/TbCV/cv8.csv", row.names = FALSE)
+```
+
+```{r}
+
+nodes9 <- obscom9 %>%dplyr::filter(Variable=="NodeNumber")%>%dplyr::filter(Water=="irr")%>%
+  dplyr::filter(Defoliation!="SL")%>%dplyr::filter(Defoliation!="LS")%>%dplyr::filter(Defoliation!="SS")
+
+phylloData9 <- nodes9 %>%
+  group_by(Name,GrowthSeason,Rotation,Collection,GrowthRotation,Tmean) %>%
+  do(mod = lm(TTsum9 ~Observed,data=.)) %>%
+  mutate(Slope9 = summary(mod)$coeff[2]) %>%
+  dplyr::select(-mod)
+  #nodes$GrowthRotation<-factor(paste(nodes$GrowthSeason,nodes$Rotation))
+  #ggplot(nodes, x=GrowthRotation, y=Slope)+geom_line(size=2)
+
+write.csv(phylloData9,"D:/R/Phyllochron/PhylloData9.csv", row.names = FALSE)
+phylloData9
+  
+```
+
+```{r}
+cv9<-phylloData9%>%group_by(Name)%>%
+ mutate(mean9=mean(Slope9))%>%
+  mutate(SD9=sd(Slope9))%>%
+  mutate(CV9=SD9/mean9)
+cv9
+write.csv(cv9,"D:/R/TbCV/cv9.csv", row.names = FALSE)
+```
+```{r}
+
+nodes10 <- obscom10 %>%dplyr::filter(Variable=="NodeNumber")%>% dplyr::filter(Water=="irr")%>%
+  dplyr::filter(Defoliation!="SL")%>%dplyr::filter(Defoliation!="LS")%>%dplyr::filter(Defoliation!="SS")
+
+phylloData10 <- nodes10 %>%
+  group_by(Name,GrowthSeason,Rotation,Collection,GrowthRotation,Tmean) %>%
+  do(mod = lm(TTsum10 ~Observed,data=.)) %>%
+  mutate(Slope10 = summary(mod)$coeff[2]) %>%
+  dplyr::select(-mod)
+  #nodes$GrowthRotation<-factor(paste(nodes$GrowthSeason,nodes$Rotation))
+  #ggplot(nodes, x=GrowthRotation, y=Slope)+geom_line(size=2)
+
+write.csv(phylloData10,"D:/R/Phyllochron/PhylloData10.csv", row.names = FALSE)
+phylloData10
+  
+```
+
+```{r}
+cv10<-phylloData10%>%group_by(Name)%>%
+ mutate(mean10=mean(Slope10))%>%
+  mutate(SD10=sd(Slope10))%>%
+  mutate(CV10=SD10/mean10)
+cv10
+write.csv(cv10,"D:/R/TbCV/cv10.csv", row.names = FALSE)
+```
+##merge CV1 to 10
+```{r,fig.height=4, fig.width=8,warning=FALSE}
+multmerge = function(mypath){
+filenames=list.files(path=mypath, full.names=TRUE)
+datalist = lapply(filenames, function(x){read.csv(file=x,header=T)})
+Reduce(function(x,y) {merge(x,y)}, datalist)}
+
+mergeCV=multmerge("D:/R/TbCV")
+mergeCV1<-mergeCV%>%
+   dplyr::select(Name,CV1,CV2,CV3,CV4,CV5,CV6,CV7,CV8,CV9,CV10) %>%
+  tidyr::gather("Variable","CV",CV1:CV10)
+unique(mergeCV1)
+mergeCV1$Names[mergeCV1$Name=="Iversen_8Waterirr" ] <-"I8irr"
+mergeCV1$Names[mergeCV1$Name=="Iversen_91DefoliationLL"] <-"I9LL"
+mergeCV1$Names[mergeCV1$Name=="Iversen_9SowingDateSD1Waterirr"]<-"I9SD1irr"
+mergeCV1$Names[mergeCV1$Name=="Iversen_9SowingDateSD2Waterirr"]<-"I9SD2irr"
+mergeCV1$Names[mergeCV1$Name=="Iversen_9SowingDateSD3Waterirr"]<-"I9SD3irr"
+mergeCV1$Names[mergeCV1$Name=="Iversen_9SowingDateSD4Waterirr"]<-"I9SD4irr"
+write.csv(mergeCV1,"D:/R/TbCV/mergeCV1.csv", row.names = FALSE)
+
+
+
+  mergeCV1%>%
+  ggplot(aes(x=Variable,y=CV,color=factor(Variable)))+geom_point(size=2)+theme_bw()+
+   # facet_wrap(~Name, ncol = 2)+
+    theme(legend.title=element_text(),legend.position ="right")+ylab("CV (%)")+
+ theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
+ theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
+  
+  
+
+```
+##Merge phyllochron data together
+```{r,fig.height=5, fig.width=10,warning=FALSE}
+mergephyllo=multmerge("D:/R/Phyllochron")
+mergephylloData<-mergephyllo%>%
+   dplyr::select(Name,GrowthSeason, Rotation,Tmean,Slope1,Slope2,Slope3,Slope4,Slope5,Slope6,Slope7,Slope8,Slope9,Slope10)%>%
+   tidyr::gather("Variable","phyllochron",Slope1:Slope10)
+   unique(mergephylloData)
+
+
+ mergephylloData%>%
+  ggplot(aes(x=Name,y=phyllochron,colour=factor(Variable)))+geom_point(size=2)+theme_bw()
+  
+  
+
+```
+
+###Regression coefficient
+```{r}
+mergephylloData%>%
+  #dplyr::filter(Name=="Iversen_8Waterirr")%>%
+  #dplyr::filter(Name=="Iversen_91DefoliationLL")%>%
+  #dplyr::filter(Name=="Iversen_9SowingDateSD1Waterirr")%>%
+  
+
+  ggplot(aes(x=Tmean, y=phyllochron, colour=factor(Variable)))+geom_point(size=2)+theme_bw()+
+  facet_wrap(~Variable, ncol=2)+
+  geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="darkgrey")+xlab("Mean air temperature (°C)")+ylab("Phyllochron (°Cd/Leaf)")+
+  theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
+ theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
+  
+# #slope
+# mergephylloDataT<-mergephylloData%>%
+#   group_by(Name,Variable)%>%
+#   mode<-lm(mergephylloDataT$Tmean~mergephylloDataT$phyllochron)
+# summary(mode)$coefficients[,4]
+# summary(mode)$r.squared
+
+#slope1
+mergephylloData1<-mergephylloData%>%
+  dplyr::filter(Variable=="Slope1")
+mode1<-lm(mergephylloData1$Tmean~mergephylloData1$phyllochron)
+
+summary(mode1)
+#slope2
+mergephylloData2<-mergephylloData%>%
+  dplyr::filter(Variable=="Slope2")
+mode2<-lm(mergephylloData2$Tmean~mergephylloData2$phyllochron)
+
+summary(mode2)
+#slope3
+mergephylloData3<-mergephylloData%>%
+  dplyr::filter(Variable=="Slope3")
+mode3<-lm(mergephylloData3$Tmean~mergephylloData3$phyllochron)
+
+summary(mode3)
+#slope4
+mergephylloData4<-mergephylloData%>%
+  dplyr::filter(Variable=="Slope4")
+mode4<-lm(mergephylloData4$Tmean~mergephylloData4$phyllochron)
+
+summary(mode4)
+#slope5
+mergephylloData5<-mergephylloData%>%
+  dplyr::filter(Variable=="Slope5")
+mode5<-lm(mergephylloData5$Tmean~mergephylloData5$phyllochron)
+
+summary(mode5)
+
+#slope6
+mergephylloData6<-mergephylloData%>%
+  dplyr::filter(Variable=="Slope6")
+mode6<-lm(mergephylloData6$Tmean~mergephylloData6$phyllochron)
+
+summary(mode6)
+
+#slope7
+mergephylloData7<-mergephylloData%>%
+  dplyr::filter(Variable=="Slope7")
+mode7<-lm(mergephylloData7$Tmean~mergephylloData7$phyllochron)
+
+summary(mode7)
+#slope8
+mergephylloData8<-mergephylloData%>%
+  dplyr::filter(Variable=="Slope8")
+mode8<-lm(mergephylloData8$Tmean~mergephylloData8$phyllochron)
+
+summary(mode8)
+
+#slope9
+mergephylloData9<-mergephylloData%>%
+  dplyr::filter(Variable=="Slope9")
+mode9<-lm(mergephylloData9$Tmean~mergephylloData9$phyllochron)
+
+summary(mode9)
+
+#slope10
+mergephylloData10<-mergephylloData%>%
+  dplyr::filter(Variable=="Slope10")
+mode10<-lm(mergephylloData10$Tmean~mergephylloData10$phyllochron)
+
+summary(mode10)
+
+
+ 
+
+```
+
+###x-intercept method
+
+```{r}
+
+LAR <- nodes1%>%
+  group_by(Name,GrowthSeason,Rotation,Collection,Tmean) %>%
+  do(mod = lm(Observed~Interval,data=.)) %>%
+  mutate(slope = summary(mod)$coeff[2]) %>%
+  dplyr::select(-mod)
+LAR
+```
+
+```{r}
+ LAR%>%
+   dplyr::filter(GrowthSeason!="3"|Rotation!="1")%>%
+   dplyr::filter(GrowthSeason!="4"|Rotation!="1")%>%
+   #dplyr::filter()
+ mutate(Name=factor(Name))%>%
+ ggplot(aes(x=Tmean, y=slope),colour=factor(Name))+geom_point(size=2)+theme_bw()+xlab("Mean air temperature (°C)")+ylab("Node appearance rate (leaves/day)")+
+  theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
+ theme(axis.title.y=element_text(face="bold",colour="black",size = 12))+
+ #facet_wrap(~Name)+
+ geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="darkgrey") 
+# LAR
+
+modL<-lm(LAR$slope~LAR$Tmean)
+summary(modL)
+coef(modL)
+predict(modL,LAR,interal="confidence")
+
+
+```
+
+
+
+
+
+### load phyllochron data
+### check met file
+```{r}
+phyll <- "D:\\R\\Data statistic\\"
+StartGrazing <- read.table(paste0(phyll, "obsTphy.txt"), 
+                      header = TRUE)
+StartGrazing1<-StartGrazing %>%
+  mutate(Clock.Today = dmy(Clock.Today))%>%
+  mutate(MidDate = dmy(MidDate))%>%
+  mutate(FinishDate= dmy(FinishDate))
+PhylloPp1 <- merge(StartGrazing1,phylloData1,by=c("Name","GrowthSeason","Rotation","GrowthRotation","Collection","Water","Defoliation","SowingDate","FD"))
+df <- data.frame(Photoperiod=c(8.5,10.5,12.5,16.5),Phyllochron = c(51,51,34,34))
+
+df
+PhylloPp1%>%
+  #dplyr::filter(Rotation!="1")%>%
+  ggplot(aes(x=PPm,y=Slope1))+geom_point(size=2)+theme_bw()+xlab("Mean photoperiod (h)")+ylab("Phyllochron (°Cd/leaf) ")+
+  facet_wrap(~Name)+
+  geom_line(data=df,(aes(x=Photoperiod,y=Phyllochron)))+
+  theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
+ theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
+  
+# # PPTrend and Pp
+# PhylloPpI<-PhylloPp1%>%
+#   dplyr::filter(Trend=="Inc")
+# PhylloPpD<-PhylloPp1%>%
+#   dplyr::filter(Trend=="Dec")
+# 
+# #   cor.test(PhylloPpI$Pp,PhylloPpI$Slope,method="spearman")
+#    cor.test(PhylloPpD$Pp,PhylloPpD$Slope,method="spearman")
+#    
+# phyppmodelI<-lm(Pp~Slope,data=PhylloPpI)
+# phyppmodelD<-lm(Pp~Slope,data=PhylloPpD)
+# 
+# summary(phyppmodelI)
+# summary(phyppmodelD)
+```
+```{r,fig.height=4, fig.width=8}
+PhylloPp1%>%
+  dplyr::filter(Stage=="Regrowth")%>%
+  dplyr::filter(Rotation!="1")%>%
+ggplot(aes(x=PPs,y=Slope2,color=factor(Name)))+geom_point(size=2)+theme_bw()+
+   facet_wrap(~Trend,ncol=3)+
+  geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="darkgrey") 
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+```{r}
+df
+PhylloPp5%>%
+  dplyr::filter(Rotation!="1")%>%
+  ggplot(aes(x=PPm,y=Slope5))+geom_point(size=2)+theme_bw()+
+  facet_wrap(~Name)+
+  geom_line(data=df,(aes(x=Photoperiod,y=Phyllochron)))
+
+```
+
+
+```{r}
+StartGrazing1
+phylloData5
+PhylloPp5 <- merge(StartGrazing1,phylloData5,by=c("Name","GrowthSeason","Rotation","GrowthRotation","Collection"))
+PhylloPp5%>%
+  dplyr::filter(Stage=="Regrowth")%>%
+  dplyr::filter(Rotation!="1")%>%
+ggplot(aes(x=PPm,y=Slope5,color=factor(Name)))+geom_point(size=2)+theme_bw()+
+   #facet_wrap(~Name,ncol=3)+
+  geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="darkgrey") 
+```
+
+
+
+
+
+
+```{r}
+# phyllo.address <- "D:\\R\\Data statistic\\"
+# phyllo <- read.table(paste0(phyllo.address, "Phyllochron.txt"), 
+#                        header = TRUE)
+# phyllo
+# phyllo1 <- phyllo %>% mutate(Clock.Today = dmy(Clock.Today))
+# 
+
+```
+
+
+
+
+
+```{r,fig.height=4, fig.width=6,warning=FALSE}
+df <- data.frame(Photoperiod=c(8.5,10.5,12.5,16.5),Phyollchron = c(51,51,34,34))
+df%>%
+  ggplot(aes(x=Photoperiod,y=Phyollchron))+theme_bw()+geom_line(size=1)+
+  theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
+  theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
+
+phyphoto1<-phyphoto %>%
+  dplyr::filter(Water=="irr")%>%
+  #dplyr::filter(Collection!="2002_2004")
+  dplyr::filter(Name=="Iversen_91DefoliationLL")
+  #dplyr::filter(Name!="Iversen_91DefoliationSL")%>%
+  #dplyr::filter(Name!="Iversen_91DefoliationLS")%>%
+  #dplyr::filter(Name!="Iversen_91DefoliationSS")%>%
+  #dplyr::filter(Stage=="Regrowth")
+  
+  
+ 
+  
+ 
+df %>%
+  ggplot(aes(x=Photoperiod, y=Phyollchron)) +theme_bw()+geom_line(size=1)+
+ geom_point(data=phyphoto1, aes(x=Pp, y=Phyllochron),colour="blue",size=3)+
+  facet_wrap(~Name, ncol=2)+
+  #facet_wrap(~Stage, ncol=2)+
+ theme(legend.title=element_blank(),legend.position = "black")+xlab("Photoperiod (h)")+ylab("Phyllochron (°Cd/Leaf )")+
+ theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
+ theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
+```
+
+##use lm for linear regression model between photoperiod and phyllochron 
+```{r,fig.height=5, fig.width=8,warning=FALSE}
+phyphoto1%>%
+  ggplot(aes(x=Pp, y=Phyllochron),colour= factor(Name)) +theme_bw()+geom_point(size=2)+
+  facet_wrap(~Stage,ncol = 2)+
+  geom_smooth(method="lm",forumula=Pp~Phyllochron)+
+  theme(legend.title=element_blank(),legend.position = "blank")+xlab("Photoperiod")+ylab("Phyllochron")+
+  theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
+  theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
+
+  
+
+
+```
+
+##ANOVA analysis
+```{r}
+phyphoto2<- phyphoto1%>%
+  dplyr::filter(Stage=="Seedling")
+AnovaResult <- aov(Phyllochron~Pp, data=phyphoto2)
+summary(AnovaResult)
+
+```
+
+```{r}
+phyphoto2<- phyphoto1%>%
+  dplyr::filter(Stage=="Regrowth")
+AnovaResult <- aov(Pp~Phyllochron, data=phyphoto2)
+summary(AnovaResult)
+
+```
+
