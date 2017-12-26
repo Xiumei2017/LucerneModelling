@@ -20,18 +20,25 @@ library(scales)
 library(zoo)
 ```
 ## Load met file
-```{r LoadSim, include = FALSE, echo=FALSE, warning=FALSE, fig.height=8, fig.width=8}
+```{r LoadSim, include = TRUE, echo=FALSE, warning=FALSE, fig.height=8, fig.width=8}
 
-met.address <- "D:\\R\\Data statistic\\"
-met <- read.table(paste0(met.address, "metTT.txt"), 
-                      header = TRUE)
-metData <- met %>% mutate(Clock.Today = dmy(Clock.Today))
-metData$Tt5<-(metData$maxt-metData$mint)/2-metData$Tb5
+met <- data.frame(Clock.Today=c("1/1/2000","2/1/2000"),mint=c(5,10), maxt=c(10,20),Tb5=c(5,5)) # assume that's what u read
+
+
+# met.address <- "D:\\R\\Data statistic\\"
+# met <- read.table(paste0(met.address, "metTT.txt"), 
+#                       header = TRUE)
+metData <- met %>% rowwise() %>% mutate(Clock.Today = dmy(Clock.Today),Tt5=max(((maxt-mint)*0.5-Tb5),0)) 
+#metData$Tt5<-(metData$maxt-metData$mint)/2-metData$Tb5
 str(metData)
-metData
+
 
 ```
+
 ## graph
+```{r}
+metData
+```
 
 ```{r, fig.height=10, fig.width=10}
 
@@ -44,16 +51,22 @@ metData %>%
 ### Beta function from Bangyou Zheng,CISRO.
 
 ```{r}
-we_beta <- function(mint, maxt, t_min, t_opt, t_max, t_ref = t_opt, maxt_weight = 0.5) {
-    tav <- maxt_weight * maxt + (1 - maxt_weight) * mint
+# we_beta <- function(mint, maxt, t_min, t_opt, t_max, t_ref = t_opt, maxt_weight = 0.5) {
+  
+# you use a single temp @ each 8-h period ... so tav is a single value - last parameter is not necessary anymore
+  we_beta <- function(tav, t_min, t_opt, t_max, t_ref = t_opt) {  
 
-
+   # tav <- maxt_weight * maxt + (1 - maxt_weight) * mint
+   
     res <- ifelse ((tav > t_min) & (tav < t_max),
     {
         a <- log(2.0) / log((t_max - t_min) / (t_opt - t_min))
+        
         refeff <- t_opt * (2 * ((tav - t_min)^a) * ((t_opt - t_min)^a) -
                                ((tav - t_min) ^ (2 * a))) / ((t_opt - t_min) ^ (2 * a))
+        
         a <- log(2.0) / log((t_max - t_min) / (t_opt - t_min))
+        
         refefft <- t_opt * (2 * ((t_ref - t_min)^a) * ((t_opt - t_min)^a) -
                                 ((t_ref - t_min) ^ (2 * a))) / ((t_opt - t_min) ^ (2 * a))
         refeff / refefft
@@ -63,6 +76,38 @@ we_beta <- function(mint, maxt, t_min, t_opt, t_max, t_ref = t_opt, maxt_weight 
 }
 
 ```
+
+# Check with params
+
+```{r}
+
+we_beta(0,2,30,45)
+we_beta(2,2,30,45)
+we_beta(30,2,30,45)
+we_beta(45,2,30,45)
+
+# Result
+# [1] 0
+# [1] 0
+# [1] 1
+# [1] 0
+
+```
+
+
+Visualise it
+
+```{r}
+df<-data.frame(T=c(-5:60),TT=0)
+
+df %>%
+  rowwise() %>%
+  mutate(TT=we_beta(T,2,30,45)) %>%
+  ggplot(aes(x=T,y=TT)) +
+  geom_point()
+
+```
+
 #create REF Jones CA, Ritchie JT, Kiniry JR, Godwin DC (1986) Subroutine structure.In 'CERES-Maize: A simulation model of maize growth anddevelopment'. (Eds CA Jones, JR Kiniry) pp. 49-194. (Texas A&M University Press: Texas, USA
 
 ```{r}
@@ -72,9 +117,10 @@ TTfunc <- function(Tmin ,Tmax){
   if (Tmin>Tmax){
    print("Tmin>Tmax")
    break
- } 
-  Topt <-30
-  TTav  <- 0
+  } 
+  
+  Topt <- 30
+  TTav <- 0
   TTsum <- 0
   
   for(n in 1:8){ 
@@ -84,10 +130,9 @@ TTfunc <- function(Tmin ,Tmax){
     TT_tn <- 0
     
     tn <- ((0.931 +  0.114*n - 0.0703 * n^2
-            + 0.0053 * n^3) * (Tmax-Tmin)) + 
-      Tmin # 8-h temperature
+            + 0.0053 * n^3) * (Tmax-Tmin)) + Tmin # 8-h temperature
     
-    TT_tn <- we_beta(mint, maxt, Tmin, Topt, Tmax, t_ref = Topt, maxt_weight = 0.5) 
+    TT_tn <- we_beta(tn,2,30,45) * tn # parameters are hardcoded here ... can/should be externalised
     
     TTsum <- max(TT_tn,0) + TTsum
     
@@ -99,8 +144,27 @@ TTfunc <- function(Tmin ,Tmax){
   return(TTav)
   }
 
-TTfunc(10,30)
 
+
+```
+
+Test
+
+```{r}
+df2<-data.frame(mint=c(-5:60)) %>%
+  mutate(maxt=mint+5+0.2*mint)  %>%
+  rowwise() %>%
+  mutate(TT=TTfunc(mint,maxt)) %>%
+  mutate(Tav=((maxt+mint)*0.5)) 
+
+summary(df2)
+
+```
+
+```{r}
+df2 %>%
+  ggplot(aes(x=Tav,y=TT)) +
+  geom_point()
 ```
 
 
