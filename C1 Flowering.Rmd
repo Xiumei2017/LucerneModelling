@@ -1,0 +1,104 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+## Read met file.
+## Read Observed data
+## calculate Tt and Ttsum
+
+```{r Load, warning=FALSE, fig.height=8, fig.width=8}
+# install.packages("zoo")
+library(dplyr)
+library(ggplot2)
+library(lubridate)   
+library(hydroGOF)
+library(xtable)
+library(knitr)
+library(tidyr)
+library(RSQLite)
+library(agricolae)
+library(scales)
+library(zoo)
+```
+## Load metdata with Tt and Pmean for each experiment
+```{r LoadSim, include = FALSE, echo=FALSE, warning=FALSE, fig.height=8, fig.width=8}
+
+metTt.address <- "D:\\R\\MetTT\\"
+met <- read.table(paste0(metTt.address, "metTT2.txt"), 
+                      header = TRUE)
+metTtData <- met %>% mutate(Clock.Today = dmy(Clock.Today))
+str(metTtData)
+metTt<-metTtData%>%mutate(TTS2=cumsum(TTday2))
+metTt
+write.csv(metTt,"D:\\R\\Data statistic\\metTt2.csv", row.names = FALSE)
+
+```
+
+### Load flowering data
+```{r LoadSim, include = FALSE, echo=FALSE, warning=FALSE, fig.height=8, fig.width=8}
+
+flower.address <- "D:\\R\\Data statistic\\"
+flower <- read.table(paste0(flower.address, "Flower.txt"),
+                      header = TRUE)
+flowerData <- flower %>% mutate(StartDate = dmy(StartDate))%>%
+  mutate(BVDate=dmy(BVDate))%>%
+  mutate(FloDate=dmy(FloDate))
+  
+str(flowerData)
+flowerData
+
+```
+##load and plot Buds visual data 
+```{r}
+flowerD<-flowerData%>%
+  dplyr::filter(Water=="irr")
+  #dplyr::filter(Name=="Iversen_9SowingDateSD1Waterirr")
+flowerD%>%
+  ggplot(aes(x=StartDate, y=Days, colour=factor(Name)))+geom_point(size=2)+theme_bw()+xlab("Date")+ylab("Days to buds visual")+
+ facet_wrap(~Stage)+
+  theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
+ theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
+
+```
+
+
+
+```{r}
+flowerD<-flowerData%>%
+  dplyr::filter(Water=="irr")
+  #dplyr::filter(Name=="Iversen_9SowingDateSD1Waterirr")
+flowerD%>%
+  ggplot(aes(x=Ps, y=Tt0.bv), colour=factor(Name))+geom_point(size=2)+theme_bw()+xlab("Start photoperiod ")+ylab("Tt0-bv")+
+ facet_wrap(~Stage)+
+  geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="darkgrey")+
+  theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
+ theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
+
+```
+```{r}
+flowerD1<-flowerD%>%dplyr::filter(Stage!="Seedling")
+model1<-lm(flowerD1$Tt0.bv~flowerD1$Ps)
+model2<-lm(flowerD1$Tt0.bv~flowerD1$Psbv)
+summary(model1)
+summary(model2)
+plot(flowerD1$Tt0.bv~flowerD1$Ps)
+abline(model1)
+```
+```{r}
+flowerD<-flowerData%>%
+  dplyr::filter(Water=="irr")
+  #dplyr::filter(Name=="Iversen_9SowingDateSD1Waterirr")
+flowerD%>%
+  ggplot(aes(x=Psf, y=Tt0.fl), colour=factor(Name))+geom_point(size=2)+theme_bw()+xlab("Mean photoperiod ")+ylab("Tt0-fl")+
+ facet_wrap(~Stage)+
+  geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="darkgrey")+
+  theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
+ theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
+
+```
+```{r}
+flowerD1<-flowerD%>%dplyr::filter(Stage!="Seedling")
+model2<-lm(flowerD1$Tt0.fl~flowerD1$Psf)
+summary(model2)
+```
+

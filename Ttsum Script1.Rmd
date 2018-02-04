@@ -1,4 +1,4 @@
----
+     ---
 title: "R Notebook"
 output: html_notebook
 ---
@@ -52,11 +52,10 @@ summary(obsData)
 ## Load met file
 ```{r LoadSim, include = FALSE, echo=FALSE, warning=FALSE, fig.height=8, fig.width=8}
 
-met.address <- "D:\\R\\Data statistic\\"
-met <- read.table(paste0(met.address, "metTT.txt"), 
+met.address <- "D:\\R\\"
+met <- read.table(paste0(met.address, "lincolnmet.txt"), 
                       header = TRUE)
 metData <- met %>% mutate(Clock.Today = dmy(Clock.Today))
-metData$Tt5<-(metData$maxt-metData$mint)/2-metData$Tb5
 str(metData)
 metData
 
@@ -192,10 +191,11 @@ TTfunc(10,30)
 ```
 ```{r}
 Tb=5 # assuming a base temperature of 8 for the simple calculation
+metData
 metTT1 <- metData %>%
-   filter(Clock.Today>"1997-01-01") %>%
+   filter(Clock.Today>="1996-01-01") %>%
   rowwise() %>%
-  mutate(TTday1=TTfunc(mint,maxt), TTday_s=max(((mint+maxt)/2)-Tb,0), diff=(TTday_s/TTday1)*100)
+  mutate(TTday1=TTfunc(mint,maxt))
 metTT1
 write.csv(metTT1,"D:/R/metTT/metTT1.csv", row.names = FALSE)
 ```
@@ -307,9 +307,9 @@ TTfunc(10,30)
 Tb=5 # assuming a base temperature of 8 for the simple calculation
 
 metTT2 <- metData %>%
-   filter(Clock.Today>"1997-01-01") %>%
+   filter(Clock.Today>="1996-01-01") %>%
   rowwise() %>%
-  mutate(TTday2=TTfunc(mint,maxt), TTday_s=max(((mint+maxt)/2)-Tb,0), diff=(TTday_s/TTday2)*100)
+  mutate(TTday2=TTfunc(mint,maxt))
 metTT2
 write.csv(metTT2,"D:/R/metTT/metTT2.csv", row.names = FALSE)
 ```
@@ -416,9 +416,9 @@ TTfunc(10,30)
 Tb=5 # assuming a base temperature of 8 for the simple calculation
 
 metTT3 <- metData %>%
-   filter(Clock.Today>"1997-01-01") %>%
+   filter(Clock.Today>="1996-01-01") %>%
   rowwise() %>%
-  mutate(TTday3=TTfunc(mint,maxt), TTday_s=max(((mint+maxt)/2)-Tb,0), diff=(TTday_s/TTday3)*100)
+  mutate(TTday3=TTfunc(mint,maxt))
 metTT3
 write.csv(metTT3,"D:/R/metTT/metTT3.csv", row.names = FALSE)
 
@@ -526,9 +526,9 @@ TTfunc(10,30)
 Tb=5 # assuming a base temperature of 8 for the simple calculation
 
 metTT4 <- metData %>%
-   filter(Clock.Today>"1997-01-01") %>%
+   filter(Clock.Today>="1996-01-01") %>%
   rowwise() %>%
-  mutate(TTday4=TTfunc(mint,maxt), TTday_s=max(((mint+maxt)/2)-Tb,0), diff=(TTday_s/TTday4)*100)
+  mutate(TTday4=TTfunc(mint,maxt))
 metTT4
 write.csv(metTT4,"D:/R/metTT/metTT4.csv", row.names = FALSE)
 ```
@@ -634,9 +634,9 @@ TTfunc(10,30)
 Tb=5 # assuming a base temperature of 8 for the simple calculation
 
 metTT5 <- metData %>%
-   filter(Clock.Today>"1997-01-01") %>%
+   filter(Clock.Today>="1996-01-01") %>%
   rowwise() %>%
-  mutate(TTday5=TTfunc(mint,maxt), TTday_s=max(((mint+maxt)/2)-Tb,0), diff=(TTday_s/TTday5)*100)
+  mutate(TTday5=TTfunc(mint,maxt))
 metTT5
 write.csv(metTT5,"D:/R/metTT/metTT5.csv", row.names = FALSE)
 ```
@@ -743,9 +743,9 @@ TTfunc(10,30)
 Tb=5 # assuming a base temperature of 8 for the simple calculation
 
 metTT6 <- metData %>%
-   filter(Clock.Today>"1997-01-01") %>%
+   filter(Clock.Today>="1996-01-01") %>%
   rowwise() %>%
-  mutate(TTday6=TTfunc(mint,maxt), TTday_s=max(((mint+maxt)/2)-Tb,0), diff=(TTday_s/TTday6)*100)
+  mutate(TTday6=TTfunc(mint,maxt))
 metTT6
 write.csv(metTT6,"D:/R/metTT/metTT6.csv", row.names = FALSE)
 ```
@@ -851,9 +851,9 @@ TTfunc(10,30)
 Tb=5 # assuming a base temperature of 8 for the simple calculation
 
 metTT7 <- metData %>%
-   filter(Clock.Today>"1997-01-01") %>%
+   filter(Clock.Today>="1996-01-01") %>%
   rowwise() %>%
-  mutate(TTday7=TTfunc(mint,maxt), TTday_s=max(((mint+maxt)/2)-Tb,0), diff=(TTday_s/TTday7)*100)
+  mutate(TTday7=TTfunc(mint,maxt))
 metTT7
 write.csv(metTT7,"D:/R/metTT/metTT7.csv", row.names = FALSE)
 ```
@@ -959,9 +959,9 @@ TTfunc(10,30)
 Tb=5 # assuming a base temperature of 8 for the simple calculation
 
 metTT8 <- metData %>%
-   filter(Clock.Today>"1997-01-01") %>%
+   filter(Clock.Today>="1996-01-01") %>%
   rowwise() %>%
-  mutate(TTday8=TTfunc(mint,maxt), TTday_s=max(((mint+maxt)/2)-Tb,0), diff=(TTday_s/TTday8)*100)
+  mutate(TTday8=TTfunc(mint,maxt))
 metTT8
 write.csv(metTT8,"D:/R/metTT/metTT8.csv", row.names = FALSE)
 ```
@@ -1067,9 +1067,9 @@ TTfunc(10,30)
 Tb=5 # assuming a base temperature of 8 for the simple calculation
 
 metTT9 <- metData %>%
-   filter(Clock.Today>"1997-01-01") %>%
+   filter(Clock.Today>="1996-01-01") %>%
   rowwise() %>%
-  mutate(TTday9=TTfunc(mint,maxt), TTday_s=max(((mint+maxt)/2)-Tb,0), diff=(TTday_s/TTday9)*100)
+  mutate(TTday9=TTfunc(mint,maxt))
 metTT9
 write.csv(metTT9,"D:/R/metTT/metTT9.csv", row.names = FALSE)
 ```
@@ -1174,25 +1174,14 @@ TTfunc(10,30)
 Tb=5 # assuming a base temperature of 8 for the simple calculation
 
 metTT10 <- metData %>%
-   filter(Clock.Today>"1997-01-01") %>%
+   filter(Clock.Today>="1996-01-01") %>%
   rowwise() %>%
-  mutate(TTday10=TTfunc(mint,maxt), TTday_s=max(((mint+maxt)/2)-Tb,0), diff=(TTday_s/TTday10)*100)
+  mutate(TTday10=TTfunc(mint,maxt))
 metTT10
 write.csv(metTT10,"D:/R/metTT/metTT10.csv", row.names = FALSE)
 ```
 
 
-
-```{r}
-metTT1 %>%
-ggplot(aes(x=TTday_s, y= TTday1)) +
-    geom_point(shape=21,alpha=0.2) +
-  geom_abline(intercept = 0, slope = 1)
-
-metTT1
-
-
-```
 ##Combine metTT 
 ```{r,fig.height=5, fig.width=10,warning=FALSE}
 multmerge = function(mypath){
@@ -1202,6 +1191,7 @@ Reduce(function(x,y) {merge(x,y)}, datalist)}
 
 mergemetTT=multmerge("D:/R/MetTT")
 mergemetTT
+write.csv(mergemetTT,"D:/R/MetTT/metTTBS.csv", row.names = FALSE)
 ```
 
 
@@ -1563,8 +1553,6 @@ mergeCV1$Names[mergeCV1$Name=="Iversen_9SowingDateSD3Waterirr"]<-"I9SD3irr"
 mergeCV1$Names[mergeCV1$Name=="Iversen_9SowingDateSD4Waterirr"]<-"I9SD4irr"
 write.csv(mergeCV1,"D:/R/TbCV/mergeCV1.csv", row.names = FALSE)
 
-
-
   mergeCV1%>%
   ggplot(aes(x=Variable,y=CV,color=factor(Variable)))+geom_point(size=2)+theme_bw()+
    # facet_wrap(~Name, ncol = 2)+
@@ -1613,6 +1601,25 @@ mergephylloData%>%
 # summary(mode)$r.squared
 
 #slope1
+
+# mergephylloDatas<- mergephylloData%>%
+#   mutate(GrowthSeason=factor(GrowthSeason))%>%
+#   group_by(Variable) %>%
+#   do(mod = lm(Tmean~phyllochron,data=.)) %>%
+#   mutate(slope = summary(mod)$coeff[2]) %>%
+#   mutate(P = summary(mod)$coeff[1,4])%>%
+#   mutate(R2 = summary(mod)$r.squared)%>%
+#   dplyr::select(-mod)
+# 
+# mergephylloDatas%>%
+#   ggplot(aes(x=Variable,y=P))+geom_point()
+
+   
+
+
+
+
+
 mergephylloData1<-mergephylloData%>%
   dplyr::filter(Variable=="Slope1")
 mode1<-lm(mergephylloData1$Tmean~mergephylloData1$phyllochron)
@@ -1700,7 +1707,7 @@ LAR
    dplyr::filter(GrowthSeason!="4"|Rotation!="1")%>%
    #dplyr::filter()
  mutate(Name=factor(Name))%>%
- ggplot(aes(x=Tmean, y=slope),colour=factor(Name))+geom_point(size=2)+theme_bw()+xlab("Mean air temperature (°C)")+ylab("Node appearance rate (leaves/day)")+
+ ggplot(aes(x=Tmean, y=slope,colour=factor(Name)))+geom_point(size=2)+theme_bw()+xlab("Mean air temperature (°C)")+ylab("Node appearance rate (leaves/day)")+
   theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
  theme(axis.title.y=element_text(face="bold",colour="black",size = 12))+
  #facet_wrap(~Name)+
