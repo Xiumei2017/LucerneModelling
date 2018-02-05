@@ -1,0 +1,98 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r Load, warning=FALSE, fig.height=8, fig.width=8}
+# install.packages("zoo")
+library(dplyr)
+library(ggplot2)
+library(lubridate)   
+library(hydroGOF)
+library(xtable)
+library(knitr)
+library(tidyr)
+library(RSQLite)
+library(agricolae)
+library(scales)
+library(zoo)
+```
+
+```{r}
+upDir <- "D:/R/"
+obsData <- "D:/R/"
+ExpList<- read.table(paste0(obsData, "ExperimentList.txt"),
+                       header = TRUE)
+ExpList
+```
+```{r}
+Exp<-ExpList%>%
+  mutate(ExpUnitCode=paste0(Experiment,Water,Defoliation,SowingDate,FD,GrowthSeason,Rotation))%>%
+  unique()
+  
+Exp
+#unique(Exp)
+
+```
+```{r}
+Met <- "D:/R/"
+MetD<- "D:/R/"
+MetLincoln<- read.table(paste0(MetD,"Lincolnmet.txt"),
+                       header = TRUE)
+MetL<-MetLincoln%>%
+  mutate(Clock.Today=dmy(Clock.Today))
+MetL
+
+```
+```{r}
+# You can have all Thermal-time functions and ...
+# Tt function by parameter combination (this can also be done by loop)
+
+# Tt calc method 1
+ttBaby <- function(tn,tx){
+  
+  # test if Tn is < Tx 
+  ta <- (tn+tx)*0.5
+  
+  tb <-0
+  
+  return(ta-tb)
+  
+}
+
+ttBaby(10,20)
+
+```
+
+
+
+```{r}
+
+UniExp<-unique(Exp$ExpUnitCode)
+
+df.all <- data.frame()
+
+for(i in 1 : length(Exp$ExpUnitCode))
+{
+  
+ Exp.sub<- Exp %>%
+    filter(ExpUnitCode==UniExp[i])
+  
+ StDate<-dmy(Exp.sub$StartDate)
+ EndDate<-dmy(Exp.sub$FinishDate)
+  
+Met.sub<-MetL%>%
+  filter(between(Clock.Today,StDate,EndDate))
+
+tt.df <- Met.sub %>% rowwise() %>% mutate(ExpName=Exp.sub$Name, Tt = ttBaby(mint,maxt)) # %>% mutate(Ttsum=cumsum(Tt)) # FIXME
+
+ df.all <- rbind(df.all,tt.df)
+
+   
+}
+
+
+
+
+```
+
