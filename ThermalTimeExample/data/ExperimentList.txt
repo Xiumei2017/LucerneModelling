@@ -1,0 +1,530 @@
+Name	Collection	Experiment	Water	Defoliation	SowingDate	FD	GrowthSeason	Rotation	StartDate	MidDate	FinishDate
+Iversen_91DefoliationLL	2002_2004	Lincoln2002	irr	LL	No	FD5	1	1	14/06/2002	9/08/2002	5/10/2002
+Iversen_91DefoliationLL	2002_2004	Lincoln2002	irr	LL	No	FD5	1	2	6/10/2002	26/10/2002	16/11/2002
+Iversen_91DefoliationLL	2002_2004	Lincoln2002	irr	LL	No	FD5	1	3	17/11/2002	7/12/2002	28/12/2002
+Iversen_91DefoliationLL	2002_2004	Lincoln2003	irr	LL	No	FD5	1	4	29/12/2002	19/01/2003	10/02/2003
+Iversen_91DefoliationLL	2002_2004	Lincoln2003	irr	LL	No	FD5	1	5	11/02/2003	2/03/2003	22/03/2003
+Iversen_91DefoliationLL	2002_2004	Lincoln2003	irr	LL	No	FD5	1	6	23/03/2003	13/04/2003	4/05/2003
+Iversen_91DefoliationLL	2002_2004	Lincoln2003	irr	LL	No	FD5	1	7	5/05/2003	24/05/2003	12/06/2003
+Iversen_91DefoliationLL	2002_2004	Lincoln2003	irr	LL	No	FD5	2	1	13/06/2003	9/08/2003	5/10/2003
+Iversen_91DefoliationLL	2002_2004	Lincoln2003	irr	LL	No	FD5	2	2	6/10/2003	24/10/2003	12/11/2003
+Iversen_91DefoliationLL	2002_2004	Lincoln2003	irr	LL	No	FD5	2	3	13/11/2003	5/12/2003	28/12/2003
+Iversen_91DefoliationLL	2002_2004	Lincoln2004	irr	LL	No	FD5	2	4	29/12/2003	18/01/2004	7/02/2004
+Iversen_91DefoliationLL	2002_2004	Lincoln2004	irr	LL	No	FD5	2	5	8/02/2004	28/02/2004	19/03/2004
+Iversen_91DefoliationLL	2002_2004	Lincoln2004	irr	LL	No	FD5	2	6	20/03/2004	10/04/2004	2/05/2004
+Iversen_91DefoliationLL	2002_2004	Lincoln2004	irr	LL	No	FD5	2	7	3/05/2004	22/05/2004	11/06/2004
+Iversen_91DefoliationLL	2002_2004	Lincoln2004	irr	LL	No	FD5	3	1	12/06/2004	7/08/2004	3/10/2004
+Iversen_8Waterdry	1997_2001	Lincoln1997	dry	LL	No	FD5	1	1	1/11/1996	27/12/1996	21/02/1997
+Iversen_8Waterirr	1997_2001	Lincoln1997	irr	LL	No	FD5	1	1	1/11/1996	27/12/1996	21/02/1997
+Iversen_8Waterdry	1997_2001	Lincoln1997	dry	LL	No	FD5	1	2	22/02/1997	14/04/1997	5/06/1997
+Iversen_8Waterirr	1997_2001	Lincoln1997	irr	LL	No	FD5	1	2	22/02/1997	14/04/1997	5/06/1997
+Iversen_8Waterdry	1997_2001	Lincoln1997	dry	LL	No	FD5	2	1	6/06/1997	6/08/1997	6/10/1997
+Iversen_8Waterirr	1997_2001	Lincoln1997	irr	LL	No	FD5	2	1	6/06/1997	6/08/1997	6/10/1997
+Iversen_8Waterdry	1997_2001	Lincoln1997	dry	LL	No	FD5	2	2	7/10/1997	28/10/1997	19/11/1997
+Iversen_8Waterirr	1997_2001	Lincoln1997	irr	LL	No	FD5	2	2	7/10/1997	28/10/1997	19/11/1997
+Iversen_8Waterdry	1997_2001	Lincoln1997	dry	LL	No	FD5	2	3	20/11/1997	6/12/1997	23/12/1997
+Iversen_8Waterirr	1997_2001	Lincoln1997	irr	LL	No	FD5	2	3	20/11/1997	6/12/1997	23/12/1997
+Iversen_8Waterdry	1997_2001	Lincoln1997	dry	LL	No	FD5	2	4	24/12/1997	13/01/1998	3/02/1998
+Iversen_8Waterirr	1997_2001	Lincoln1997	irr	LL	No	FD5	2	4	24/12/1997	13/01/1998	3/02/1998
+Iversen_8Waterdry	1997_2001	Lincoln1997	dry	LL	No	FD5	2	5	4/02/1998	22/02/1998	12/03/1998
+Iversen_8Waterirr	1997_2001	Lincoln1997	irr	LL	No	FD5	2	5	4/02/1998	22/02/1998	12/03/1998
+Iversen_8Waterdry	1997_2001	Lincoln1997	dry	LL	No	FD5	2	6	13/03/1998	21/04/1998	30/05/1998
+Iversen_8Waterirr	1997_2001	Lincoln1997	irr	LL	No	FD5	2	6	13/03/1998	21/04/1998	30/05/1998
+Iversen_8Waterdry	1997_2001	Lincoln1997	dry	LL	No	FD5	3	1	1/07/1998	15/08/1998	29/09/1998
+Iversen_8Waterirr	1997_2001	Lincoln1997	irr	LL	No	FD5	3	1	1/07/1998	15/08/1998	29/09/1998
+Iversen_8Waterdry	1997_2001	Lincoln1997	dry	LL	No	FD5	3	2	30/09/1998	21/10/1998	11/11/1998
+Iversen_8Waterirr	1997_2001	Lincoln1997	irr	LL	No	FD5	3	2	30/09/1998	21/10/1998	11/11/1998
+Iversen_8Waterdry	1997_2001	Lincoln1997	dry	LL	No	FD5	3	3	12/11/1998	28/11/1998	15/12/1998
+Iversen_8Waterirr	1997_2001	Lincoln1997	irr	LL	No	FD5	3	3	12/11/1998	28/11/1998	15/12/1998
+Iversen_8Waterdry	1997_2001	Lincoln1997	dry	LL	No	FD5	3	4	16/12/1998	30/12/1998	13/01/1999
+Iversen_8Waterirr	1997_2001	Lincoln1997	irr	LL	No	FD5	3	4	16/12/1998	30/12/1998	13/01/1999
+Iversen_8Waterdry	1997_2001	Lincoln1997	dry	LL	No	FD5	3	5	14/01/1999	31/01/1999	17/02/1999
+Iversen_8Waterirr	1997_2001	Lincoln1997	irr	LL	No	FD5	3	5	14/01/1999	31/01/1999	17/02/1999
+Iversen_8Waterdry	1997_2001	Lincoln1997	dry	LL	No	FD5	3	6	18/02/1999	18/03/1999	15/04/1999
+Iversen_8Waterirr	1997_2001	Lincoln1997	irr	LL	No	FD5	3	6	18/02/1999	18/03/1999	15/04/1999
+Iversen_8Waterdry	1997_2001	Lincoln1997	dry	LL	No	FD5	3	7	16/04/1999	23/05/1999	30/06/1999
+Iversen_8Waterirr	1997_2001	Lincoln1997	irr	LL	No	FD5	3	7	16/04/1999	23/05/1999	30/06/1999
+Iversen_8Waterdry	1997_2001	Lincoln1997	dry	LL	No	FD5	4	1	1/07/1999	15/08/1999	29/09/1999
+Iversen_8Waterirr	1997_2001	Lincoln1997	irr	LL	No	FD5	4	1	1/07/1999	15/08/1999	29/09/1999
+Iversen_8Waterdry	1997_2001	Lincoln1997	dry	LL	No	FD5	4	2	30/09/1999	20/10/1999	10/11/1999
+Iversen_8Waterirr	1997_2001	Lincoln1997	irr	LL	No	FD5	4	2	30/09/1999	20/10/1999	10/11/1999
+Iversen_8Waterdry	1997_2001	Lincoln1997	dry	LL	No	FD5	4	3	11/11/1999	30/11/1999	20/12/1999
+Iversen_8Waterirr	1997_2001	Lincoln1997	irr	LL	No	FD5	4	3	11/11/1999	30/11/1999	20/12/1999
+Iversen_8Waterdry	1997_2001	Lincoln1997	dry	LL	No	FD5	4	4	21/12/1999	8/01/2000	27/01/2000
+Iversen_8Waterirr	1997_2001	Lincoln1997	irr	LL	No	FD5	4	4	21/12/1999	8/01/2000	27/01/2000
+Iversen_8Waterdry	1997_2001	Lincoln1997	dry	LL	No	FD5	4	5	28/01/2000	20/02/2000	14/03/2000
+Iversen_8Waterirr	1997_2001	Lincoln1997	irr	LL	No	FD5	4	5	28/01/2000	20/02/2000	14/03/2000
+Iversen_8Waterdry	1997_2001	Lincoln1997	dry	LL	No	FD5	4	6	15/03/2000	19/04/2000	25/05/2000
+Iversen_8Waterirr	1997_2001	Lincoln1997	irr	LL	No	FD5	4	6	15/03/2000	19/04/2000	25/05/2000
+Iversen_8Waterdry	1997_2001	Lincoln1997	dry	LL	No	FD5	5	1	26/05/2000	24/07/2000	22/09/2000
+Iversen_8Waterirr	1997_2001	Lincoln1997	irr	LL	No	FD5	5	1	26/05/2000	24/07/2000	22/09/2000
+Iversen_8Waterdry	1997_2001	Lincoln1997	dry	LL	No	FD5	5	2	23/09/2000	17/10/2000	10/11/2000
+Iversen_8Waterirr	1997_2001	Lincoln1997	irr	LL	No	FD5	5	2	23/09/2000	17/10/2000	10/11/2000
+Iversen_8Waterdry	1997_2001	Lincoln1997	dry	LL	No	FD5	5	3	11/11/2000	1/12/2000	21/12/2000
+Iversen_8Waterirr	1997_2001	Lincoln1997	irr	LL	No	FD5	5	3	11/11/2000	1/12/2000	21/12/2000
+Iversen_8Waterdry	1997_2001	Lincoln1997	dry	LL	No	FD5	5	4	22/12/2000	7/01/2001	24/01/2001
+Iversen_8Waterirr	1997_2001	Lincoln1997	irr	LL	No	FD5	5	4	22/12/2000	7/01/2001	24/01/2001
+Iversen_8Waterdry	1997_2001	Lincoln1997	dry	LL	No	FD5	5	5	25/01/2001	18/02/2001	14/03/2001
+Iversen_8Waterirr	1997_2001	Lincoln1997	irr	LL	No	FD5	5	5	25/01/2001	18/02/2001	14/03/2001
+Iversen_8Waterdry	1997_2001	Lincoln1997	dry	LL	No	FD5	5	6	15/03/2001	8/04/2001	2/05/2001
+Iversen_8Waterirr	1997_2001	Lincoln1997	irr	LL	No	FD5	5	6	15/03/2001	8/04/2001	2/05/2001
+Iversen_8Waterdry	1997_2001	Lincoln1997	dry	LL	No	FD5	5	7	3/05/2001	2/06/2001	2/07/2001
+Iversen_8Waterirr	1997_2001	Lincoln1997	irr	LL	No	FD5	5	7	3/05/2001	2/06/2001	2/07/2001
+Iversen_8Waterdry	1997_2001	Lincoln1997	dry	LL	No	FD5	6	1	3/07/2001	18/08/2001	3/10/2001
+Iversen_8Waterirr	1997_2001	Lincoln1997	irr	LL	No	FD5	6	1	3/07/2001	18/08/2001	3/10/2001
+Iversen_8Waterdry	1997_2001	Lincoln1997	dry	LL	No	FD5	6	2	4/10/2001	3/11/2001	3/12/2001
+Iversen_8Waterirr	1997_2001	Lincoln1997	irr	LL	No	FD5	6	2	4/10/2001	3/11/2001	3/12/2001
+Iversen_9SowingDateSD1Waterirr	2000_2002	Lincoln2000	irr	LL	SD1	FD5	1	1	24/10/2000	8/12/2000	23/01/2001
+Iversen_9SowingDateSD1Waterdry	2000_2002	Lincoln2000	dry	LL	SD1	FD5	1	1	24/10/2000	8/12/2000	23/01/2001
+Iversen_9SowingDateSD1Waterdry	2000_2002	Lincoln2000	dry	LL	SD1	FD5	1	2	24/01/2001	13/02/2001	6/03/2001
+Iversen_9SowingDateSD1Waterirr	2000_2002	Lincoln2000	irr	LL	SD1	FD5	1	2	24/01/2001	13/02/2001	6/03/2001
+Iversen_9SowingDateSD1Waterdry	2000_2002	Lincoln2000	dry	LL	SD1	FD5	1	3	7/03/2001	4/04/2001	2/05/2001
+Iversen_9SowingDateSD1Waterirr	2000_2002	Lincoln2000	irr	LL	SD1	FD5	1	3	7/03/2001	4/04/2001	2/05/2001
+Iversen_9SowingDateSD1Waterdry	2000_2002	Lincoln2000	dry	LL	SD1	FD5	1	4	3/05/2001	2/06/2001	3/07/2001
+Iversen_9SowingDateSD1Waterirr	2000_2002	Lincoln2000	irr	LL	SD1	FD5	1	4	3/05/2001	2/06/2001	3/07/2001
+Iversen_9SowingDateSD1Waterdry	2000_2002	Lincoln2000	dry	LL	SD1	FD5	2	1	4/07/2001	16/08/2001	29/09/2001
+Iversen_9SowingDateSD1Waterirr	2000_2002	Lincoln2000	irr	LL	SD1	FD5	2	1	4/07/2001	16/08/2001	29/09/2001
+Iversen_9SowingDateSD1Waterirr	2000_2002	Lincoln2000	irr	LL	SD1	FD5	2	2	30/09/2001	22/10/2001	14/11/2001
+Iversen_9SowingDateSD1Waterdry	2000_2002	Lincoln2000	dry	LL	SD1	FD5	2	2	30/09/2001	22/10/2001	14/11/2001
+Iversen_9SowingDateSD1Waterdry	2000_2002	Lincoln2000	dry	LL	SD1	FD5	2	3	15/11/2001	3/12/2001	21/12/2001
+Iversen_9SowingDateSD1Waterirr	2000_2002	Lincoln2000	irr	LL	SD1	FD5	2	3	15/11/2001	3/12/2001	21/12/2001
+Iversen_9SowingDateSD1Waterdry	2000_2002	Lincoln2000	dry	LL	SD1	FD5	2	4	22/12/2001	16/01/2002	11/02/2002
+Iversen_9SowingDateSD1Waterirr	2000_2002	Lincoln2000	irr	LL	SD1	FD5	2	4	22/12/2001	16/01/2002	11/02/2002
+Iversen_9SowingDateSD1Waterdry	2000_2002	Lincoln2000	dry	LL	SD1	FD5	2	5	12/02/2002	9/03/2002	3/04/2002
+Iversen_9SowingDateSD1Waterirr	2000_2002	Lincoln2000	irr	LL	SD1	FD5	2	5	12/02/2002	9/03/2002	3/04/2002
+Iversen_9SowingDateSD1Waterdry	2000_2002	Lincoln2000	dry	LL	SD1	FD5	2	6	4/04/2002	9/05/2002	14/06/2002
+Iversen_9SowingDateSD1Waterirr	2000_2002	Lincoln2000	irr	LL	SD1	FD5	2	6	4/04/2002	9/05/2002	14/06/2002
+Iversen_9SowingDateSD1Waterdry	2000_2002	Lincoln2000	dry	LL	SD1	FD5	2	7	15/06/2002	22/07/2002	28/08/2002
+Iversen_9SowingDateSD1Waterirr	2000_2002	Lincoln2000	irr	LL	SD1	FD5	2	7	15/06/2002	22/07/2002	28/08/2002
+Iversen_9SowingDateSD2Waterirr	2000_2002	Lincoln2000	irr	LL	SD2	FD5	1	1	14/11/2000	29/12/2000	13/02/2001
+Iversen_9SowingDateSD2Waterdry	2000_2002	Lincoln2000	dry	LL	SD2	FD5	1	1	14/11/2000	29/12/2000	13/02/2001
+Iversen_9SowingDateSD2Waterirr	2000_2002	Lincoln2000	irr	LL	SD2	FD5	1	2	14/02/2001	24/03/2001	1/05/2001
+Iversen_9SowingDateSD2Waterdry	2000_2002	Lincoln2000	dry	LL	SD2	FD5	1	2	14/02/2001	24/03/2001	1/05/2001
+Iversen_9SowingDateSD2Waterdry	2000_2002	Lincoln2000	dry	LL	SD2	FD5	1	3	2/05/2001	2/06/2001	4/07/2001
+Iversen_9SowingDateSD2Waterirr	2000_2002	Lincoln2000	irr	LL	SD2	FD5	1	3	2/05/2001	2/06/2001	4/07/2001
+Iversen_9SowingDateSD2Waterdry	2000_2002	Lincoln2000	dry	LL	SD2	FD5	2	1	5/07/2001	16/08/2001	27/09/2001
+Iversen_9SowingDateSD2Waterirr	2000_2002	Lincoln2000	irr	LL	SD2	FD5	2	1	5/07/2001	16/08/2001	27/09/2001
+Iversen_9SowingDateSD2Waterdry	2000_2002	Lincoln2000	dry	LL	SD2	FD5	2	2	28/09/2001	21/10/2001	14/11/2001
+Iversen_9SowingDateSD2Waterirr	2000_2002	Lincoln2000	irr	LL	SD2	FD5	2	2	28/09/2001	21/10/2001	14/11/2001
+Iversen_9SowingDateSD2Waterdry	2000_2002	Lincoln2000	dry	LL	SD2	FD5	2	3	15/11/2001	3/12/2001	21/12/2001
+Iversen_9SowingDateSD2Waterirr	2000_2002	Lincoln2000	irr	LL	SD2	FD5	2	3	15/11/2001	3/12/2001	21/12/2001
+Iversen_9SowingDateSD2Waterdry	2000_2002	Lincoln2000	dry	LL	SD2	FD5	2	4	22/12/2001	11/01/2002	31/01/2002
+Iversen_9SowingDateSD2Waterirr	2000_2002	Lincoln2000	irr	LL	SD2	FD5	2	4	22/12/2001	11/01/2002	31/01/2002
+Iversen_9SowingDateSD2Waterdry	2000_2002	Lincoln2000	dry	LL	SD2	FD5	2	5	1/02/2002	3/03/2002	2/04/2002
+Iversen_9SowingDateSD2Waterirr	2000_2002	Lincoln2000	irr	LL	SD2	FD5	2	5	1/02/2002	3/03/2002	2/04/2002
+Iversen_9SowingDateSD3Waterdry	2000_2002	Lincoln2000	dry	LL	SD3	FD5	1	1	5/12/2000	19/01/2001	6/03/2001
+Iversen_9SowingDateSD3Waterirr	2000_2002	Lincoln2000	irr	LL	SD3	FD5	1	1	5/12/2000	19/01/2001	6/03/2001
+Iversen_9SowingDateSD3Waterdry	2000_2002	Lincoln2000	dry	LL	SD3	FD5	1	2	7/03/2001	4/04/2001	2/05/2001
+Iversen_9SowingDateSD3Waterirr	2000_2002	Lincoln2000	irr	LL	SD3	FD5	1	2	7/03/2001	4/04/2001	2/05/2001
+Iversen_9SowingDateSD3Waterdry	2000_2002	Lincoln2000	dry	LL	SD3	FD5	1	3	3/05/2001	29/05/2001	25/06/2001
+Iversen_9SowingDateSD3Waterirr	2000_2002	Lincoln2000	irr	LL	SD3	FD5	1	3	3/05/2001	29/05/2001	25/06/2001
+Iversen_9SowingDateSD3Waterdry	2000_2002	Lincoln2000	dry	LL	SD3	FD5	2	1	26/06/2001	11/08/2001	27/09/2001
+Iversen_9SowingDateSD3Waterirr	2000_2002	Lincoln2000	irr	LL	SD3	FD5	2	1	26/06/2001	11/08/2001	27/09/2001
+Iversen_9SowingDateSD3Waterdry	2000_2002	Lincoln2000	dry	LL	SD3	FD5	2	2	28/09/2001	21/10/2001	14/11/2001
+Iversen_9SowingDateSD3Waterirr	2000_2002	Lincoln2000	irr	LL	SD3	FD5	2	2	28/09/2001	21/10/2001	14/11/2001
+Iversen_9SowingDateSD3Waterdry	2000_2002	Lincoln2000	dry	LL	SD3	FD5	2	3	15/11/2001	3/12/2001	21/12/2001
+Iversen_9SowingDateSD3Waterirr	2000_2002	Lincoln2000	irr	LL	SD3	FD5	2	3	15/11/2001	3/12/2001	21/12/2001
+Iversen_9SowingDateSD3Waterdry	2000_2002	Lincoln2000	dry	LL	SD3	FD5	2	4	22/12/2001	11/01/2002	31/01/2002
+Iversen_9SowingDateSD3Waterirr	2000_2002	Lincoln2000	irr	LL	SD3	FD5	2	4	22/12/2001	11/01/2002	31/01/2002
+Iversen_9SowingDateSD3Waterdry	2000_2002	Lincoln2000	dry	LL	SD3	FD5	2	5	2/02/2002	3/03/2002	2/04/2002
+Iversen_9SowingDateSD3Waterirr	2000_2002	Lincoln2000	irr	LL	SD3	FD5	2	5	2/02/2002	3/03/2002	2/04/2002
+Iversen_9SowingDateSD4Waterdry	2000_2002	Lincoln2001	dry	LL	SD4	FD5	1	1	27/12/2000	10/02/2001	27/03/2001
+Iversen_9SowingDateSD4Waterirr	2000_2002	Lincoln2001	irr	LL	SD4	FD5	1	1	27/12/2000	10/02/2001	27/03/2001
+Iversen_9SowingDateSD4Waterdry	2000_2002	Lincoln2001	dry	LL	SD4	FD5	1	2	28/03/2001	14/04/2001	10/05/2001
+Iversen_9SowingDateSD4Waterirr	2000_2002	Lincoln2001	irr	LL	SD4	FD5	1	2	28/03/2001	14/04/2001	10/05/2001
+Iversen_9SowingDateSD4Waterdry	2000_2002	Lincoln2001	dry	LL	SD4	FD5	1	3	11/05/2001	2/06/2001	4/07/2001
+Iversen_9SowingDateSD4Waterirr	2000_2002	Lincoln2001	irr	LL	SD4	FD5	1	3	11/05/2001	2/06/2001	4/07/2001
+Iversen_9SowingDateSD4Waterdry	2000_2002	Lincoln2001	dry	LL	SD4	FD5	2	1	5/07/2001	16/08/2001	27/09/2001
+Iversen_9SowingDateSD4Waterirr	2000_2002	Lincoln2001	irr	LL	SD4	FD5	2	1	5/07/2001	16/08/2001	27/09/2001
+Iversen_9SowingDateSD4Waterdry	2000_2002	Lincoln2001	dry	LL	SD4	FD5	2	2	28/09/2001	21/10/2001	14/11/2001
+Iversen_9SowingDateSD4Waterirr	2000_2002	Lincoln2001	irr	LL	SD4	FD5	2	2	28/09/2001	21/10/2001	14/11/2001
+Iversen_9SowingDateSD4Waterdry	2000_2002	Lincoln2001	dry	LL	SD4	FD5	2	3	15/11/2001	3/12/2001	21/12/2001
+Iversen_9SowingDateSD4Waterirr	2000_2002	Lincoln2001	irr	LL	SD4	FD5	2	3	15/11/2001	3/12/2001	21/12/2001
+Iversen_9SowingDateSD4Waterdry	2000_2002	Lincoln2001	dry	LL	SD4	FD5	2	4	22/12/2001	11/01/2002	31/01/2002
+Iversen_9SowingDateSD4Waterirr	2000_2002	Lincoln2001	irr	LL	SD4	FD5	2	4	22/12/2001	11/01/2002	31/01/2002
+Iversen_9SowingDateSD4Waterdry	2000_2002	Lincoln2001	dry	LL	SD4	FD5	2	5	1/02/2002	3/03/2002	2/04/2002
+Iversen_9SowingDateSD4Waterirr	2000_2002	Lincoln2001	irr	LL	SD4	FD5	2	5	1/02/2002	3/03/2002	2/04/2002
+Iverson12DefoliationFD5	2014_2018	Lincoln2015	irr	LL	no	FD5	1	1	30/01/2015	19/02/2015	11/03/2015
+Iverson12DefoliationFD5	2014_2018	Lincoln2015	irr	LL	no	FD5	1	2	12/03/2015	3/04/2015	26/04/2015
+Iverson12DefoliationFD5	2014_2018	Lincoln2015	irr	LL	no	FD5	1	3	27/04/2015	19/05/2015	10/06/2015
+Iverson12DefoliationFD5	2014_2018	Lincoln2015	irr	LL	no	FD5	2	1	4/09/2015	27/09/2015	21/10/2015
+Iverson12DefoliationFD5	2014_2018	Lincoln2015	irr	LL	no	FD5	2	2	22/10/2015	14/11/2015	8/12/2015
+Iverson12DefoliationFD5	2014_2018	Lincoln2015	irr	LL	no	FD5	2	3	9/12/2015	26/12/2015	13/01/2016
+Iverson12DefoliationFD5	2014_2018	Lincoln2015	irr	LL	no	FD5	2	4	14/01/2016	4/02/2016	25/02/2016
+Iverson12DefoliationFD5	2014_2018	Lincoln2015	irr	LL	no	FD5	2	5	26/02/2016	17/03/2016	7/04/2016
+Iverson12DefoliationFD5	2014_2018	Lincoln2015	irr	LL	no	FD5	2	6	8/04/2016	28/04/2016	18/05/2016
+Iverson12DefoliationFD5	2014_2018	Lincoln2015	irr	LL	no	FD5	2	7	8/04/2016	28/04/2016	18/05/2016
+Iverson12DefoliationFD5	2014_2018	Lincoln2015	irr	LL	no	FD5	3	1	26/08/2016	16/09/2016	7/10/2016
+Iverson12DefoliationFD5	2014_2018	Lincoln2015	irr	LL	no	FD5	3	2	8/10/2016	31/10/2016	24/11/2016
+Iverson12DefoliationFD5	2014_2018	Lincoln2015	irr	LL	no	FD5	3	3	25/11/2016	25/12/2016	25/01/2017
+Iverson12DefoliationFD5	2014_2018	Lincoln2015	irr	LL	no	FD5	3	4	26/01/2017	17/02/2017	12/03/2017
+Iverson12DefoliationFD5	2014_2018	Lincoln2015	irr	LL	no	FD5	3	5	13/03/2017	10/04/2017	9/05/2017
+Iverson12DefoliationFD5	2014_2018	Lincoln2015	irr	LL	no	FD5	3	6	10/05/2017	12/06/2017	16/07/2017
+Iverson12DefoliationFD5	2014_2018	Lincoln2015	irr	LL	no	FD5	3	7	17/07/2017	10/08/2017	3/09/2017
+Iverson12DefoliationFD5	2014_2018	Lincoln2015	irr	LL	no	FD5	4	1	4/09/2017	26/09/2017	18/10/2017
+Iverson12DefoliationFD5	2014_2018	Lincoln2015	irr	LL	no	FD5	4	2	19/10/2017	10/11/2017	3/12/2017
+Iverson12DefoliationFD5	2014_2018	Lincoln2015	irr	LL	no	FD5	4	3	4/12/2017	25/12/2017	16/01/2018
+Iverson12DefoliationFD2	2014_2018	Lincoln2015	irr	LL	no	FD2	1	1	30/01/2015	19/02/2015	11/03/2015
+Iverson12DefoliationFD2	2014_2018	Lincoln2015	irr	LL	no	FD2	1	2	12/03/2015	3/04/2015	26/04/2015
+Iverson12DefoliationFD2	2014_2018	Lincoln2015	irr	LL	no	FD2	1	3	27/04/2015	19/05/2015	10/06/2015
+Iverson12DefoliationFD2	2014_2018	Lincoln2015	irr	LL	no	FD2	2	1	4/09/2015	27/09/2015	21/10/2015
+Iverson12DefoliationFD2	2014_2018	Lincoln2015	irr	LL	no	FD2	2	2	22/10/2015	14/11/2015	8/12/2015
+Iverson12DefoliationFD2	2014_2018	Lincoln2015	irr	LL	no	FD2	2	3	9/12/2015	26/12/2015	13/01/2016
+Iverson12DefoliationFD2	2014_2018	Lincoln2015	irr	LL	no	FD2	2	4	14/01/2016	4/02/2016	25/02/2016
+Iverson12DefoliationFD2	2014_2018	Lincoln2015	irr	LL	no	FD2	2	5	26/02/2016	17/03/2016	7/04/2016
+Iverson12DefoliationFD2	2014_2018	Lincoln2015	irr	LL	no	FD2	2	6	8/04/2016	28/04/2016	18/05/2016
+Iverson12DefoliationFD2	2014_2018	Lincoln2015	irr	LL	no	FD2	2	7	8/04/2016	28/04/2016	18/05/2016
+Iverson12DefoliationFD2	2014_2018	Lincoln2015	irr	LL	no	FD2	3	1	26/08/2016	16/09/2016	7/10/2016
+Iverson12DefoliationFD2	2014_2018	Lincoln2015	irr	LL	no	FD2	3	2	8/10/2016	31/10/2016	24/11/2016
+Iverson12DefoliationFD2	2014_2018	Lincoln2015	irr	LL	no	FD2	3	3	25/11/2016	25/12/2016	25/01/2017
+Iverson12DefoliationFD2	2014_2018	Lincoln2015	irr	LL	no	FD2	3	4	26/01/2017	17/02/2017	12/03/2017
+Iverson12DefoliationFD2	2014_2018	Lincoln2015	irr	LL	no	FD2	3	5	13/03/2017	10/04/2017	9/05/2017
+Iverson12DefoliationFD2	2014_2018	Lincoln2015	irr	LL	no	FD2	3	6	10/05/2017	12/06/2017	16/07/2017
+Iverson12DefoliationFD2	2014_2018	Lincoln2015	irr	LL	no	FD2	3	7	17/07/2017	10/08/2017	3/09/2017
+Iverson12DefoliationFD2	2014_2018	Lincoln2015	irr	LL	no	FD2	4	1	4/09/2017	26/09/2017	18/10/2017
+Iverson12DefoliationFD2	2014_2018	Lincoln2015	irr	LL	no	FD2	4	2	19/10/2017	10/11/2017	3/12/2017
+Iverson12DefoliationFD2	2014_2018	Lincoln2015	irr	LL	no	FD2	4	3	4/12/2017	25/12/2017	16/01/2018
+Iversen_91DefoliationLS	2002_2004	Lincoln2002	irr	LS	No	FD5	1	1	14/06/2002	9/08/2002	5/10/2002
+Iversen_91DefoliationLS	2002_2004	Lincoln2002	irr	LS	No	FD5	1	2	6/10/2002	26/10/2002	16/11/2002
+Iversen_91DefoliationLS	2002_2004	Lincoln2002	irr	LS	No	FD5	1	3	17/11/2002	7/12/2002	27/12/2002
+Iversen_91DefoliationLS	2002_2004	Lincoln2002	irr	LS	No	FD5	1	4	28/12/2002	19/01/2003	10/02/2003
+Iversen_91DefoliationLS	2002_2004	Lincoln2002	irr	LS	No	FD5	1	5	11/02/2003	23/02/2003	7/03/2003
+Iversen_91DefoliationLS	2002_2004	Lincoln2002	irr	LS	No	FD5	1	6	8/03/2003	21/03/2003	4/04/2003
+Iversen_91DefoliationLS	2002_2004	Lincoln2002	irr	LS	No	FD5	1	7	5/04/2003	19/04/2003	12/06/2003
+Iversen_91DefoliationLS	2002_2004	Lincoln2002	irr	LS	No	FD5	2	1	13/06/2003	9/08/2003	5/10/2003
+Iversen_91DefoliationLS	2002_2004	Lincoln2002	irr	LS	No	FD5	2	2	6/10/2003	24/10/2003	12/11/2003
+Iversen_91DefoliationLS	2002_2004	Lincoln2002	irr	LS	No	FD5	2	3	13/11/2003	5/12/2003	28/12/2003
+Iversen_91DefoliationLS	2002_2004	Lincoln2002	irr	LS	No	FD5	2	4	29/12/2003	18/01/2004	7/02/2004
+Iversen_91DefoliationLS	2002_2004	Lincoln2002	irr	LS	No	FD5	2	5	8/02/2004	21/02/2004	6/03/2004
+Iversen_91DefoliationLS	2002_2004	Lincoln2002	irr	LS	No	FD5	2	6	7/03/2004	20/03/2004	3/04/2004
+Iversen_91DefoliationLS	2002_2004	Lincoln2002	irr	LS	No	FD5	2	7	4/04/2004	18/04/2004	2/05/2004
+Iversen_91DefoliationLS	2002_2004	Lincoln2002	irr	LS	No	FD5	2	8	3/05/2004	22/05/2004	11/06/2004
+Iversen_91DefoliationLS	2002_2004	Lincoln2002	irr	LS	No	FD5	3	1	12/06/2004	7/08/2004	3/10/2004
+Iversen_91DefoliationSL	2002_2004	Lincoln2002	irr	SL	No	FD5	1	1	14/06/2002	1/08/2002	19/09/2002
+Iversen_91DefoliationSL	2002_2004	Lincoln2002	irr	SL	No	FD5	1	2	20/09/2002	3/10/2002	17/10/2002
+Iversen_91DefoliationSL	2002_2004	Lincoln2002	irr	SL	No	FD5	1	3	18/10/2002	31/10/2002	13/11/2002
+Iversen_91DefoliationSL	2002_2004	Lincoln2002	irr	SL	No	FD5	1	4	14/11/2002	27/11/2002	11/12/2002
+Iversen_91DefoliationSL	2002_2004	Lincoln2002	irr	SL	No	FD5	1	5	12/12/2002	25/12/2002	8/01/2003
+Iversen_91DefoliationSL	2002_2004	Lincoln2002	irr	SL	No	FD5	1	6	9/01/2003	25/01/2003	10/02/2003
+Iversen_91DefoliationSL	2002_2004	Lincoln2002	irr	SL	No	FD5	1	7	11/02/2003	2/03/2003	22/03/2003
+Iversen_91DefoliationSL	2002_2004	Lincoln2002	irr	SL	No	FD5	1	8	23/03/2003	13/04/2003	4/05/2003
+Iversen_91DefoliationSL	2002_2004	Lincoln2002	irr	SL	No	FD5	1	9	5/05/2003	24/05/2003	12/06/2003
+Iversen_91DefoliationSL	2002_2004	Lincoln2002	irr	SL	No	FD5	2	1	13/06/2003	31/07/2003	17/09/2003
+Iversen_91DefoliationSL	2002_2004	Lincoln2002	irr	SL	No	FD5	2	2	18/09/2003	3/10/2003	18/10/2003
+Iversen_91DefoliationSL	2002_2004	Lincoln2002	irr	SL	No	FD5	2	3	19/10/2003	31/10/2003	12/11/2003
+Iversen_91DefoliationSL	2002_2004	Lincoln2002	irr	SL	No	FD5	2	4	13/11/2003	27/11/2003	12/12/2003
+Iversen_91DefoliationSL	2002_2004	Lincoln2002	irr	SL	No	FD5	2	5	13/12/2003	25/12/2003	7/01/2004
+Iversen_91DefoliationSL	2002_2004	Lincoln2002	irr	SL	No	FD5	2	6	8/01/2004	23/01/2004	7/02/2004
+Iversen_91DefoliationSL	2002_2004	Lincoln2002	irr	SL	No	FD5	2	7	8/02/2004	28/02/2004	19/03/2004
+Iversen_91DefoliationSL	2002_2004	Lincoln2002	irr	SL	No	FD5	2	8	20/03/2004	10/04/2004	2/05/2004
+Iversen_91DefoliationSL	2002_2004	Lincoln2002	irr	SL	No	FD5	2	9	3/05/2004	22/05/2004	11/06/2004
+Iversen_91DefoliationSL	2002_2004	Lincoln2002	irr	SL	No	FD5	3	1	12/06/2004	7/08/2004	3/10/2004
+Iversen_91DefoliationSS	2002_2004	Lincoln2002	irr	SS	No	FD5	1	1	14/06/2002	29/07/2002	13/09/2002
+Iversen_91DefoliationSS	2002_2004	Lincoln2002	irr	SS	No	FD5	1	2	14/09/2002	28/09/2002	13/10/2002
+Iversen_91DefoliationSS	2002_2004	Lincoln2002	irr	SS	No	FD5	1	3	14/10/2002	26/10/2002	8/11/2002
+Iversen_91DefoliationSS	2002_2004	Lincoln2002	irr	SS	No	FD5	1	4	9/11/2002	22/11/2002	6/12/2002
+Iversen_91DefoliationSS	2002_2004	Lincoln2002	irr	SS	No	FD5	1	5	7/12/2002	20/12/2002	3/01/2003
+Iversen_91DefoliationSS	2002_2004	Lincoln2002	irr	SS	No	FD5	1	6	4/01/2003	20/01/2003	5/02/2003
+Iversen_91DefoliationSS	2002_2004	Lincoln2002	irr	SS	No	FD5	1	7	6/02/2003	18/02/2003	6/03/2003
+Iversen_91DefoliationSS	2002_2004	Lincoln2002	irr	SS	No	FD5	1	8	7/03/2003	17/03/2003	3/04/2003
+Iversen_91DefoliationSS	2002_2004	Lincoln2002	irr	SS	No	FD5	1	9	4/04/2003	16/04/2003	2/05/2003
+Iversen_91DefoliationSS	2002_2004	Lincoln2002	irr	SS	No	FD5	1	10	3/05/2003	22/05/2003	12/06/2003
+Iversen_91DefoliationSS	2002_2004	Lincoln2002	irr	SS	No	FD5	2	1	13/06/2003	28/07/2003	17/09/2003
+Iversen_91DefoliationSS	2002_2004	Lincoln2002	irr	SS	No	FD5	2	2	18/09/2003	29/09/2003	15/10/2003
+Iversen_91DefoliationSS	2002_2004	Lincoln2002	irr	SS	No	FD5	2	3	16/10/2003	29/10/2003	11/11/2003
+Iversen_91DefoliationSS	2002_2004	Lincoln2002	irr	SS	No	FD5	2	4	12/11/2003	26/11/2003	11/12/2003
+Iversen_91DefoliationSS	2002_2004	Lincoln2002	irr	SS	No	FD5	2	5	12/12/2003	23/12/2003	3/01/2004
+Iversen_91DefoliationSS	2002_2004	Lincoln2002	irr	SS	No	FD5	2	6	4/01/2004	18/01/2004	2/02/2004
+Iversen_91DefoliationSS	2002_2004	Lincoln2002	irr	SS	No	FD5	2	7	3/02/2004	17/02/2004	3/03/2004
+Iversen_91DefoliationSS	2002_2004	Lincoln2002	irr	SS	No	FD5	2	8	4/03/2004	16/03/2004	31/03/2004
+Iversen_91DefoliationSS	2002_2004	Lincoln2002	irr	SS	No	FD5	2	9	1/04/2004	13/04/2004	27/04/2004
+Iversen_91DefoliationSS	2002_2004	Lincoln2002	irr	SS	No	FD5	2	10	28/04/2004	18/05/2004	9/06/2004
+Iversen_91DefoliationSS	2002_2004	Lincoln2002	irr	SS	No	FD5	3	1	10/06/2004	6/08/2004	4/10/2004
+Iverson12DeFD5	2014_2018	Lincoln2015	irr	HH	no	FD5	1	1	30/01/2015	13/03/2015	24/04/2015
+Iverson12DeFD5	2014_2018	Lincoln2015	irr	HH	no	FD5	1	2	25/04/2015	15/06/2015	6/08/2015
+Iverson12DeFD5	2014_2018	Lincoln2015	irr	HH	no	FD5	2	1	4/09/2015	17/10/2015	30/11/2015
+Iverson12DeFD5	2014_2018	Lincoln2015	irr	HH	no	FD5	2	2	3/12/2015	13/01/2016	23/02/2016
+Iverson12DeFD5	2014_2018	Lincoln2015	irr	HH	no	FD5	2	3	26/02/2016	5/04/2016	14/05/2016
+Iverson12DeFD5	2014_2018	Lincoln2015	irr	HH	no	FD5	3	1	12/07/2016	22/08/2016	3/10/2016
+Iverson12DeFD5	2014_2018	Lincoln2015	irr	HH	no	FD5	3	2	15/10/2016	28/11/2016	11/01/2017
+Iverson12DeFD5	2014_2018	Lincoln2015	irr	HH	no	FD5	3	3	26/01/2017	9/03/2017	20/04/2017
+Iverson12DeFD5	2014_2018	Lincoln2015	irr	HH	no	FD5	3	4	11/05/2017	10/06/2017	11/07/2017
+Iverson12DeFD5	2014_2018	Lincoln2015	irr	HH	no	FD5	4	1	17/07/2017	30/08/2017	13/10/2017
+Iverson12DeFD5	2014_2018	Lincoln2015	irr	HH	no	FD5	4	2	19/10/2017	2/12/2017	15/01/2018
+Iverson12DeFD2	2014_2018	Lincoln2015	irr	HH	no	FD2	1	1	30/01/2015	13/03/2015	24/04/2015
+Iverson12DeFD2	2014_2018	Lincoln2015	irr	HH	no	FD2	1	2	25/04/2015	15/06/2015	6/08/2015
+Iverson12DeFD2	2014_2018	Lincoln2015	irr	HH	no	FD2	2	1	4/09/2015	17/10/2015	30/11/2015
+Iverson12DeFD2	2014_2018	Lincoln2015	irr	HH	no	FD2	2	2	3/12/2015	13/01/2016	23/02/2016
+Iverson12DeFD2	2014_2018	Lincoln2015	irr	HH	no	FD2	2	3	26/02/2016	5/04/2016	14/05/2016
+Iverson12DeFD2	2014_2018	Lincoln2015	irr	HH	no	FD2	3	1	12/07/2016	22/08/2016	3/10/2016
+Iverson12DeFD2	2014_2018	Lincoln2015	irr	HH	no	FD2	3	2	15/10/2016	28/11/2016	11/01/2017
+Iverson12DeFD2	2014_2018	Lincoln2015	irr	HH	no	FD2	3	3	26/01/2017	9/03/2017	20/04/2017
+Iverson12DeFD2	2014_2018	Lincoln2015	irr	HH	no	FD2	3	4	11/05/2017	10/06/2017	11/07/2017
+Iverson12DeFD2	2014_2018	Lincoln2015	irr	HH	no	FD2	4	1	17/07/2017	30/08/2017	13/10/2017
+Iverson12DeFD2	2014_2018	Lincoln2015	irr	HH	no	FD2	4	2	19/10/2017	2/12/2017	15/01/2018
+Iverson12DeFD10	2014_2018	Lincoln2015	irr	HH	no	FD10	1	1	30/01/2015	13/03/2015	24/04/2015
+Iverson12DeFD10	2014_2018	Lincoln2015	irr	HH	no	FD10	1	2	25/04/2015	15/06/2015	6/08/2015
+Iverson12DeFD10	2014_2018	Lincoln2015	irr	HH	no	FD10	2	1	4/09/2015	17/10/2015	30/11/2015
+Iverson12DeFD10	2014_2018	Lincoln2015	irr	HH	no	FD10	2	2	3/12/2015	13/01/2016	23/02/2016
+Iverson12DeFD10	2014_2018	Lincoln2015	irr	HH	no	FD10	2	3	26/02/2016	5/04/2016	14/05/2016
+Iverson12DeFD10	2014_2018	Lincoln2015	irr	HH	no	FD10	3	1	12/07/2016	22/08/2016	3/10/2016
+Iverson12DeFD10	2014_2018	Lincoln2015	irr	HH	no	FD10	3	2	15/10/2016	28/11/2016	11/01/2017
+Iverson12DeFD10	2014_2018	Lincoln2015	irr	HH	no	FD10	3	3	26/01/2017	9/03/2017	20/04/2017
+Iverson12DeFD10	2014_2018	Lincoln2015	irr	HH	no	FD10	3	4	11/05/2017	10/06/2017	11/07/2017
+Iverson12DeFD10	2014_2018	Lincoln2015	irr	HH	no	FD10	4	1	17/07/2017	30/08/2017	13/10/2017
+Iverson12DeFD10	2014_2018	Lincoln2015	irr	HH	no	FD10	4	2	19/10/2017	2/12/2017	15/01/2018
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+											
+Iverson12DeFD5	2014_2018	Lincoln2015	irr	HH	no	FD5	4	2	19/10/2017	2/12/2017	15/01/2018

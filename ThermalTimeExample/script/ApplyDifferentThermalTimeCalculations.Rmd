@@ -1,0 +1,334 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+# Example script to test how to implement various Tt calculations
+
+```{r Load, warning=FALSE, fig.height=8, fig.width=8}
+# install.packages("zoo")
+library(dplyr)
+library(ggplot2)
+library(lubridate)   
+library(hydroGOF)
+library(xtable)
+library(knitr)
+library(tidyr)
+library(RSQLite)
+library(agricolae)
+library(scales)
+library(zoo)
+```
+
+# get raw data
+
+```{r}
+upDir <- "C:/GitHubRepos/2017_LucerneXiumei/"
+obsData <- "LucerneModelling/ThermalTimeExample/data/"
+
+
+ExpList_raw<- read.table(paste0(upDir,obsData, "ExperimentList.txt"),
+                       header = TRUE)
+summary(ExpList_raw)
+```
+
+## Tidy up and clean up data
+
+```{r}
+ExpList_worked <- ExpList_raw %>%
+  mutate(StartDate=dmy(StartDate),MidDate=dmy(MidDate),FinishDate=dmy(FinishDate)) %>%
+  mutate(SowingDate=as.factor(ifelse(SowingDate=="no","Sd_No",paste0("Sd_",SowingDate)))) %>% # assume this is typo to be fixed?
+  mutate(GrowthSeason=as.factor(paste0("Gs_",GrowthSeason))) %>% # creating more intuitive labels here
+  mutate(Rotation=as.factor(paste0("Rt_",Rotation))) %>%
+  mutate(ExpUnitCode=as.factor(paste0(Experiment,Water,Defoliation,SowingDate,FD,GrowthSeason,Rotation))) 
+
+  
+summary(ExpList_worked)
+```
+
+### Get met files
+
+```{r}
+MetLincoln_raw<- read.table(paste0(upDir,obsData,"Lincolnmet.txt"),
+                       header = TRUE)
+
+MetLincoln_worked <- MetLincoln_raw %>%
+  mutate(Clock.Today=dmy(Clock.Today))
+
+summary(MetLincoln_worked)
+
+```
+
+## Define functions to calculate Thermel-time
+
+### Method 1: simple Tt with fixed Tb (not for use in your project)
+
+- for testing script only
+- ... and show how to set functions
+
+Describe method 1
+
+```{r}
+
+# Set a fixed base temperature
+TB <- 5
+
+# Tt calc method 1
+ttBaby <- function(tn,tx, tb){
+  
+  # test if Tn is < Tx as robustness
+  if(tn>tx) {
+    print("Minimum temp > max temp")
+    break
+    }
+  
+  ta <- (tn+tx)*0.5
+  
+  return(max(0,ta-tb))
+  
+}
+
+# Test it
+
+TN<- 10
+TX<- 20
+TB<- 5
+
+ttBaby(TN,TX,TB) # should give 10 as result
+
+```
+
+### Method 2: we_beta function 
+
+Describe method 2
+
+```{r}
+
+  we_beta <- function(temp_input, t_min, t_opt, t_max, t_ref = t_opt) {  
+
+   # temp_input <- maxt_weight * maxt + (1 - maxt_weight) * mint
+   
+    res <- ifelse ((temp_input > t_min) & (temp_input < t_max),
+    {
+        a <- log(2.0) / log((t_max - t_min) / (t_opt - t_min))
+        
+        refeff <- t_opt * (2 * ((temp_input - t_min)^a) * ((t_opt - t_min)^a) -
+                               ((temp_input - t_min) ^ (2 * a))) / ((t_opt - t_min) ^ (2 * a))
+        
+        a <- log(2.0) / log((t_max - t_min) / (t_opt - t_min))
+        
+        refefft <- t_opt * (2 * ((t_ref - t_min)^a) * ((t_opt - t_min)^a) -
+                                ((t_ref - t_min) ^ (2 * a))) / ((t_opt - t_min) ^ (2 * a))
+        refeff / refefft
+    }, 0)
+
+    return (res)
+  }
+
+# test it
+betaParam <- c(2,30,40) # temperatures 
+we_beta(30,betaParam[1],betaParam[2],betaParam[3])
+
+
+#####################################################################################
+
+# TT calculation using beta function
+
+TTfunc_beta <- function(Tmin ,Tmax, bp){         
+ 
+  if (Tmin>Tmax){
+   print("Tmin>Tmax")
+   break
+  } 
+  
+#  Topt <- 30
+  TTav <- 0
+  TTsum <- 0
+  
+  for(n in 1:8){ 
+    
+    tn <- 0
+    
+    TT_tn <- 0
+    
+    tn <- ((0.931 +  0.114*n - 0.0703 * n^2
+            + 0.0053 * n^3) * (Tmax-Tmin)) + Tmin # 8-h temperature
+    
+    TT_tn <- we_beta(tn,bp[1],bp[2],bp[3]) * tn 
+    TTsum <- max(TT_tn,0) + TTsum
+    
+ #   print(TT_tn)
+    
+    }
+  TTav <- TTsum/8
+  
+  return(TTav)
+}
+
+# test beta
+TTfunc_beta(5,20,betaParam)
+```
+
+## Method 3: broken stick function 
+
+Based on: APSIM from Jones CA, Ritchie JT, Kiniry JR, Godwin DC (1986) Subroutine structure.In 'CERES-Maize: A simulation model of maize growth anddevelopment'. (Eds CA Jones, JR Kiniry) pp. 49-194. (Texas A&M University Press: Texas, USA
+
+```{r}
+
+# Create a TT linear interpolation function
+
+# Aim: Interpolates linearly between two known x-y pairs
+
+int_func <- function(temp,TT,temp_ref){
+
+# if temp is too low or too high give extreme TT values
+ if(temp_ref>temp[length(temp)]) {
+   
+   out <- TT[length(TT)] 
+   
+ } else if (temp_ref<temp[1]) {
+   
+   out <- TT[1]
+   
+ } else {
+   
+# else interpolate
+   
+   tryCatch(  
+   
+  out <- approx(temp, TT, xout = temp_ref, 
+         method="linear", 
+         rule = 2)$y,
+  error = function(e) 
+  {
+  out <- NA
+  }
+) 
+  
+} # end if check
+
+  return(out)  
+  
+ }
+  
+
+# Test and test interpolation function 
+
+# Set an input cardinal temperature df
+tt_card <- data.frame(x_ref=c(1.0,  5.0,  10,  15,  30,  40),
+                      y_ref=c(0.0,  3.0,  6.5, 10,  25,  0.0))
+
+temp_ref  <- 25 # random input x-axes value to test
+temp <- tt_card$x_ref # x-axes
+TT <- tt_card$y_ref # y-axes
+
+int_func(temp,TT,temp_ref) # result must be 20
+
+####################################################################################
+
+# Create TT calculation based on broken-stick
+# that uses the interpolation function
+# Aim: Finds thermal-time in between any given broken-stick cardinal temperature set
+
+TTfunc <- function(Tmin ,Tmax, tt_card){ # Tmin and Tmax are numeric, tt_card is data.frame         
+ 
+  if (Tmin>Tmax){
+   print("Tmin>Tmax")
+   break
+ } 
+  
+  TTav  <- 0
+  TTsum <- 0
+  
+  perPerDay <- 8 # how many periods per day - hardwired param here
+  
+  # break 24 h into 8 periods of 3 h
+  for(n in 1:perPerDay){ 
+    
+    tn <- 0 # temperature at period n (x axes)
+    
+    TT_tn <- 0 # thermal-time at period n (y axes)
+    
+    tn <- ((0.931 +  0.114*n - 0.0703 * n^2
+            + 0.0053 * n^3) * (Tmax-Tmin)) + 
+      Tmin # 8-h temperature
+    
+    TT_tn <- int_func(tt_card$x_ref, tt_card$y_ref,tn) # finds TT (y axes) for a given temperature (x axes) at period n
+    
+    TTsum <- max(TT_tn,0) + TTsum
+    
+ #   print(TT_tn)
+    
+    }
+
+  TTav <- TTsum/perPerDay
+  
+  return(TTav)
+  }
+
+# test thermal-time function
+TTfunc(10,30, tt_card) # result must be 15.47005
+
+```
+
+## Apply different Tt methods
+
+- Segment datasets in individual rotations
+- Apply all methdos to calculate Tt
+- Calculate Tt sums for each method
+
+```{r}
+
+# add function to "turn-off" rowise() in dplyr. FIXME: maybe there's a better/simpler solution?
+ungroup.rowwise_df <- function(x) {
+  class(x) <- c( "tbl_df", "data.frame")
+  x
+}
+
+UniExp <- unique(ExpList_worked$ExpUnitCode)
+
+df.all <- data.frame()
+
+for(i in 1:length(UniExp))
+{
+
+ # print(i)
+  
+ Exp.sub <- ExpList_worked %>%
+   filter(ExpUnitCode==UniExp[i]) %>% 
+   unique() # FIXME: There are duplicated entries that cause it to break (unique as a quick fix only - clear input raw data)
+  
+ StDate <- ymd(Exp.sub$StartDate)
+ EndDate <- ymd(Exp.sub$FinishDate)
+  
+Met.sub<-MetLincoln_worked %>%
+  filter(between(Clock.Today,StDate,EndDate))
+
+tt.df <- Met.sub %>% 
+  rowwise() %>%
+  mutate(ExpName=Exp.sub$ExpUnitCode, 
+         Experiment=Exp.sub$Experiment,
+         Water=Exp.sub$Water,
+         Defoliation=Exp.sub$Defoliation,
+         SowingDate=Exp.sub$SowingDate,
+         FD=Exp.sub$FD,
+         GrowthSeason=Exp.sub$GrowthSeason,
+         Rotation=Exp.sub$Rotation,
+         Tt_baby = ttBaby(mint,maxt,5), # method 1
+         Tt_broken = TTfunc(mint,maxt,tt_card), # method 2 - note that each method requires different parameters
+         Tt_beta = TTfunc_beta(5,20,betaParam)
+         ) %>%
+         ungroup.rowwise_df() %>%
+         mutate(Tt_baby_sum=cumsum(Tt_baby), # sum of method 1 ... and so on
+         Tt_broken_sum = cumsum(cumsum(Tt_broken)),
+         Tt_beta_sum = cumsum(cumsum(Tt_beta))  
+                ) 
+
+ df.all <- rbind(df.all,tt.df)
+
+}
+
+summary(df.all)
+
+```
+
