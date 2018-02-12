@@ -23,13 +23,14 @@ library(zoo)
 # get raw data
 
 ```{r}
-upDir <- "C:/GitHubRepos/2017_LucerneXiumei/"
-obsData <- "LucerneModelling/ThermalTimeExample/data/"
+upDir <- "D:/R/"
+obsData <- "D:/R/"
 
-
-ExpList_raw<- read.table(paste0(upDir,obsData, "ExperimentList.txt"),
+ExpList_raw<- read.table(paste0(obsData, "ExperimentList.txt"),
                        header = TRUE)
 summary(ExpList_raw)
+ExpList_raw
+
 ```
 
 ## Tidy up and clean up data
@@ -49,7 +50,12 @@ summary(ExpList_worked)
 ### Get met files
 
 ```{r}
-MetLincoln_raw<- read.table(paste0(upDir,obsData,"Lincolnmet.txt"),
+
+upDir <- "D:/R/"
+obsData <- "D:/R/"
+
+
+MetLincoln_raw<- read.table(paste0(obsData,"Lincolnmet.txt"),
                        header = TRUE)
 
 MetLincoln_worked <- MetLincoln_raw %>%
@@ -90,11 +96,12 @@ ttBaby <- function(tn,tx, tb){
 
 # Test it
 
-TN<- 10
-TX<- 20
+TN<- -10
+TX<- 0
 TB<- 5
 
 ttBaby(TN,TX,TB) # should give 10 as result
+
 
 ```
 
@@ -126,8 +133,16 @@ Describe method 2
   }
 
 # test it
-betaParam <- c(2,30,40) # temperatures 
-we_beta(30,betaParam[1],betaParam[2],betaParam[3])
+#betaParam <- c(i,30,40) # temperatures 
+
+for(i in 0:5){
+  
+  betaParam<- c(i,30,40)
+  
+  x<-we_beta(15,betaParam[1],betaParam[2],betaParam[3])
+  print(x)
+}
+
 
 
 #####################################################################################
@@ -165,9 +180,45 @@ TTfunc_beta <- function(Tmin ,Tmax, bp){
   return(TTav)
 }
 
-# test beta
+# test TT function
 TTfunc_beta(5,20,betaParam)
+
+TTbeta<-MetLincoln_worked %>%
+  rowwise() %>%
+  mutate(TTbeta=TTfunc_beta(mint,maxt,betaParam))
+TTbeta
+#testing change parameters value
+
+df_all_tb<-data.frame()
+
+for(i in 0:5){
+  
+  betaParam <- c(i,30,40)
+  
+  loopIndex<-i
+  
+  df_res<-MetLincoln_worked %>%
+  mutate(Tb=loopIndex) %>%
+  rowwise() %>%
+  mutate(TTbeta=TTfunc_beta(mint,maxt,betaParam))
+  
+  df_all_tb<-rbind(df_all_tb,df_res)
+  
+}
+
+summary(df_all_tb)
+df_all_tb
+
 ```
+```{r}
+#test
+MetLincoln<-MetLincoln_worked%>%
+  mutate(Dif=maxt-mint)%>%
+  filter(Dif<0)
+MetLincoln
+```
+
+
 
 ## Method 3: broken stick function 
 
@@ -217,6 +268,10 @@ int_func <- function(temp,TT,temp_ref){
 # Set an input cardinal temperature df
 tt_card <- data.frame(x_ref=c(1.0,  5.0,  10,  15,  30,  40),
                       y_ref=c(0.0,  3.0,  6.5, 10,  25,  0.0))
+tt_card2 <- data.frame(temp=c(2.0, 15,  30,  40),
+                      TT=c(0.0, 10, 25,  0.0))
+tt_card3 <- data.frame(temp=c(3.0, 15,  30,  40),
+                      TT=c(0.0, 10, 25,  0.0))
 
 temp_ref  <- 25 # random input x-axes value to test
 temp <- tt_card$x_ref # x-axes
@@ -230,7 +285,7 @@ int_func(temp,TT,temp_ref) # result must be 20
 # that uses the interpolation function
 # Aim: Finds thermal-time in between any given broken-stick cardinal temperature set
 
-TTfunc <- function(Tmin ,Tmax, tt_card){ # Tmin and Tmax are numeric, tt_card is data.frame         
+TTfunc_broken <- function(Tmin ,Tmax, tt_card){ # Tmin and Tmax are numeric, tt_card is data.frame         
  
   if (Tmin>Tmax){
    print("Tmin>Tmax")
@@ -267,7 +322,7 @@ TTfunc <- function(Tmin ,Tmax, tt_card){ # Tmin and Tmax are numeric, tt_card is
   }
 
 # test thermal-time function
-TTfunc(10,30, tt_card) # result must be 15.47005
+TTfunc_broken(10,30, tt_card) # result must be 15.47005
 
 ```
 
@@ -295,8 +350,7 @@ for(i in 1:length(UniExp))
  # print(i)
   
  Exp.sub <- ExpList_worked %>%
-   filter(ExpUnitCode==UniExp[i]) %>% 
-   unique() # FIXME: There are duplicated entries that cause it to break (unique as a quick fix only - clear input raw data)
+   filter(ExpUnitCode==UniExp[i]) 
   
  StDate <- ymd(Exp.sub$StartDate)
  EndDate <- ymd(Exp.sub$FinishDate)
@@ -315,7 +369,7 @@ tt.df <- Met.sub %>%
          GrowthSeason=Exp.sub$GrowthSeason,
          Rotation=Exp.sub$Rotation,
          Tt_baby = ttBaby(mint,maxt,5), # method 1
-         Tt_broken = TTfunc(mint,maxt,tt_card), # method 2 - note that each method requires different parameters
+         Tt_broken = TTfunc_broken(mint,maxt,tt_card), # method 2 - note that each method requires different parameters
          Tt_beta = TTfunc_beta(5,20,betaParam)
          ) %>%
          ungroup.rowwise_df() %>%
@@ -329,6 +383,7 @@ tt.df <- Met.sub %>%
 }
 
 summary(df.all)
+df.all
 
 ```
 
