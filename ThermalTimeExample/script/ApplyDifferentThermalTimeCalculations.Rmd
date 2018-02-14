@@ -59,7 +59,8 @@ MetLincoln_raw<- read.table(paste0(obsData,"Lincolnmet.txt"),
                        header = TRUE)
 
 MetLincoln_worked <- MetLincoln_raw %>%
-  mutate(Clock.Today=dmy(Clock.Today))
+  mutate(Clock.Today=dmy(Clock.Today))%>%
+  filter(Clock.Today>="1996-01-01")
 
 summary(MetLincoln_worked)
 
@@ -135,13 +136,13 @@ Describe method 2
 # test it
 #betaParam <- c(i,30,40) # temperatures 
 
-for(i in 0:5){
-  
-  betaParam<- c(i,30,40)
-  
-  x<-we_beta(15,betaParam[1],betaParam[2],betaParam[3])
-  print(x)
-}
+# for(i in 0:5){
+#   
+#   betaParam<- c(i,30,40)
+#   
+#   x<-we_beta(15,betaParam[1],betaParam[2],betaParam[3])
+#   print(x)
+# }
 
 
 
@@ -180,18 +181,18 @@ TTfunc_beta <- function(Tmin ,Tmax, bp){
   return(TTav)
 }
 
-# test TT function
-TTfunc_beta(5,20,betaParam)
-
-TTbeta<-MetLincoln_worked %>%
-  rowwise() %>%
-  mutate(TTbeta=TTfunc_beta(mint,maxt,betaParam))
-TTbeta
+# # test TT function
+# TTfunc_beta(5,20,betaParam)
+# 
+# TTbeta<-MetLincoln_worked %>%
+#   rowwise() %>%
+#   mutate(TTbeta=TTfunc_beta(mint,maxt,betaParam))
+# TTbeta
 #testing change parameters value
 
 df_all_tb<-data.frame()
 
-for(i in 0:5){
+for(i in 1:5){
   
   betaParam <- c(i,30,40)
   
@@ -205,9 +206,8 @@ for(i in 0:5){
   df_all_tb<-rbind(df_all_tb,df_res)
   
 }
-
-summary(df_all_tb)
 df_all_tb
+write.csv(df_all_tb,"D:/R/TtAll/df_all_tb.csv", row.names = FALSE)
 
 ```
 ```{r}
@@ -220,7 +220,7 @@ MetLincoln
 
 
 
-## Method 3: broken stick function 
+## Method 3: broken stick and fick function 
 
 Based on: APSIM from Jones CA, Ritchie JT, Kiniry JR, Godwin DC (1986) Subroutine structure.In 'CERES-Maize: A simulation model of maize growth anddevelopment'. (Eds CA Jones, JR Kiniry) pp. 49-194. (Texas A&M University Press: Texas, USA
 
@@ -268,10 +268,6 @@ int_func <- function(temp,TT,temp_ref){
 # Set an input cardinal temperature df
 tt_card <- data.frame(x_ref=c(1.0,  5.0,  10,  15,  30,  40),
                       y_ref=c(0.0,  3.0,  6.5, 10,  25,  0.0))
-tt_card2 <- data.frame(temp=c(2.0, 15,  30,  40),
-                      TT=c(0.0, 10, 25,  0.0))
-tt_card3 <- data.frame(temp=c(3.0, 15,  30,  40),
-                      TT=c(0.0, 10, 25,  0.0))
 
 temp_ref  <- 25 # random input x-axes value to test
 temp <- tt_card$x_ref # x-axes
@@ -322,9 +318,83 @@ TTfunc_broken <- function(Tmin ,Tmax, tt_card){ # Tmin and Tmax are numeric, tt_
   }
 
 # test thermal-time function
-TTfunc_broken(10,30, tt_card) # result must be 15.47005
+# TTfunc_broken(10,30, tt_card) # result must be 15.47005
+# TTbroken<-MetLincoln_worked %>%
+#  rowwise() %>%
+#  mutate(TTbroken=TTfunc_broken(mint,maxt,tt_card))
+#  TTbroken
+ ###########################################################
+ df_all_broken<-data.frame()
+
+for(i in 1:5){
+  
+  tt_card <- data.frame(x_ref=c(i, 15,  30,  40),
+                        y_ref=c(0.0, 10,  25,  0.0))
+  
+  loopIndex<-i
+  
+  df_res_broken<-MetLincoln_worked %>%
+  mutate(Tbb=loopIndex) %>%
+  rowwise() %>%
+  mutate(TTbroken=TTfunc_broken(mint,maxt, tt_card))
+  
+  df_all_broken<-rbind(df_all_broken,df_res_broken)
+  
+}
+
+df_all_broken
+write.csv(df_all_broken,"D:/R/TtAll/df_all_broken.csv", row.names = FALSE)
+ ###########################################################
+ df_all_fick<-data.frame()
+
+for(i in 1:5){
+  
+  tt_card <- data.frame(x_ref=c(i, 30,  40),
+                        y_ref=c(0.0,  25,  0.0))
+  
+  loopIndex<-i
+  
+  df_res_fick<-MetLincoln_worked %>%
+  mutate(TbF=loopIndex) %>%
+  rowwise() %>%
+  mutate(TTfick=TTfunc_broken(mint,maxt, tt_card))
+  
+  df_all_fick<-rbind(df_all_fick,df_res_fick)
+  
+}
+
+df_all_fick
+write.csv(df_all_fick,"D:/R/TtAll/df_all_fick.csv", row.names = FALSE)
+```
+
+##combine three datasets together
+
+```{r}
+# df_Tb<- df_all_tb%>%
+#     mutate(year=factor(year),day=factor(day),rain=factor(rain),maxt=factor(maxt),mint=factor(mint),
+#     mean=factor(mean),radn=factor(radn),wind=factor(wind),vp=factor(vp),Clock.Today=dmy(Clock.Today),Pp=factor(Pp))
+#   
+# df_Tbroken<-df_all_broken %>% 
+#   mutate(year=factor(year),day=factor(day),rain=factor(rain),maxt=factor(maxt),mint=factor(mint),mean=factor(mean),radn=factor(radn),wind=factor(wind),vp=factor(vp),Clock.Today=dmy(Clock.Today),Pp=factor(Pp))
+# 
+# 
+# df_Tfick<-df_all_fick%>%
+#   mutate(year=factor(year),day=factor(day),rain=factor(rain),maxt=factor(maxt),mint=factor(mint),mean=factor(mean),radn=factor(radn),wind=factor(wind),vp=factor(vp),Clock.Today=dmy(Clock.Today),Pp=factor(Pp))
+# 
+# mergeTt<- merge(df_all_broken,df_all_fick,by=C("Clock.Today"))
+```
+
+```{r}
+upDir <- "D:/R/"
+obsData <- "D:/R/TtAll/"
+
+TtAll<- read.table(paste0(obsData, "TtAll.txt"),
+                       header = TRUE)%>%
+  mutate(Clock.Today=dmy(Clock.Today))
+TtAll
 
 ```
+
 
 ## Apply different Tt methods
 
@@ -340,9 +410,17 @@ ungroup.rowwise_df <- function(x) {
   x
 }
 
+uniTb <- unique(TtAll$Tb)
+
 UniExp <- unique(ExpList_worked$ExpUnitCode)
 
 df.all <- data.frame()
+ 
+for(i in 1:length(uniTb)){
+  
+  TtAll1 <- TtAll %>%
+  filter(Tb==uniTb[i])  
+  
 
 for(i in 1:length(UniExp))
 {
@@ -355,8 +433,9 @@ for(i in 1:length(UniExp))
  StDate <- ymd(Exp.sub$StartDate)
  EndDate <- ymd(Exp.sub$FinishDate)
   
-Met.sub<-MetLincoln_worked %>%
+Met.sub<-TtAll1 %>%
   filter(between(Clock.Today,StDate,EndDate))
+  
 
 tt.df <- Met.sub %>% 
   rowwise() %>%
@@ -367,23 +446,18 @@ tt.df <- Met.sub %>%
          SowingDate=Exp.sub$SowingDate,
          FD=Exp.sub$FD,
          GrowthSeason=Exp.sub$GrowthSeason,
-         Rotation=Exp.sub$Rotation,
-         Tt_baby = ttBaby(mint,maxt,5), # method 1
-         Tt_broken = TTfunc_broken(mint,maxt,tt_card), # method 2 - note that each method requires different parameters
-         Tt_beta = TTfunc_beta(5,20,betaParam)
-         ) %>%
-         ungroup.rowwise_df() %>%
-         mutate(Tt_baby_sum=cumsum(Tt_baby), # sum of method 1 ... and so on
-         Tt_broken_sum = cumsum(cumsum(Tt_broken)),
-         Tt_beta_sum = cumsum(cumsum(Tt_beta))  
-                ) 
-
+         Rotation=Exp.sub$Rotation) %>%
+         ungroup.rowwise_df()%>% 
+         mutate( Tt_beta_sum = cumsum(cumsum(TTbeta)),
+                  Tt_fick_sum =cumsum(cumsum(TTfick)),
+                  Tt_broken_sum= cumsum(cumsum(TTbroken)))
  df.all <- rbind(df.all,tt.df)
 
-}
+}}
 
 summary(df.all)
 df.all
+write.csv(df.all,"D:/R/TtAll/df.all.csv", row.names = FALSE)
 
 ```
 
