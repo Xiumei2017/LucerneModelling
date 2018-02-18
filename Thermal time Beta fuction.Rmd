@@ -139,8 +139,8 @@ TTfunc <- function(Tmin ,Tmax){
 ##Test
 
 ```{r}
-df2<-data.frame(mint=c(-5:60)) %>%
-  mutate(maxt=mint+5+0.2*mint)  %>%
+df2<-data.frame(mint=c(0:40)) %>%
+  mutate(maxt=mint+0.2*mint)  %>%
   rowwise() %>%
   mutate(TT=TTfunc(mint,maxt)) %>%
   mutate(Tav=((maxt+mint)*0.5)) 
@@ -149,10 +149,12 @@ summary(df2)
 
 ```
 
-```{r}
+```{r,fig.height=4, fig.width=5}
 df2 %>%
   ggplot(aes(x=Tav,y=TT)) +
-  geom_point()
+  geom_point(size=1.5)+theme_bw()+xlab("Ta(°C)")+ylab("Tt (°Cd)")+
+ theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
+ theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
 ```
 ### Tb=1
 ##create beta function
