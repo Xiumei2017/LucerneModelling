@@ -38,10 +38,10 @@ ExpList_raw
 ```{r}
 ExpList_worked <- ExpList_raw %>%
   mutate(StartDate=dmy(StartDate),MidDate=dmy(MidDate),FinishDate=dmy(FinishDate)) %>%
-  mutate(SowingDate=as.factor(ifelse(SowingDate=="no","Sd_No",paste0("Sd_",SowingDate)))) %>% # assume this is typo to be fixed?
+  #mutate(SowingDate=as.factor(ifelse(SowingDate=="no","Sd_No",paste0("Sd_",SowingDate)))) %>% # assume this is typo to be fixed?
   mutate(GrowthSeason=as.factor(paste0("Gs_",GrowthSeason))) %>% # creating more intuitive labels here
   mutate(Rotation=as.factor(paste0("Rt_",Rotation))) %>%
-  mutate(ExpUnitCode=as.factor(paste0(Experiment,Water,Defoliation,SowingDate,FD,GrowthSeason,Rotation))) 
+  mutate(ExpUnitCode=as.factor(paste0(Name,GrowthSeason,Rotation))) 
 
   
 summary(ExpList_worked)
@@ -371,8 +371,10 @@ write.csv(df_all_fick,"D:/R/TtAll/df_all_fick.csv", row.names = FALSE)
 
 ```{r}
 # df_Tb<- df_all_tb%>%
-#     mutate(year=factor(year),day=factor(day),rain=factor(rain),maxt=factor(maxt),mint=factor(mint),
-#     mean=factor(mean),radn=factor(radn),wind=factor(wind),vp=factor(vp),Clock.Today=dmy(Clock.Today),Pp=factor(Pp))
+#         mutate(year=factor(year),day=factor(day),rain=factor(rain),maxt=factor(maxt),mint=factor(mint),
+#                mean=factor(mean),radn=factor(radn),
+#                wind=factor(wind),vp=factor(vp),Clock.Today=dmy(Clock.Today),Pp=factor(Pp))
+
 #   
 # df_Tbroken<-df_all_broken %>% 
 #   mutate(year=factor(year),day=factor(day),rain=factor(rain),maxt=factor(maxt),mint=factor(mint),mean=factor(mean),radn=factor(radn),wind=factor(wind),vp=factor(vp),Clock.Today=dmy(Clock.Today),Pp=factor(Pp))
@@ -450,7 +452,8 @@ tt.df <- Met.sub %>%
          ungroup.rowwise_df()%>% 
          mutate( Tt_beta_sum = cumsum(cumsum(TTbeta)),
                   Tt_fick_sum =cumsum(cumsum(TTfick)),
-                  Tt_broken_sum= cumsum(cumsum(TTbroken)))
+                  Tt_broken_sum= cumsum(cumsum(TTbroken)))%>%
+         mutate(Ppm=mean(Pp), Tmean=mean(mean))
  df.all <- rbind(df.all,tt.df)
 
 }}
