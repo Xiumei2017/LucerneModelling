@@ -441,7 +441,7 @@ Met.sub<-TtAll1 %>%
 
 tt.df <- Met.sub %>% 
   rowwise() %>%
-  mutate(ExpName=Exp.sub$ExpUnitCode, 
+  mutate(ExpName=Exp.sub$ExpUnitCode,
          Experiment=Exp.sub$Experiment,
          Water=Exp.sub$Water,
          Defoliation=Exp.sub$Defoliation,
@@ -449,10 +449,10 @@ tt.df <- Met.sub %>%
          FD=Exp.sub$FD,
          GrowthSeason=Exp.sub$GrowthSeason,
          Rotation=Exp.sub$Rotation) %>%
-         ungroup.rowwise_df()%>% 
-         mutate( Tt_beta_sum = cumsum(cumsum(TTbeta)),
-                  Tt_fick_sum =cumsum(cumsum(TTfick)),
-                  Tt_broken_sum= cumsum(cumsum(TTbroken)))%>%
+         ungroup.rowwise_df()%>%
+         mutate( Tt_beta_sum = cumsum(TTbeta),
+                  Tt_fick_sum =cumsum(TTfick),
+                  Tt_broken_sum= cumsum(TTbroken))%>%
          mutate(Ppm=mean(Pp), Tmean=mean(mean))
  df.all <- rbind(df.all,tt.df)
 

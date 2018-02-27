@@ -18,85 +18,76 @@ library(agricolae)
 library(scales)
 library(zoo)
 ```
-# ### merge all the Obs data
-# ```{r}
-# obsT3<-rbind(obsI91LS3,obsI91LL3,obsI9SD13,obsI9SD23,obsI9SD33,obsI9SD43,obsI83,obsI12D42FD5)
-# write.csv(obsT3,"D:/R/TmeanRotation/obsTt3.csv",row.names = FALSE)
-# obsT3
-## lode observed data
-### merge all the Obs data
+# ### load obs data
 ```{r}
 upDir <- "D:/R/CombinedData/"
 obsData <- "D:/R/CombinedData/"
 
-obsI91LL3<- read.table(paste0(obsData, "obsI91LL3.txt"),
-                       header = TRUE)
-
-obsI9SD13<-read.table(paste0(obsData, "obsI9SD13.txt"),
-                      header = TRUE)
-obsI9SD23<-read.table(paste0(obsData, "obsI9SD23.txt"),
-                      header = TRUE)
-obsI9SD33<-read.table(paste0(obsData, "obsI9SD33.txt"),
-                      header = TRUE)
-obsI9SD43<-read.table(paste0(obsData, "obsI9SD43.txt"),
-                      header = TRUE)
-obsI83<-read.table(paste0(obsData, "obsI83.txt"),
-                      header = TRUE)
-obsI12D42FD5<-read.table(paste0(obsData, "obsI12D42FD5.txt"),
-                      header = TRUE)
-
-obsH<-rbind(obsI91LL3,obsI9SD13,obsI9SD23,obsI9SD33,obsI9SD43,obsI83,obsI12D42FD5)
-obsH
+obsAll <- read.table(paste0(obsData, "ObsAll.txt"),
+                   header = TRUE)
+obsA<- obsAll %>%
+  mutate(StartDate=dmy(StartDate),MidDate=dmy(MidDate),FinishDate=dmy(FinishDate),Clock.Today=dmy(Clock.Today)) %>%
+  #mutate(SowingDate=as.factor(ifelse(SowingDate=="no","Sd_No",paste0("Sd_",SowingDate)))) %>% # assume this is typo to be fixed?
+  mutate(GrowthSeason1=as.factor(paste0("Gs_",GrowthSeason))) %>% # creating more intuitive labels here
+  mutate(Rotation1=as.factor(paste0("Rt_",Rotation))) %>%
+  mutate(ExpUnitCode=as.factor(paste0(Name,GrowthSeason1,Rotation1))) %>%
+  mutate(Clock.Today1 = as.POSIXct(paste(Clock.Today,Time),format="%Y-%m-%d %H:%M:%S"))
+  
+summary(obsA)
+obsA
 ```
+```{r}
+upDir <- "D:/R/"
+obsData <- "D:/R/TtAll/"
 
+Tt<- read.table(paste0(obsData, "df.all.txt"),
+               header = TRUE)
+TtA <- Tt %>% mutate(Clock.Today=dmy(Clock.Today), ExpUnitCode=as.factor(ExpName))
+TtA
+ObsH <-merge(obsA,TtA,by=c("Clock.Today","ExpUnitCode")) %>%
+  mutate(GrowthRotation=as.factor(paste0(GrowthSeason.x,Rotation.x)))%>%
+  dplyr::filter(Water.x=="irr")%>%
+  dplyr::filter(Defoliation.x=="LL")%>%
+  dplyr::filter(Variable=="NodeNumber")
+  
 
-```{r, echo=FALSE}
-obsH1<-obsH%>%
-  mutate(Rotation = factor(Rotation))%>%
-  mutate(Clock.Today = dmy(Clock.Today))
-obsH1$Clock.Today1 <-as.POSIXct(paste(obsH1$Clock.Today,obsH1$Time),format="%Y-%m-%d %H:%M:%S")
-obsH1
-
+summary(ObsH)
 ```
 
 ```{r,fig.height=6, fig.width=10}
-obsNode<-obsH1%>%
-  dplyr::filter(Variable=="NodeNumber")%>%
-  dplyr::filter(Water=="irr")%>%
-  dplyr::filter(Defoliation=="LL")%>%
-  mutate(StartDate = dmy(StartDate))%>%
-  mutate(MidDate = dmy(MidDate))%>%
-  mutate(FinishDate= dmy(FinishDate))
-obsNode
-phyll <- "D:\\R\\Data statistic\\"
-StartGrazing <- read.table(paste0(phyll, "obsTphy.txt"), 
-                      header = TRUE)
-StartGrazing1<-StartGrazing %>%
-  mutate(StartDate = dmy(StartDate))%>%
-  mutate(MidDate = dmy(MidDate))%>%
-  mutate(FinishDate= dmy(FinishDate))%>%
-  mutate(Rotation=as.factor(Rotation))
-
-StartGrazing1
-
-obsf<- merge(obsNode,StartGrazing1,by=c("Name","Collection","GrowthSeason","Rotation","GrowthRotation"))
-obsf
-obsef<-obsf%>%
-  mutate(BudV=dmy(BudV))%>%
-  mutate(Flowering=dmy(Flowering))%>%
-  mutate(Ture=ifelse(Clock.Today<=BudV,"Yes","No"))
-
-obsef
+obsNode<-ObsH%>%
+  dplyr::filter(Tb==1)
  
-obsef1<-obsef %>%
-      mutate(Ture = ifelse(is.na(Ture),"A",Ture))
-  
-obsNode%>%
+obsNode
+# phyll <- "D:\\R\\Data statistic\\"
+# StartGrazing <- read.table(paste0(phyll, "obsTphy.txt"), 
+#                       header = TRUE)
+# StartGrazing1<-StartGrazing %>%
+#   mutate(StartDate = dmy(StartDate))%>%
+#   mutate(MidDate = dmy(MidDate))%>%
+#   mutate(FinishDate= dmy(FinishDate))%>%
+#   mutate(Rotation=as.factor(Rotation))
+# 
+# StartGrazing1
+# 
+# obsf<- merge(obsNode,StartGrazing1,by=c("Name","Collection","GrowthSeason","Rotation","GrowthRotation"))
+# obsf
+# obsef<-obsf%>%
+#   mutate(BudV=dmy(BudV))%>%
+#   mutate(Flowering=dmy(Flowering))%>%
+#   mutate(Ture=ifelse(Clock.Today<=BudV,"Yes","No"))
+# 
+# obsef
+#  
+# obsef1<-obsef %>%
+#       mutate(Ture = ifelse(is.na(Ture),"A",Ture))
+#   
+obsNodeF<-obsNode%>%
   #dplyr::filter(Ture!="No")%>%
   dplyr::filter(Name=="Iversen_8Waterirr")%>%
-  ggplot(aes(x=TTS1, y=Observed))+geom_point(size=2)+theme_bw()+xlab("Thermal time (°Cd) ")+ylab("Node number"   )+ggtitle("Iversen_8Waterirr")  +
+  ggplot(aes(x=Tt_broken_sum, y=Observed))+geom_point(size=2)+theme_bw()+xlab("Thermal time (°Cd) ")+ylab("Node number"   )+ggtitle("Iversen_8Waterirr")  +
  geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="blue")+
- facet_grid(GrowthSeason~Rotation)+
+ facet_grid(GrowthSeason.x~Rotation.x)+
   theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
  theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
 
@@ -108,9 +99,9 @@ obsNode1<-obsNode%>%
   dplyr::filter(Collection=="2000_2002")%>%
   dplyr::filter(Name=="Iversen_9SowingDateSD1Waterirr")
 obsNode1%>%
-  ggplot(aes(x=TTWES5, y=Observed), colour=factor(Name))+geom_point(size=2)+theme_bw()+xlab("Thermal time(°Cd) ")+ylab("Node number")+ggtitle("Iversen_9SowingDateSD1Waterirr")+
+  ggplot(aes(x=Tt_beta_sum, y=Observed), colour=factor(Name))+geom_point(size=2)+theme_bw()+xlab("Thermal time(°Cd) ")+ylab("Node number")+ggtitle("Iversen_9SowingDateSD1Waterirr")+
   geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="blue")+
- facet_grid(GrowthSeason~Rotation)+theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
+ facet_grid(GrowthSeason.x~Rotation.x)+theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
  theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
   
 ```
@@ -120,9 +111,9 @@ obsNode2<-obsNode%>%
   dplyr::filter(Collection=="2000_2002")%>%
   dplyr::filter(Name=="Iversen_9SowingDateSD2Waterirr")
 obsNode2%>%
-  ggplot(aes(x=TTWES1, y=Observed), colour=factor(Name))+geom_point(size=2)+theme_bw()+xlab("Thermal time (°Cd)")+ylab("Node number")+ggtitle("Iversen_9SowingDateSD2Waterirr")+
+  ggplot(aes(x=Tt_beta_sum, y=Observed), colour=factor(Name))+geom_point(size=2)+theme_bw()+xlab("Thermal time (°Cd)")+ylab("Node number")+ggtitle("Iversen_9SowingDateSD2Waterirr")+
   geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="blue")+
- facet_grid(GrowthSeason~Rotation)+theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
+ facet_grid(GrowthSeason.x~Rotation.x)+theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
  theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
   
 ```
@@ -133,9 +124,9 @@ obsNode1<-obsNode%>%
   dplyr::filter(Collection=="2000_2002")%>%
   dplyr::filter(Name=="Iversen_9SowingDateSD3Waterirr")
 obsNode1%>%
-  ggplot(aes(x=TTWES1, y=Observed), colour=factor(Name))+geom_point(size=2)+theme_bw()+xlab("Thermal time (°Cd)")+ylab("Node number")+ggtitle("Iversen_9SowingDateSD3Waterirr")+
+  ggplot(aes(x=Tt_beta_sum, y=Observed), colour=factor(Name))+geom_point(size=2)+theme_bw()+xlab("Thermal time (°Cd)")+ylab("Node number")+ggtitle("Iversen_9SowingDateSD3Waterirr")+
   geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="blue")+
- facet_grid(GrowthSeason~Rotation)+theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
+ facet_grid(GrowthSeason.x~Rotation.x)+theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
  theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
   
 ```
@@ -145,9 +136,9 @@ obsNode1<-obsNode%>%
   dplyr::filter(Collection=="2000_2002")%>%
   dplyr::filter(Name=="Iversen_9SowingDateSD4Waterirr")
 obsNode1%>%
-  ggplot(aes(x=TTWES5, y=Observed), colour=factor(Name))+geom_point(size=2)+theme_bw()+xlab("Thermal time(°Cd)")+ylab("Node number")+ggtitle("Iversen_9SowingDateSD4Waterirr")+
+  ggplot(aes(x=Tt_beta_sum, y=Observed), colour=factor(Name))+geom_point(size=2)+theme_bw()+xlab("Thermal time(°Cd)")+ylab("Node number")+ggtitle("Iversen_9SowingDateSD4Waterirr")+
   geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="blue")+
- facet_grid(GrowthSeason~Rotation)+theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
+ facet_grid(GrowthSeason.x~Rotation.x)+theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
  theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
   
 ```
@@ -157,351 +148,134 @@ obsNode1%>%
 obsNode%>%
   #dplyr::filter(Ture!="No")%>%  
   dplyr::filter(Name=="Iversen_91DefoliationLL")%>%
-  ggplot(aes(x=TTWES1, y=Observed), colour=factor(Name))+geom_point(size=2)+theme_bw()+xlab("Thermal time (°Cd)")+ylab("Node number")+ggtitle("Iversen_91DefoliationLL")+
+  ggplot(aes(x=Tt_beta_sum, y=Observed), colour=factor(Name))+geom_point(size=2)+theme_bw()+xlab("Thermal time (°Cd)")+ylab("Node number")+ggtitle("Iversen_91DefoliationLL")+
   geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="blue")+
- facet_grid(GrowthSeason~Rotation)+
+ facet_grid(GrowthSeason.x~Rotation.x)+
   theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
  theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
 ```
 
 ```{r,fig.height=6, fig.width=10}
-obsNodes<-obsNode%>%
-  dplyr::filter(Name=="Iverson12DefoliationFD5")
-obsNodes%>%
-  ggplot(aes(x=TTWES1, y=Observed), colour=factor(Name))+geom_point(size=2)+theme_bw()+xlab("Thermal time(°Cd)")+ylab("Node number")+ggtitle("Iverson12DefoliationFD5")+
+obsNodeLL<-obsNode%>%
+  dplyr::filter(Name=="Iversen_121DefoliationLLFDFD5")
+obsNodeLL%>%
+  ggplot(aes(x=Tt_beta_sum, y=Observed), colour=factor(Name))+geom_point(size=2)+theme_bw()+xlab("Thermal time(°Cd)")+ylab("Node number")+ggtitle("Iverson_121DefoliationLLFDFD5")+
  geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="blue")+
- facet_grid(GrowthSeason~Rotation)+
+ facet_grid(GrowthSeason.x~Rotation.x)+
   theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
  theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
 
 ```
+
 ###R squared and phyllo calculation for each rotation
 ##TTWES1
 ##Tb evaluation 
 ```{r}
 #obsef1%>%
  # dplyr::filter(Ture!="No")
-statWE1<-obsNode%>%
- filter(Variable == "NodeNumber") %>%
-  filter(Water=="irr")%>%
-  filter(Defoliation=="LL")%>%
-  mutate(GrowthSeason=factor(GrowthSeason))%>%
-  group_by(GrowthSeason,Collection) %>%
-  group_by(Name,GrowthSeason,Rotation,Collection,Tmean,Pmean) %>%
-  do(mod = lm(TTWES1~Observed,data=.)) %>%
-  mutate(R2WE1 = summary(mod)$r.squared) %>%
-  mutate(PhylloWE1 = summary(mod)$coeff[2]) %>%
-  dplyr::select(-mod)
+ # statWE1<-ObsH%>%
+ # filter(Variable == "NodeNumber") %>%
+ #  filter(Water=="irr")%>%
+ #  filter(Defoliation=="LL")%>%
+ #  mutate(GrowthSeason=factor(GrowthSeason))%>%
+ #  group_by(GrowthSeason,Collection) %>%
+
+uniTb <- unique(ObsH$Tb)
+
+PhyBeta.all <- data.frame()
+ 
+for(i in 1:length(uniTb)){
   
-  WE1R2<-statWE1%>%
-  group_by(Collection)%>%
-  mutate(meanR2WE1=mean(R2WE1))
-  WE1R2
-  write.csv(WE1R2,"D:/R/Phyllo/WE1R2.csv", row.names = FALSE)
+  ObsH1 <- ObsH %>%
+  filter(Tb==uniTb[i])
+  
+   ObsH.sub <- ObsH1 %>%
+  group_by(Name,GrowthSeason.x,Rotation.x,Collection,Tmean,Ppm,Tb) %>%
+    do(mod.beta = lm(Tt_beta_sum~Observed,data=.))%>%
+  mutate(R2WE = summary(mod.beta)$r.squared)%>%
+  mutate(PhylloWE = summary(mod.beta)$coeff[2])%>%
+  dplyr::select(-mod.beta)
+
+  PhyBeta.all <- rbind(PhyBeta.all, ObsH.sub)
+}
+  
+PhyBeta.all
+write.csv(PhyBeta.all,"D:/R/PhyllochronData/PhyBeta.all.csv", row.names = FALSE)
 
 ```
-
-
-##TTWES2
 ```{r}
-#obsef1%>%
- # dplyr::filter(Ture!="No")
-statWE2<-obsNode%>%
- filter(Variable == "NodeNumber") %>%
-  filter(Water=="irr")%>%
-  filter(Defoliation=="LL")%>%
-  mutate(GrowthSeason=factor(GrowthSeason))%>%
-  group_by(GrowthSeason,Collection) %>%
-  group_by(Name,GrowthSeason,Rotation,Collection,Tmean,Pmean) %>%
-  do(mod = lm(TTWES2~Observed,data=.)) %>%
-  mutate(R2WE2 = summary(mod)$r.squared) %>%
-  mutate(PhylloWE2 = summary(mod)$coeff[2]) %>%
-  dplyr::select(-mod)
-  
-  WE2R2<-statWE2%>%
-  group_by(Collection)%>%
-  mutate(meanR2WE2=mean(R2WE2))
-  WE2R2
-  write.csv(WE2R2,"D:/R/Phyllo/WE2R2.csv", row.names = FALSE)
+uniTb <- unique(ObsH$Tb)
 
+Phybroken.all <- data.frame()
+ 
+for(i in 1:length(uniTb)){
+  
+  ObsH1 <- ObsH %>%
+  filter(Tb==uniTb[i])
+  
+   ObsH.sub <- ObsH1 %>%
+  group_by(Name,GrowthSeason.x,Rotation.x,Collection,Tmean,Ppm,Tb) %>%
+    do(mod.broken = lm(Tt_broken_sum~Observed,data=.))%>%
+    #do(mod.fick = lm(Tt_fick_sum~Observed,data=.))%>%
+  mutate(R2Br = summary(mod.broken)$r.squared)%>%
+  mutate(PhylloBr = summary(mod.broken)$coeff[2])%>%
+  dplyr::select(-mod.broken)
+
+  Phybroken.all <- rbind(Phybroken.all, ObsH.sub)
+}
+  
+Phybroken.all
+write.csv(Phybroken.all,"D:/R/PhyllochronData/Phybroken.all.csv", row.names = FALSE)
 ```
-##TTWES3
 ```{r}
-statWE3<-obsNode%>%
- filter(Variable == "NodeNumber") %>%
-  filter(Water=="irr")%>%
-  filter(Defoliation=="LL")%>%
-  mutate(GrowthSeason=factor(GrowthSeason))%>%
-  group_by(GrowthSeason,Collection) %>%
-  group_by(Name,GrowthSeason,Rotation,Collection,Tmean,Pmean) %>%
-  do(mod = lm(TTWES3~Observed,data=.)) %>%
-  mutate(R2WE3 = summary(mod)$r.squared) %>%
-  mutate(PhylloWE3 = summary(mod)$coeff[2]) %>%
-  dplyr::select(-mod)
-  
-  WE3R2<-statWE3%>%
-  group_by(Collection)%>%
-  mutate(meanR2WE3=mean(R2WE3))
-  WE3R2
-  write.csv(WE3R2,"D:/R/Phyllo/WE3R2.csv", row.names = FALSE)
+uniTb <- unique(ObsH$Tb)
 
-```
-##TTWE4
-```{r}
-statWE4<-obsNode%>%
- filter(Variable == "NodeNumber") %>%
-  filter(Water=="irr")%>%
-  filter(Defoliation=="LL")%>%
-  mutate(GrowthSeason=factor(GrowthSeason))%>%
-  group_by(GrowthSeason,Collection) %>%
-  group_by(Name,GrowthSeason,Rotation,Collection,Tmean,Pmean) %>%
-  do(mod = lm(TTWES4~Observed,data=.)) %>%
-  mutate(R2WE4 = summary(mod)$r.squared) %>%
-  mutate(PhylloWE4 = summary(mod)$coeff[2]) %>%
-  dplyr::select(-mod)
+Phyfick.all <- data.frame()
+ 
+for(i in 1:length(uniTb)){
   
-  WE4R2<-statWE4%>%
-  group_by(Collection)%>%
-  mutate(meanR2WE4=mean(R2WE4))
-  WE4R2
-  write.csv(WE4R2,"D:/R/Phyllo/WE4R2.csv", row.names = FALSE)
-
-```
-##TTWE5
-```{r}
-statWE5<-obsNode%>%
- filter(Variable == "NodeNumber") %>%
-  filter(Water=="irr")%>%
-  filter(Defoliation=="LL")%>%
-  mutate(GrowthSeason=factor(GrowthSeason))%>%
-  group_by(GrowthSeason,Collection) %>%
-  group_by(Name,GrowthSeason,Rotation,Collection,Tmean,Pmean) %>%
-  do(mod = lm(TTWES5~Observed,data=.)) %>%
-  mutate(R2WE5 = summary(mod)$r.squared) %>%
-  mutate(PhylloWE5 = summary(mod)$coeff[2]) %>%
-  dplyr::select(-mod)
+  ObsH1 <- ObsH %>%
+  filter(Tb==uniTb[i])
   
-  WE5R2<-statWE5%>%
-  group_by(Collection)%>%
-  mutate(meanR2WE5=mean(R2WE5))
-  WE5R2
-  write.csv(WE5R2,"D:/R/Phyllo/WE5R2.csv", row.names = FALSE)
+   ObsH.sub <- ObsH1 %>%
+  group_by(Name,GrowthSeason.x,Rotation.x,Collection,Tmean,Ppm,Tb) %>%
+    do(mod.fick = lm(Tt_fick_sum~Observed,data=.))%>%
+  mutate(R2fi = summary(mod.fick)$r.squared)%>%
+  mutate(Phyllofick = summary(mod.fick)$coeff[2])%>%
+  dplyr::select(-mod.fick)
 
-```
-##TTS1
-```{r}
-statS1<-obsNode%>%
- filter(Variable == "NodeNumber") %>%
-  filter(Water=="irr")%>%
-  filter(Defoliation=="LL")%>%
-  mutate(GrowthSeason=factor(GrowthSeason))%>%
-  group_by(GrowthSeason,Collection) %>%
-  group_by(Name,GrowthSeason,Rotation,Collection,Tmean,Pmean) %>%
-  do(mod = lm(TTS1~Observed,data=.)) %>%
-  mutate(R2S1 = summary(mod)$r.squared) %>%
-  mutate(PhylloS1 = summary(mod)$coeff[2]) %>%
-  dplyr::select(-mod)
+  Phyfick.all <- rbind(Phyfick.all, ObsH.sub)
+}
   
-  S1R2<-statS1%>%
-  group_by(Collection)%>%
-  mutate(meanR2S1=mean(R2S1))
-  S1R2
-  write.csv(S1R2,"D:/R/Phyllo/S1R2.csv", row.names = FALSE)
-
-```
-##TTS2
-```{r}
-statS2<-obsNode%>%
- filter(Variable == "NodeNumber") %>%
-  filter(Water=="irr")%>%
-  filter(Defoliation=="LL")%>%
-  mutate(GrowthSeason=factor(GrowthSeason))%>%
-  group_by(GrowthSeason,Collection) %>%
-  group_by(Name,GrowthSeason,Rotation,Collection,Tmean,Pmean) %>%
-  do(mod = lm(TTS2~Observed,data=.)) %>%
-  mutate(R2S2 = summary(mod)$r.squared) %>%
-  mutate(PhylloS2 = summary(mod)$coeff[2]) %>%
-  dplyr::select(-mod)
-  
-  S2R2<-statS2%>%
-  group_by(Collection)%>%
-  mutate(meanR2S2=mean(R2S2))
-  S2R2
-  write.csv(S2R2,"D:/R/Phyllo/S2R2.csv", row.names = FALSE)
-
-```
-##TTS3
-```{r}
-statS3<-obsNode%>%
- filter(Variable == "NodeNumber") %>%
-  filter(Water=="irr")%>%
-  filter(Defoliation=="LL")%>%
-  mutate(GrowthSeason=factor(GrowthSeason))%>%
-  group_by(GrowthSeason,Collection) %>%
-  group_by(Name,GrowthSeason,Rotation,Collection,Tmean,Pmean) %>%
-  do(mod = lm(TTS3~Observed,data=.)) %>%
-  mutate(R2S3 = summary(mod)$r.squared) %>%
-  mutate(PhylloS3 = summary(mod)$coeff[2]) %>%
-  dplyr::select(-mod)
-  
-  S3R2<-statS3%>%
-  group_by(Collection)%>%
-  mutate(meanR2S3=mean(R2S3))
-  S3R2
-  write.csv(S3R2,"D:/R/Phyllo/S3R2.csv", row.names = FALSE)
-
-```
-##TTS4
-```{r}
-statS4<-obsNode%>%
- filter(Variable == "NodeNumber") %>%
-  filter(Water=="irr")%>%
-  filter(Defoliation=="LL")%>%
-  mutate(GrowthSeason=factor(GrowthSeason))%>%
-  group_by(GrowthSeason,Collection) %>%
-  group_by(Name,GrowthSeason,Rotation,Collection,Tmean,Pmean) %>%
-  do(mod = lm(TTS4~Observed,data=.)) %>%
-  mutate(R2S4 = summary(mod)$r.squared) %>%
-  mutate(PhylloS4 = summary(mod)$coeff[2]) %>%
-  dplyr::select(-mod)
-  
-  S4R2<-statS4%>%
-  group_by(Collection)%>%
-  mutate(meanR2S4=mean(R2S4))
-  S4R2
-  write.csv(S4R2,"D:/R/Phyllo/S4R2.csv", row.names = FALSE)
-
+Phyfick.all
+write.csv(Phyfick.all,"D:/R/PhyllochronData/Phyfick.all.csv", row.names = FALSE)
 ```
 
-##TTS5
-```{r}
-statS5<-obsNode%>%
- filter(Variable == "NodeNumber") %>%
-  filter(Water=="irr")%>%
-  filter(Defoliation=="LL")%>%
-  mutate(GrowthSeason=factor(GrowthSeason))%>%
-  group_by(GrowthSeason,Collection) %>%
-  group_by(Name,GrowthSeason,Rotation,Collection,Tmean,Pmean) %>%
-  do(mod = lm(TTS5~Observed,data=.)) %>%
-  mutate(R2S5 = summary(mod)$r.squared) %>%
-  mutate(PhylloS5 = summary(mod)$coeff[2]) %>%
-  dplyr::select(-mod)
-  
-  S5R2<-statS5%>%
-  group_by(Collection   )%>%
-  mutate(meanR2S5=mean(R2S5))
-  S5R2
-  write.csv(S5R2,"D:/R/Phyllo/S5R2.csv", row.names = FALSE)
 
-```
-##TTS6
-```{r}
-statS6<-obsNode%>%
- filter(Variable == "NodeNumber") %>%
-  filter(Water=="irr")%>%
-  filter(Defoliation=="LL")%>%
-  mutate(GrowthSeason=factor(GrowthSeason))%>%
-  group_by(GrowthSeason,Collection) %>%
-  group_by(Name,GrowthSeason,Rotation,Collection,Tmean,Pmean) %>%
-  do(mod = lm(TTS6~Observed,data=.)) %>%
-  mutate(R2S6 = summary(mod)$r.squared) %>%
-  mutate(PhylloS6 = summary(mod)$coeff[2]) %>%
-  dplyr::select(-mod)
-  
-  S6R2<-statS6%>%
-  group_by(Collection)%>%
-  mutate(meanR2S6=mean(R2S6))
-  S6R2
-  write.csv(S6R2,"D:/R/Phyllo/S6R2.csv", row.names = FALSE)
+<!-- ##TTWES2 -->
+<!-- ```{r} -->
+<!-- #obsef1%>% -->
+<!--  # dplyr::filter(Ture!="No") -->
+<!-- statWE2<-obsNode%>% -->
+<!--  filter(Variable == "NodeNumber") %>% -->
+<!--   filter(Water=="irr")%>% -->
+<!--   filter(Defoliation=="LL")%>% -->
+<!--   mutate(GrowthSeason=factor(GrowthSeason))%>% -->
+<!--   group_by(GrowthSeason,Collection) %>% -->
+<!--   group_by(Name,GrowthSeason,Rotation,Collection,Tmean,Pmean) %>% -->
+<!--   do(mod = lm(TTWES2~Observed,data=.)) %>% -->
+<!--   mutate(R2WE2 = summary(mod)$r.squared) %>% -->
+<!--   mutate(PhylloWE2 = summary(mod)$coeff[2]) %>% -->
+<!--   dplyr::select(-mod) -->
 
-```
+<!--   WE2R2<-statWE2%>% -->
+<!--   group_by(Collection)%>% -->
+<!--   mutate(meanR2WE2=mean(R2WE2)) -->
+<!--   WE2R2 -->
+<!--   write.csv(WE2R2,"D:/R/Phyllo/WE2R2.csv", row.names = FALSE) -->
 
-##TTS7
-```{r}
-statS7<-obsNode%>%
- filter(Variable == "NodeNumber") %>%
-  filter(Water=="irr")%>%
-  filter(Defoliation=="LL")%>%
-  mutate(GrowthSeason=factor(GrowthSeason))%>%
-  group_by(GrowthSeason,Collection) %>%
-  group_by(Name,GrowthSeason,Rotation,Collection,Tmean,Pmean) %>%
-  do(mod = lm(TTS7~Observed,data=.)) %>%
-  mutate(R2S7 = summary(mod)$r.squared) %>%
-  mutate(PhylloS7 = summary(mod)$coeff[2]) %>%
-  dplyr::select(-mod)
-  
-  S7R2<-statS7%>%
-  group_by(Collection)%>%
-  mutate(meanR2S7=mean(R2S7))
-  S7R2
-  write.csv(S7R2,"D:/R/Phyllo/S7R2.csv", row.names = FALSE)
+<!-- ``` -->
 
-```
-
-##TTS8
-```{r}
-statS8<-obsNode%>%
- filter(Variable == "NodeNumber") %>%
-  filter(Water=="irr")%>%
-  filter(Defoliation=="LL")%>%
-  mutate(GrowthSeason=factor(GrowthSeason))%>%
-  group_by(GrowthSeason,Collection) %>%
-  group_by(Name,GrowthSeason,Rotation,Collection,Tmean,Pmean) %>%
-  do(mod = lm(TTS8~Observed,data=.)) %>%
-  mutate(R2S8 = summary(mod)$r.squared) %>%
-  mutate(PhylloS8 = summary(mod)$coeff[2]) %>%
-  dplyr::select(-mod)
-  
-  S8R2<-statS8%>%
-  group_by(Collection)%>%
-  mutate(meanR2S8=mean(R2S8))
-  S8R2
-  write.csv(S8R2,"D:/R/Phyllo/S8R2.csv", row.names = FALSE)
-
-```
-##TTS9
-```{r}
-statS9<-obsNode%>%
- filter(Variable == "NodeNumber") %>%
-  filter(Water=="irr")%>%
-  filter(Defoliation=="LL")%>%
-  mutate(GrowthSeason=factor(GrowthSeason))%>%
-  group_by(GrowthSeason,Collection) %>%
-  group_by(Name,GrowthSeason,Rotation,Collection,Tmean,Pmean) %>%
-  do(mod = lm(TTS9~Observed,data=.)) %>%
-  mutate(R2S9 = summary(mod)$r.squared) %>%
-  mutate(PhylloS9 = summary(mod)$coeff[2]) %>%
-  dplyr::select(-mod)
-  
-  S9R2<-statS9%>%
-  group_by(Collection)%>%
-  mutate(meanR2S9=mean(R2S9))
-  S9R2
-  write.csv(S9R2,"D:/R/Phyllo/S9R2.csv", row.names = FALSE)
-
-```
-
-##TTS10
-```{r}
-statS10<-obsNode%>%
- filter(Variable == "NodeNumber") %>%
-  filter(Water=="irr")%>%
-  filter(Defoliation=="LL")%>%
-  mutate(GrowthSeason=factor(GrowthSeason))%>%
-  group_by(GrowthSeason,Collection) %>%
-  group_by(Name,GrowthSeason,Rotation,Collection,Tmean,Pmean) %>%
-  do(mod = lm(TTS10~Observed,data=.)) %>%
-  mutate(R2S10 = summary(mod)$r.squared) %>%
-  mutate(PhylloS10 = summary(mod)$coeff[2]) %>%
-  dplyr::select(-mod)
-  
-  S10R2<-statS10%>%
-  group_by(Collection)%>%
-  mutate(meanR2S10=mean(R2S10))
-  S10R2
-  write.csv(S10R2,"D:/R/Phyllo/S10R2.csv", row.names = FALSE)
-
-```
 
 ### Combine the Phyllo data together
 ```{r,fig.height=5, fig.width=10,warning=FALSE}
@@ -510,7 +284,7 @@ filenames=list.files(path=mypath, full.names=TRUE)
 datalist = lapply(filenames, function(x){read.csv(file=x,header=T)})
 Reduce(function(x,y) {merge(x,y)}, datalist)}
 
-mergephy=multmerge("D:/R/Phyllo")
+mergephy=multmerge("D:/R/PhyllochronData")
 mergephy
 
 ```
@@ -518,8 +292,10 @@ mergephy
 ```{r}
 
 mergeP<-mergephy%>%
-   dplyr::select(Name,GrowthSeason,Rotation,Collection,Tmean, Pmean,PhylloS1,PhylloS2,PhylloS3,PhylloS4,PhylloS5,PhylloS6,PhylloS7,PhylloS8,PhylloS9,PhylloS10,PhylloWE1,PhylloWE2,PhylloWE3,PhylloWE4,PhylloWE5) %>%
-  tidyr::gather("Variable","Phyllo",PhylloS1:PhylloWE5)
+   dplyr::select(Name,GrowthSeason.x,Rotation.x,Collection,Tmean, Ppm,Tb, PhylloWE,PhylloBr,Phyllofick) %>%
+  tidyr::gather("Variable","Phyllo",PhylloWE:Phyllofick)%>%
+  mutate(PhylloTb=as.factor(paste0(Variable,Tb)))%>%
+  mutate(GrowthRotation=as.factor(paste0(GrowthSeason.x,Rotation.x)))
 unique(mergeP)
 
 mergeP$Names[mergeP$Name=="Iversen_8Waterirr" ] <-"I8irr"
@@ -528,112 +304,40 @@ mergeP$Names[mergeP$Name=="Iversen_9SowingDateSD1Waterirr"]<-"I9SD1irr"
 mergeP$Names[mergeP$Name=="Iversen_9SowingDateSD2Waterirr"]<-"I9SD2irr"
 mergeP$Names[mergeP$Name=="Iversen_9SowingDateSD3Waterirr"]<-"I9SD3irr"
 mergeP$Names[mergeP$Name=="Iversen_9SowingDateSD4Waterirr"]<-"I9SD4irr"
-mergeP$Names[mergeP$Name=="Iversen12DefoliationFD5"]<-"I12DF5"
+mergeP$Names[mergeP$Name=="Iversen_121DefoliationLLFDFD5"]<-"I12DF5"
 mergeP
 
 ```
 ##Regression coefficient
 ```{r}
 mergeP%>%
- ggplot(aes(x=Tmean, y=Phyllo, colour=factor(Name)))+geom_point(size=2)+theme_bw()+
+ ggplot(aes(x=Tmean, y=Phyllo, colour=factor(Names)))+geom_point(size=2)+theme_bw()+
   geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="darkgrey")+xlab("Mean air temperature (°C)")+ylab("Phyllochron (°Cd/Leaf)")+
-  facet_wrap(~Variable,ncol = 2)+
+  facet_wrap(~PhylloTb,ncol = 2)+
   theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
  theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
   
 ```
 
 ```{r}
-#TbWE=1
-mergePWE1<-mergeP%>%
-  dplyr::filter(Variable=="PhylloWE1")
-modWE1<-lm(mergePWE1$Tmean~mergePWE1$Phyllo)
-summary(modWE1)
-#TbWE=2
-mergePWE2<-mergeP%>%
-  dplyr::filter(Variable=="PhylloWE2")
-modWE2<-lm(mergePWE2$Tmean~mergePWE2$Phyllo)
-summary(modWE2)
-#TbWE=3
-mergePWE3<-mergeP%>%
-  dplyr::filter(Variable=="PhylloWE3")
-modWE3<-lm(mergePWE3$Tmean~mergePWE3$Phyllo)
-summary(modWE3)
-#TbWE=4
-mergePWE4<-mergeP%>%
-  dplyr::filter(Variable=="PhylloWE4")
-modWE4<-lm(mergePWE4$Tmean~mergePWE4$Phyllo)
-summary(modWE4)
-#TbWE=5
-mergePWE5<-mergeP%>%
-  dplyr::filter(Variable=="PhylloWE5")
-modWE5<-lm(mergePWE5$Tmean~mergePWE5$Phyllo)
-summary(modWE5)
 
-#Tbs=1
-mergeP
-mergeP1<-mergeP%>%
-  dplyr::filter(Variable=="PhylloS1")
-mod1<-lm(mergeP1$Tmean~mergeP1$Phyllo)
-summary(mod1)
-#Tbs=2
-mergeP2<-mergeP%>%
-  dplyr::filter(Variable=="PhylloS2")
-mod2<-lm(mergeP2$Tmean~mergeP2$Phyllo)
-summary(mod2)
+uniPhy <- unique(mergeP$PhylloTb)
+Slope.df<-data.frame()
 
-#Tbs=3
-mergeP3<-mergeP%>%
-  dplyr::filter(Variable=="PhylloS3")
-mod3<-lm(mergeP3$Tmean~mergeP3$Phyllo)
-
-summary(mod3)
-#Tbs=4
-mergeP4<-mergeP%>%
-  dplyr::filter(Variable=="PhylloS4")
-mod4<-lm(mergeP4$Tmean~mergeP4$Phyllo)
-
-summary(mod4)
-#slope5
-mergeP5<-mergeP%>%
-  dplyr::filter(Variable=="PhylloS5")
-mod5<-lm(mergeP5$Tmean~mergeP5$Phyllo)
-
-summary(mod5)
-
-#slope6
-mergeP6<-mergeP%>%
-  dplyr::filter(Variable=="PhylloS6")
-mod6<-lm(mergeP6$Tmean~mergeP6$Phyllo)
-
-summary(mod6)
-
-#slope7
-mergeP7<-mergeP%>%
-  dplyr::filter(Variable=="PhylloS7")
-mod7<-lm(mergeP7$Tmean~mergeP7$Phyllo)
-
-summary(mod7)
-#slope8
-mergeP8<-mergeP%>%
-  dplyr::filter(Variable=="PhylloS8")
-mod8<-lm(mergeP8$Tmean~mergeP8$Phyllo)
-
-summary(mod8)
-
-#slope9
-mergeP9<-mergeP%>%
-  dplyr::filter(Variable=="PhylloS9")
-mod9<-lm(mergeP9$Tmean~mergeP9$Phyllo)
-
-summary(mod9)
-
-#slope10
-mergeP10<-mergeP%>%
-  dplyr::filter(Variable=="PhylloS10")
-mod10<-lm(mergeP10$Tmean~mergeP10$Phyllo)
-
-summary(mod10)
+for(i in 1:length(uniPhy) ){
+   mergeP.sub <- mergeP %>%
+     filter(PhylloTb==uniPhy[i])%>%
+   group_by(PhylloTb) %>%
+    do(modPhy = lm(Tmean~Phyllo,data=.))%>%
+  mutate(R2 = summary(modPhy)$r.squared)%>%
+  mutate(slope = summary(modPhy)$coeff[2])%>%
+  mutate(P=anova(modPhy)$'Pr(>F)'[1])%>%  
+  dplyr::select(-modPhy)
+     
+   Slope.df <- rbind(Slope.df,mergeP.sub)
+  
+}
+ Slope.df
 
 ```
 
@@ -651,10 +355,10 @@ mergePcv1<-mergePcv%>%group_by(Variable)%>%
   mutate(CVmean=mean(CVPhyllo))
 
 mergePcv%>%
-  ggplot(aes(x=Variable,y=CVPhyllo,color=factor(Collection)))+geom_point(size=2)+theme_bw()
+  ggplot(aes(x=PhylloTb,y=CVPhyllo,color=factor(Collection)))+geom_point(size=2)+theme_bw()
   
 mergePcv1%>%
-  ggplot(aes(x=Variable,y=CVmean))+geom_point(size=2)+theme_bw()
+  ggplot(aes(x=PhylloTb,y=CVmean))+geom_point(size=2)+theme_bw()
 mergePcv1
 
 ```
@@ -662,26 +366,20 @@ mergePcv1
 ###x-intercept method
 
 ```{r}
-obsef1
 
-LAR1 <- obsef1%>%
-  dplyr::filter(Variable=="NodeNumber")
-  # dplyr::filter(Water=="irr")%>%
-  # dplyr::filter(Defoliation=="LL")
-
-LAR2<-LAR1%>%  
-  group_by(Name,GrowthSeason,Rotation,Collection,Tmean,Pmean,Trend,GrowthRotation) %>%
+LAR2<-ObsH%>%  
+  group_by(Name,GrowthSeason.x,Rotation.x,Collection,Tmean,Ppm,GrowthRotation) %>%
   do(mod = lm(Observed~Interval,data=.)) %>%
   mutate(slope = summary(mod)$coeff[2]) %>%
   dplyr::select(-mod)
 LAR2
 
 LAR2%>%
-  dplyr::filter(Rotation!="6"|Collection!="1997_2001")%>%
+  dplyr::filter(Rotation.x!="6"|Collection!="1997_2001")%>%
   #dplyr::filter(GrowthRotation!="11"|Collection!="2000_2002")%>%
    #dplyr::filter()
  mutate(Name=factor(Name))%>%
- ggplot(aes(x=Tmean, y=slope,label=GrowthRotation))+geom_point(size=2)+theme_bw()+xlab("Mean air temperature (°C)")+ylab("Node appearance rate (leaves/day)")+scale_x_continuous(limits=c(-8,20))+
+ ggplot(aes(x=Tmean, y=slope,label=GrowthRotation))+geom_text()+theme_bw()+xlab("Mean air temperature (°C)")+ylab("Node appearance rate (leaves/day)")+scale_x_continuous(limits=c(-8,20))+
   theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
  theme(axis.title.y=element_text(face="bold",colour="black",size = 12))+
  facet_wrap(~Collection)+
@@ -699,107 +397,43 @@ predict(LAR2.lm, LAR2, interval="predict")
 ```
 
 
-
-
-
-
-```{r}
-LAR2002<-LAR2%>%
-  dplyr::filter(Collection=="2002_2004")
-LAR2002.lm=lm(slope~Tmean,data=LAR2002)
-summary(LAR2002.lm)
-predict(LAR2002.lm, LAR2002, interval="predict")
-```
-```{r}
-LAR2000<-LAR2%>%
-  dplyr::filter(Collection=="2000_2002")
-LAR2000.lm=lm(slope~Tmean,data=LAR2000)
-summary(LAR2000.lm) 
-coef(LAR2000.lm)
-predict(LAR2000.lm, LAR2000, interval="predict")
-```
-```{r}
-LAR1997<-LAR2%>%
-  dplyr::filter(Collection=="1997_2001")
-LAR1997.lm=lm(slope~Tmean,data=LAR1997)
-coef(LAR1997.lm)
-
-summary(LAR1997.lm) 
-predict(LAR1997.lm, LAR1997, interval="predict")   
-```
-```{r}
-LAR2014<-LAR2%>%
-  dplyr::filter(Collection=="2014_2018")
-LAR2014.lm=lm(slope~Tmean,data=LAR2014)
-coef(LAR2014.lm)
-
-summary(LAR2014.lm) 
-predict(LAR2014.lm, LAR2014, interval="predict")   
-```
-
 ```{r}
 
-LARs<-LAR1%>%
-  dplyr::filter(Collection=="2002_2004")
-
-LAR.lm = lm(TTS2~Observed, data=LARs) 
-LAR.res = resid(LAR.lm)
-
-
-plot(LARs$Clock.Today, LAR.res, ylab="Residuals", xlab="Date") 
-abline(0, 0) 
-
-```
-```{r}
-
-LARs<-LAR1%>%
-  dplyr::filter(Collection=="1997_2001")
-
-LAR.lm = lm(Observed ~ TTS2, data=LARs) 
-LAR.res = resid(LAR.lm)
-
-
-plot(LARs$Clock.Today, LAR.res, ylab="Residuals", xlab="Date") 
-abline(0, 0) 
-
-```
-
-```{r}
-
-LARs<-LAR1%>%
-  dplyr::filter(Collection=="2014_2018")
-
-LAR.lm = lm(Observed ~ TTS2, data=LARs) 
-LAR.res = resid(LAR.lm)
-
-
-plot(LARs$Clock.Today, LAR.res, ylab="Residuals", xlab="Date") 
-abline(0, 0) 
+# LARs<-LAR1%>%
+#   dplyr::filter(Collection=="2014_2018")
+# 
+# LAR.lm = lm(Observed ~ TTS2, data=LARs) 
+# LAR.res = resid(LAR.lm)
+# 
+# 
+# plot(LARs$Clock.Today, LAR.res, ylab="Residuals", xlab="Date") 
+# abline(0, 0) 
 
 ```
 
 
 #load Rotation and Growth season
-```{r,fig.height=5, fig.width=10}
-phyll <- "D:\\R\\Data statistic\\"
-StartGrazing <- read.table(paste0(phyll, "obsTphy.txt"), 
+```{r,fig.height=4, fig.width=10}
+phyll <- "D:\\R\\"
+StartGrazing <- read.table(paste0(phyll, "ExperimentList.txt"), 
                       header = TRUE)
 StartGrazing1<-StartGrazing %>%
-  mutate(Clock.Today = dmy(StartDate))%>%
-  mutate(MidDate = dmy(MidDate))%>%
-  mutate(FinishDate= dmy(FinishDate))
-PhyPp<- merge(StartGrazing1,mergephy,by=c("Name","GrowthSeason","Rotation","Collection"))
-PhyPp
+  mutate(GrowthRotation= as.factor(paste0(GrowthSeason,Rotation)))
+PhyPp<- merge(StartGrazing1,mergeP,by=c("Name","Collection","GrowthRotation"))
 
+PhyPp
+mergeP
 
 PhyPp%>%
   #dplyr::filter(Rotation!="1")%>%
   #dplyr::filter(Rotation!="7")%>%
   #dplyr::filter(Name!="Iversen_8Waterirr"|GrowthSeason!="3")%>%
-  dplyr::filter(Stage!="Seedling")%>%
-  ggplot(aes(x=Pmean, y=PhylloS1,label=GrowthRotation,color=Name))+geom_text()+theme_bw()+xlab("Mean photoperiod(h) ")+ylab("Phyllochron (°Cd/primary leaves)")+
+  #dplyr::filter(Stage!="Seedling")%>%
+  dplyr::filter(PhylloTb=="PhylloBr1")%>%
+  ggplot(aes(x=Ppm, y=Phyllo,label=GrowthRotation,color=Name))+geom_text()+theme_bw()+xlab("Mean photoperiod(h) ")+ylab("Phyllochron (°Cd/primary leaves)")+
   geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="darkgrey")+
-  facet_wrap(~Trend)+
+  facet_grid(Trend~Stage)+
+  #facet_wrap(~Stage,ncol = 2)+
   #geom_point(size=2)+
   theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
  theme(axis.title.y=element_text(face="bold",colour="black",size = 12))+
@@ -808,12 +442,6 @@ PhyPp%>%
   
 ```
 
-```{r}
-PhyPp1<-PhyPp%>%dplyr::filter(Stage!="seedling")
-PhyPp1
-model<-lm(PhyPp1$Phyllo~PhyPp1$Pmean)
-summary(model)
-```
 
 
 ## Define stats function
@@ -953,7 +581,7 @@ summary(simD)
 
 
 head(obsNode)
-mergedf<-merge(obsNode,simD,by=c("Clock.Today","Name","Variable"))
+mergedf<-merge(obsA,simD,by=c("Clock.Today","Name","Variable"))
 summary(mergedf)
 str(mergedf)
 mergedf
@@ -967,11 +595,19 @@ mergedf
 ## 1997-2001
 ```{r,fig.height=4, fig.width=9}
 
-obsNode1<-obsNode%>%dplyr::filter(Collection=="1997_2001")
+obsNode1<-obsA%>%
+  dplyr::filter(Collection=="1997_2001")%>%
+  dplyr::filter(Variable=="NodeNumber")%>%
+  dplyr::filter(Name=="Iversen_8Waterirr")%>%
+  dplyr::filter(Clock.Today>"1997-08-01")%>%
+  dplyr::filter(Clock.Today<"2001-08-01")
   
- 
+  
+   
  simD1<-simD%>%
    mutate(Clock.Today = ymd_hms(Clock.Today))%>%
+   dplyr::filter(Clock.Today>"1997-08-01")%>%
+   dplyr::filter(Clock.Today<"2001-08-01")%>%
    dplyr::filter(Variable=="NodeNumber")%>%
    dplyr::filter(Name=="Iversen_8Waterirr")
  str(simD1)
@@ -988,7 +624,10 @@ obsNode1<-obsNode%>%dplyr::filter(Collection=="1997_2001")
 
 ##2002-2004
 ```{r,  fig.height=4, fig.width=8}
-obsNode2<-obsNode%>% dplyr::filter(Name=="Iversen_91DefoliationLL")
+obsNode2<-obsNode%>% 
+  dplyr::filter(Collection=="2002_2004")%>%
+  dplyr::filter(Variable=="NodeNumber")%>%
+  dplyr::filter(Name=="Iversen_91DefoliationLL")
 
 simD2<-simD%>%
   mutate(Clock.Today = ymd_hms(Clock.Today))%>%
@@ -1011,7 +650,8 @@ ggplot(aes(x=Clock.Today,y=Predicted))+geom_line(size=1)+theme_bw()+
 ##2000-2002
 ```{r,  fig.height=8, fig.width=8}
 obsNode3<-obsNode%>%
-  dplyr::filter(Collection=="2000_2002")
+  dplyr::filter(Collection=="2000_2002")%>%
+  dplyr::filter(Variable=="NodeNumber")
  obsNode3 
 
 simD3<-simD%>%
@@ -1046,25 +686,50 @@ ggplot(aes(x=Clock.Today,y=Predicted))+geom_line(size=1)+theme_bw()+
   theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
   
 ```
+##2014-2018
+```{r,  fig.height=4, fig.width=8}
+obsNode4<-obsNode%>% 
+  dplyr::filter(Collection=="2014_2018")%>%
+  dplyr::filter(Variable=="NodeNumber")%>%
+  dplyr::filter(Name=="Iversen_121DefoliationLLFDFD5")
 
+simD4<-simD%>%
+  mutate(Clock.Today = ymd_hms(Clock.Today))%>%
+  dplyr::filter(Variable=="NodeNumber")%>%
+  dplyr::filter(Name=="Iversen_121DefoliationLLFDFD5")
+str(simD4)
+simD4%>%
+ggplot(aes(x=Clock.Today,y=Predicted))+geom_line(size=1)+theme_bw()+
+  facet_wrap(~Name,ncol = 1)+
+  geom_point(data=obsNode4, aes(x=Clock.Today1, y=Observed),colour="green",size=3)+
+  theme(legend.title=element_blank(),legend.position = "blank")+xlab("Date")+ylab("Node number")+
+  theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
+  theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
+  
+  
+
+
+```
 
 # Statistic and Graph
-```{r,  fig.height=6, fig.width=8}
+```{r,fig.height=6, fig.width=10}
 mergedf
 summary(mergedf)
 str(mergedf)
 
 mergedf %>%
     dplyr::filter(Variable== "NodeNumber") %>% 
+   dplyr::filter(Water== "irr")%>%
+  dplyr::filter(Defoliation== "LL")%>%
   ggplot(aes(x=Observed, y= Predicted, 
           colour= factor(Name))) +
-  geom_point(size=3)+theme_bw()+
+  geom_point(size=2)+theme_bw()+
   geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="darkgrey") +
   geom_abline(intercept = 0, slope = 1) +
   coord_fixed(ratio = 1)+
   ggtitle("Node Number")+
-  facet_wrap(~Collection, ncol = 3)+
-  theme(legend.title=element_blank(),legend.position = "blank")+xlab("Observed")+ylab("Predicted")+
+  facet_wrap(~Collection, ncol = 4)+
+  theme(legend.title=element_blank())+xlab("Observed")+ylab("Predicted")+
   theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
   theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
 ```
@@ -1072,13 +737,34 @@ mergedf %>%
 
 ## 2002-2004
 
-```{r,  fig.height=8, fig.width=10}
+```{r}
 mergedf
 summary(mergedf)
 str(mergedf)
 
 mergedf %>%
     dplyr::filter(Collection=="2002_2004")%>%
+  dplyr::filter(Variable== "NodeNumber") %>% 
+   dplyr::filter(Water== "irr")%>%
+  dplyr::filter(Defoliation== "LL")%>%
+  ggplot(aes(x=Observed, y= Predicted, 
+          colour= factor(Name))) +
+  geom_point(size=3)+theme_bw()+
+  geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="darkgrey") +
+  geom_abline(intercept = 0, slope = 1) +
+  coord_fixed(ratio = 1)+
+  ggtitle("Node Number")+
+  facet_grid(GrowthSeason~Rotation)+
+  theme(legend.title=element_blank(),legend.position = "blank")+xlab("Observed")+ylab("Predicted")+
+  theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
+  theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
+```
+```{r}
+mergedf %>%
+    dplyr::filter(Collection=="2014_2018")%>%
+  dplyr::filter(Variable== "NodeNumber") %>% 
+   dplyr::filter(Water== "irr")%>%
+  dplyr::filter(Defoliation== "LL")%>%
   ggplot(aes(x=Observed, y= Predicted, 
           colour= factor(Name))) +
   geom_point(size=3)+theme_bw()+
@@ -1093,15 +779,19 @@ mergedf %>%
 ```
 
 
+
 ## 2000-2002
 
-```{r,  fig.height=8, fig.width=10}
+```{r}
 mergedf
 summary(mergedf)
 str(mergedf)
 
 mergedf %>%
     dplyr::filter(Collection=="2000_2002")%>%
+  dplyr::filter(Variable== "NodeNumber") %>% 
+   dplyr::filter(Water== "irr")%>%
+  dplyr::filter(Defoliation== "LL")%>%
   ggplot(aes(x=Observed, y= Predicted, 
           colour= factor(Name))) +
   geom_point(size=3)+theme_bw()+
@@ -1110,7 +800,7 @@ mergedf %>%
   coord_fixed(ratio = 1)+
   ggtitle("Node Number")+
   facet_grid(GrowthSeason~Rotation)+
-  theme(legend.title=element_blank(),legend.position = "blank")+xlab("Observed")+ylab("Predicted")+
+  theme(legend.title=element_blank())+xlab("Observed")+ylab("Predicted")+
   theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
   theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
 ```
@@ -1118,9 +808,12 @@ mergedf %>%
 
 
 
-```{r, fig.width=8, fig.height=8, warning=FALSE}
+```{r}
 mergedf %>%
     dplyr::filter(Collection=="1997_2001")%>%
+  dplyr::filter(Variable== "NodeNumber") %>% 
+   dplyr::filter(Water== "irr")%>%
+  dplyr::filter(Defoliation== "LL")%>%
   ggplot(aes(x=Observed, y= Predicted, 
           colour= factor(Name))) +
   geom_point(size=3)+theme_bw() +
@@ -1128,7 +821,7 @@ mergedf %>%
   geom_abline(intercept = 0, slope = 1) +
   coord_fixed(ratio = 1) +
   ggtitle("Node Number")  +
-  facet_wrap(~Rotation, ncol = 4)+
+  facet_grid(GrowthSeason~Rotation)+
   theme(legend.title=element_blank(),legend.position = "blank")+xlab("Observed")+ylab("Predicted")+
   theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
   theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
@@ -1137,6 +830,9 @@ mergedf %>%
 ```{r, warning=FALSE}
 mergedf %>%
     dplyr::filter(Collection=="1997_2001")%>%
+  dplyr::filter(Variable== "NodeNumber") %>% 
+   dplyr::filter(Water== "irr")%>%
+  dplyr::filter(Defoliation== "LL")%>%
   ggplot(aes(x=Observed, y= Predicted, 
           colour= factor(Name))) +
   geom_point(size=3)+theme_bw() +
@@ -1157,6 +853,9 @@ mergedf %>%
 str(mergedf)
 
 mergedf %>%
+  dplyr::filter(Variable== "NodeNumber") %>% 
+   dplyr::filter(Water== "irr")%>%
+  dplyr::filter(Defoliation== "LL")%>%
  #filter(Variable == "NodeNumber") %>%
  #filter(Collection=="2010-2012")%>%
   mutate(Rotation= as.factor(Rotation))%>%
@@ -1176,21 +875,5 @@ mergedf %>%
   
 ```
 
-```{r}
-mergedf %>%
-  mutate(Rotation= as.factor(Rotation))%>%
-  mutate(GrowthSeason=as.factor(GrowthSeason))%>%
-  group_by(GrowthRotation,Collection,Name) %>%
-  summarise(
-    n = n(),
-    r2 = gauchStats(Predicted,Observed)[5],
-  #  rmse = round(rmse(Predicted,Observed),0),
-    r_rmse = round(rmse(Predicted,Observed)/mean(Observed)*100,1),
-    nse = round(NSE(Predicted,Observed),1),
-    sb = gauchStats(Predicted,Observed)[1],
-  nu = gauchStats(Predicted,Observed)[2],
-  lc = gauchStats(Predicted,Observed)[3]
-  ) 
 
-```
 
