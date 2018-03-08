@@ -54,7 +54,7 @@ ObsH <-merge(obsA,TtA,by=c("Clock.Today","ExpUnitCode")) %>%
 summary(ObsH)
 ```
 
-```{r,fig.height=6, fig.width=10}
+```{r,fig.height=6, fig.width=8}
 obsNode<-ObsH%>%
   dplyr::filter(Tb==1)
  
@@ -93,7 +93,7 @@ obsNodeF<-obsNode%>%
 
 ```
 
-```{r,fig.height=4, fig.width=10}
+```{r,fig.height=4, fig.width=8}
 obsNode1<-obsNode%>%
   #dplyr::filter(Ture!="No")%>%
   dplyr::filter(Collection=="2000_2002")%>%
@@ -144,7 +144,7 @@ obsNode1%>%
 ```
 
 
-```{r,fig.height=6, fig.width=10}
+```{r,fig.height=4, fig.width=8}
 obsNode%>%
   #dplyr::filter(Ture!="No")%>%  
   dplyr::filter(Name=="Iversen_91DefoliationLL")%>%
@@ -155,7 +155,7 @@ obsNode%>%
  theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
 ```
 
-```{r,fig.height=6, fig.width=10}
+```{r,fig.height=5, fig.width=8}
 obsNodeLL<-obsNode%>%
   dplyr::filter(Name=="Iversen_121DefoliationLLFDFD5")
 obsNodeLL%>%
@@ -413,7 +413,7 @@ predict(LAR2.lm, LAR2, interval="predict")
 
 
 #load Rotation and Growth season
-```{r,fig.height=4, fig.width=10}
+```{r,fig.height=6, fig.width=10}
 phyll <- "D:\\R\\"
 StartGrazing <- read.table(paste0(phyll, "ExperimentList.txt"), 
                       header = TRUE)
@@ -721,8 +721,8 @@ mergedf %>%
     dplyr::filter(Variable== "NodeNumber") %>% 
    dplyr::filter(Water== "irr")%>%
   dplyr::filter(Defoliation== "LL")%>%
-  ggplot(aes(x=Observed, y= Predicted, 
-          colour= factor(Name))) +
+  dplyr::filter(Collection!="2010_2012")%>%
+  ggplot(aes(x=Observed, y= Predicted, colour= factor(Name))) +
   geom_point(size=2)+theme_bw()+
   geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="darkgrey") +
   geom_abline(intercept = 0, slope = 1) +

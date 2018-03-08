@@ -1,0 +1,230 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+### Data analysis for height and node after flowering for HH treatment and FD5
+
+```{r Load, warning=FALSE, fig.height=8, fig.width=8}
+# install.packages("zoo")
+library(dplyr)
+library(ggplot2)
+library(lubridate)   
+library(hydroGOF)
+library(xtable)
+library(knitr)
+library(tidyr)
+library(RSQLite)
+library(agricolae)
+library(scales)
+library(zoo)
+```
+# ### load obs data
+```{r}
+upDir <- "D:/R/CombinedData/"
+obsData <- "D:/R/CombinedData/"
+
+obsAll <- read.table(paste0(obsData, "ObsAll.txt"),
+                   header = TRUE)
+obsA<- obsAll %>%
+  mutate(StartDate=dmy(StartDate),MidDate=dmy(MidDate),FinishDate=dmy(FinishDate),Clock.Today=dmy(Clock.Today)) %>%
+  #mutate(SowingDate=as.factor(ifelse(SowingDate=="no","Sd_No",paste0("Sd_",SowingDate)))) %>% # assume this is typo to be fixed?
+  mutate(GrowthSeason1=as.factor(paste0("Gs_",GrowthSeason))) %>% # creating more intuitive labels here
+  mutate(Rotation1=as.factor(paste0("Rt_",Rotation))) %>%
+  mutate(ExpUnitCode=as.factor(paste0(Name,GrowthSeason1,Rotation1))) %>%
+  mutate(Clock.Today1 = as.POSIXct(paste(Clock.Today,Time),format="%Y-%m-%d %H:%M:%S"))%>%
+  dplyr::filter(Name=="Iversen_121DefoliationHHFDFD5")
+  
+summary(obsA)
+obsA
+```
+```{r}
+upDir <- "D:/R/"
+obsData <- "D:/R/TtAll/"
+
+Tt<- read.table(paste0(obsData, "df.all.txt"),
+               header = TRUE)
+TtA <- Tt %>% mutate(Clock.Today=dmy(Clock.Today), ExpUnitCode=as.factor(ExpName))
+TtA
+ObsHH <-merge(obsA,TtA,by=c("Clock.Today","ExpUnitCode","Water","Defoliation","FD","Experiment")) %>%
+  mutate(GrowthRotation=as.factor(paste0(GrowthSeason.x,Rotation.x)))%>%
+  dplyr::filter(Water=="irr")%>%
+  dplyr::filter(Tb==1)
+ 
+  
+ObsHH
+summary(ObsHH)
+```
+###node appearance
+```{r,fig.height=5, fig.width=8}
+obsNodeHH<-ObsHH%>%
+   dplyr::filter(Variable=="NodeNumber")%>%
+   dplyr::filter(FD=="FD5")
+
+obsNodeHH%>%
+  ggplot(aes(x=Tt_broken_sum, y=Observed), colour=factor(Name))+geom_point(size=2)+theme_bw()+xlab("Thermal time(°Cd)")+ylab("Node number")+ggtitle("Iverson_121DefoliationHHFDFD5")+
+ #geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="blue")+
+ facet_grid(GrowthSeason.x~Rotation.x)+
+  theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
+ theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
+
+```
+###Height
+```{r,fig.height=5, fig.width=8}
+
+obsHHH<-ObsHH%>%
+  dplyr::filter(Variable=="Height")%>%
+   dplyr::filter(FD=="FD5")%>%
+  mutate(Observed=Observed*10)
+obsHHH%>%
+  ggplot(aes(x=Tt_broken_sum, y=Observed), colour=factor(Name))+geom_point(size=2)+theme_bw()+xlab("Thermal time(°Cd)")+ylab("Height(mm)")+ggtitle("Iverson_121DefoliationHHFDFD5")+
+# geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="blue")+
+ facet_grid(GrowthSeason.x~Rotation.x)+
+  theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
+ theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
+
+```
+
+###Join with the flowering data
+
+```{r}
+upDir <- "D:/R/"
+obsData <- "D:/R/"
+
+flowering <- read.table(paste0(obsData, "Flowering.txt"),
+                   header = TRUE)
+flower <- flowering%>%
+  mutate(StartDate=dmy(StartDate),BVDate=dmy(BVDate),FloDate=dmy(FloDate))
+  
+
+mergeHH<-merge(ObsHH,flower,by=c("Name","Water","StartDate"))%>%
+   mutate(Dev=ifelse(Clock.Today<=BVDate,"Veg","Repro"))
+   
+
+```
+###Nodenumber and Phyllochron
+```{r,fig.height=6, fig.width=10}
+mergeHH_Veg<-mergeHH%>%
+  dplyr::filter(Dev=="Veg")%>%
+  dplyr::filter(Variable=="NodeNumber")
+mergeHH_Veg%>%  
+  ggplot(aes(x=Tt_broken_sum, y=Observed), colour=factor(Name))+geom_point(size=2)+theme_bw()+xlab("Thermal time(°Cd)")+ylab("Node number")+ggtitle("Iverson_121DefoliationHHFDFD5")+
+ geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="blue")+
+ facet_grid(GrowthSeason.x~Rotation.x)+
+  theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
+ theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
+```
+```{r}
+ mergeHH_V <- mergeHH_Veg %>%
+  mutate(GrowthSeason=as.factor(GrowthSeason.x),Rotation=as.factor(Rotation.x))%>%
+  group_by(Name,GrowthSeason,Rotation,Tmean,Ppm,Tb) %>%
+    do(mod = lm(Tt_broken_sum~Observed,data=.))%>%
+  mutate(PhollchronV = summary(mod)$coeff[2])%>%
+  dplyr::select(-mod)
+```
+
+
+```{r,fig.height=6, fig.width=10}
+mergeHH_Repro<-mergeHH%>%
+  dplyr::filter(Dev=="Repro")%>%
+  dplyr::filter(Variable=="NodeNumber")
+mergeHH_Repro%>%
+  ggplot(aes(x=Tt_broken_sum, y=Observed), colour=factor(Name))+geom_point(size=2)+theme_bw()+xlab("Thermal time(°Cd)")+ylab("Node number")+ggtitle("Iverson_121DefoliationHHFDFD5")+
+ geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="blue")+
+ facet_grid(GrowthSeason.x~Rotation.x)+
+  theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
+ theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
+```
+```{r}
+ mergeHH_R <- mergeHH_Repro %>%
+  mutate(GrowthSeason=as.factor(GrowthSeason.x),Rotation=as.factor(Rotation.x))%>%
+  dplyr::filter(GrowthSeason!="2"|Rotation!="1") %>%
+  group_by(Name,GrowthSeason,Rotation,Tmean,Ppm,Tb) %>%
+    do(mod = lm(Tt_broken_sum~Observed,data=.))%>%
+  mutate(PhyollchronR= summary(mod)$coeff[2])%>%
+  dplyr::select(-mod)
+  
+mergePhy<-merge(mergeHH_V, mergeHH_R,by=c("Name","GrowthSeason","Rotation","Tmean","Ppm","Tb"))%>%
+  dplyr::select(Name,GrowthSeason,Rotation,Tmean, Ppm,Tb, PhollchronV,PhyollchronR) %>%
+  tidyr::gather("Variable","Phyllo",PhollchronV:PhyollchronR)
+
+  
+```
+
+```{r,fig.height=4, fig.width=6}
+mergePhy%>%
+  mutate(GrowthRotation=as.factor(paste0(GrowthSeason,Rotation)))%>%
+  filter(GrowthRotation!="21")%>%
+  ggplot(aes(x=Ppm, y=Phyllo,colour=factor(Name),label=GrowthRotation))+geom_text()+
+  #geom_point(size=2)+
+  theme_bw()+xlab("Photoperiod")+ylab("Phyllochron")+ggtitle("Iverson_121DefoliationHHFDFD5")+
+ geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="blue")+
+ facet_wrap(~Variable,ncol = 2)+
+   theme(legend.title=element_blank(),legend.position = "blank")+
+  theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
+ theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
+```
+###Height and Heightchron
+```{r,fig.height=6, fig.width=10}
+mergeHH_Veg<-mergeHH%>%
+  dplyr::filter(Dev=="Veg")%>%
+  dplyr::filter(Variable=="Height")%>%
+   mutate(Observed=Observed*10)
+mergeHH_Veg%>%  
+  ggplot(aes(x=Tt_broken_sum, y=Observed), colour=factor(Name))+geom_point(size=2)+theme_bw()+xlab("Thermal time(°Cd)")+ylab("Height(mm)")+ggtitle("Iverson_121DefoliationHHFDFD5")+
+ geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="blue")+
+ facet_grid(GrowthSeason.x~Rotation.x)+
+  theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
+ theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
+```
+```{r}
+ mergeHH_V <- mergeHH_Veg %>%
+  mutate(GrowthSeason=as.factor(GrowthSeason.x),Rotation=as.factor(Rotation.x))%>%
+  group_by(Name,GrowthSeason,Rotation,Tmean,Ppm,Tb) %>%
+    do(mod = lm(Tt_broken_sum~Observed,data=.))%>%
+  mutate(HeightchronV = summary(mod)$coeff[2])%>%
+  dplyr::select(-mod)
+```
+
+
+```{r,fig.height=6, fig.width=10}
+mergeHH_Repro<-mergeHH%>%
+  dplyr::filter(Dev=="Repro")%>%
+  dplyr::filter(Variable=="Height")%>%
+  mutate(Observed=Observed*10)
+mergeHH_Repro%>%
+  ggplot(aes(x=Tt_broken_sum, y=Observed), colour=factor(Name))+geom_point(size=2)+theme_bw()+xlab("Thermal time(°Cd)")+ylab("Height(mm)")+ggtitle("Iverson_121DefoliationHHFDFD5")+
+ geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="blue")+
+ facet_grid(GrowthSeason.x~Rotation.x)+
+  theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
+ theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
+```
+```{r}
+ mergeHH_R <- mergeHH_Repro %>%
+  mutate(GrowthSeason=as.factor(GrowthSeason.x),Rotation=as.factor(Rotation.x))%>%
+  dplyr::filter(GrowthSeason!="2"|Rotation!="1") %>%
+  group_by(Name,GrowthSeason,Rotation,Tmean,Ppm,Tb) %>%
+    do(mod = lm(Tt_broken_sum~Observed,data=.))%>%
+  mutate(HeightchronR= summary(mod)$coeff[2])%>%
+  dplyr::select(-mod)
+  
+mergePhy<-merge(mergeHH_V, mergeHH_R,by=c("Name","GrowthSeason","Rotation","Tmean","Ppm","Tb"))%>%
+  dplyr::select(Name,GrowthSeason,Rotation,Tmean, Ppm,Tb, HeightchronV,HeightchronR) %>%
+  tidyr::gather("Variable","Phyllo",HeightchronV:HeightchronR)
+
+  
+```
+
+```{r}
+mergePhy%>%
+  mutate(GrowthRotation=as.factor(paste0(GrowthSeason,Rotation)))%>%
+ # filter(GrowthRotation!="21")%>%
+  ggplot(aes(x=Ppm, y=Phyllo,colour=factor(Name),label=GrowthRotation))+geom_text()+
+  #geom_point(size=2)+
+  theme_bw()+xlab("Photoperiod")+ylab("Heightochron(°Cd/mm)")+ggtitle("Iverson_121DefoliationHHFDFD5")+
+ geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="blue")+
+ facet_wrap(~Variable,ncol = 2)+
+  theme(legend.title=element_blank(),legend.position = "blank")+
+  theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
+ theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
+```
+

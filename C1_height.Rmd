@@ -58,7 +58,7 @@ ObsH <-merge(obsA,TtA,by=c("Clock.Today","ExpUnitCode")) %>%
 summary(ObsH)
 ```
 
-```{r,fig.height=6, fig.width=10}
+```{r,fig.height=5, fig.width=8}
 obsheight<-ObsH%>%
   dplyr::filter(Name=="Iversen_8Waterirr")
 obsheight%>%
@@ -70,7 +70,7 @@ obsheight%>%
 
 ```
 #Iversen_91DefoliationLL
-```{r,fig.height=6, fig.width=10}
+```{r,fig.height=5, fig.width=8}
 obsheight1<-ObsH%>%
   dplyr::filter(Name=="Iversen_91DefoliationLL")
 obsheight1%>%
@@ -82,7 +82,7 @@ obsheight1%>%
  
 ```
 ##Iversen_9SowingDateSD1Waterirr
-```{r,fig.height=4, fig.width=10}
+```{r,fig.height=4, fig.width=8}
 
 obsheight3<-ObsH%>%
   dplyr::filter(Name=="Iversen_9SowingDateSD1Waterirr")%>%
@@ -149,7 +149,7 @@ obsheight1%>%
 
 
 ##Iverson12DefoliationFD5
-```{r,fig.height=6, fig.width=10}
+```{r,fig.height=5, fig.width=8}
 
 obsheight1<-ObsH%>%
   dplyr::filter(Name=="Iversen_121DefoliationLLFDFD5")%>%
@@ -628,7 +628,7 @@ mergedf %>%
 str(mergedf)
 
 mergedf %>%
-  group_by(Name,Collection) %>%
+  group_by(Name) %>%
   summarise(
     n = n(),
     r2 = gauchStats(Predicted,Observed)[5],
