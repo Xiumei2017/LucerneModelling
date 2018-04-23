@@ -19,6 +19,7 @@ library(agricolae)
 library(scales)
 library(zoo)
 library(lme4)
+library(reshape2)
 ```
 ## lode observed data
 ```{r}
@@ -48,22 +49,290 @@ Tt<- read.table(paste0(obsData, "df.all.txt"),
                header = TRUE)
 TtA <- Tt %>% mutate(Clock.Today=dmy(Clock.Today), ExpUnitCode=as.factor(ExpName))
 TtA
-ObsL <-merge(obsA,TtA,by=c("Clock.Today","ExpUnitCode")) %>%
+ObsL.Raw <-merge(obsA,TtA,by=c("Clock.Today","ExpUnitCode"))
+ObsL<-ObsL.Raw%>%
   mutate(GrowthRotation=as.factor(paste0(GrowthSeason.x,Rotation.x)))%>%
   dplyr::filter(Water.x=="irr")%>%
   dplyr::filter(Defoliation.x=="LL")%>%
-  dplyr::filter(Variable=="LAI")%>%
+  dplyr::filter(FD.x=="FD5")%>%
+  dplyr::filter(Variable=="LAI"|Variable=="NodeNumber")%>%
   dplyr::filter(Tb==1)
   
 
 summary(ObsL)
 ```
 
+
+
+```{r}
+ObsLF<-ObsL%>%
+  dplyr::filter(Name!="Iversen_8Waterirr"|GrowthRotation!="11")%>%
+  dplyr::filter(Name!="Iversen_8Waterirr"|GrowthRotation!="22")%>%
+  dplyr::filter(Name!="Iversen_8Waterirr"|GrowthRotation!="31")%>%
+  dplyr::filter(Name!="Iversen_8Waterirr"|GrowthSeason.x!="4")%>%
+  dplyr::filter(Name!="Iversen_8Waterirr"|GrowthRotation!="57")%>%
+  dplyr::filter(Name!="Iversen_8Waterirr"|GrowthRotation!="61")%>%
+ dplyr::filter(Name!="Iversen_121DefoliationLLFDFD5"|GrowthRotation!="14")%>%
+ dplyr::filter(Name!="Iversen_121DefoliationLLFDFD5"|GrowthSeason.x!="3")%>%
+ dplyr::filter(Name!="Iversen_121DefoliationLLFDFD5"|GrowthSeason.x!="4")%>%
+ dplyr::filter(Name!="Iversen_9SowingDateSD1Waterirr"|GrowthRotation!="14")%>%
+ dplyr::filter(Name!="Iversen_9SowingDateSD2Waterirr"|GrowthRotation!="21")%>%
+ dplyr::filter(Name!="Iversen_9SowingDateSD2Waterirr"|GrowthRotation!="13")%>%
+  dplyr::filter(Name!="Iversen_9SowingDateSD3Waterirr"|GrowthRotation!="21")%>%
+  dplyr::filter(Name!="Iversen_9SowingDateSD4Waterirr"|GrowthRotation!="21")
+
+
+```
+
+# Create and test interpolation function 
+
+###Node appearance data preparation
+###Node appearance interpolate for each rotation
+```{r}
+
+# add function to "turn-off" rowise() in dplyr. FIXME: maybe there's a better/simpler solution?
+
+UniExp <- unique(ObsLF$ExpUnitCode)
+
+Inte.df <- data.frame()
+  
+for(i in 1:length(UniExp))
+{
+  
+  ObsLA<-ObsLF%>%
+   filter(ExpUnitCode==UniExp[i])
+  
+ LN<-ObsLA%>%
+  unique()%>%
+  tidyr::spread(Variable,Observed)
+ 
+ LN.data<-LN%>%
+  mutate( NodeNumber.y=approx(LN$Clock.Today, LN$NodeNumber, xout =LN$Clock.Today, 
+         method="linear", 
+         rule = 2)$y)##interpolate function 
+  
+
+ Inte.df <- rbind(Inte.df, LN.data)
+
+}
+
+summary(Inte.df)
+Inte.df
+#write.csv(df.all,"D:/R/TtAll/df.all.csv", row.names = FALSE)
+
+```
+###Plot LAI against Nodenumber
+##Regrowth
+```{r,fig.height=7, fig.width=10}
+phyll <- "D:\\R\\"
+StartGrazing <- read.table(paste0(phyll, "ExperimentList.txt"), 
+                      header = TRUE)
+StartGrazing1<-StartGrazing %>%
+  mutate(GrowthRotation= as.factor(paste0(GrowthSeason,Rotation)))
+Inte.df.Pp<- merge(StartGrazing1,Inte.df,by=c("Name","Collection","GrowthRotation"))
+
+
+Leaf_Node<-Inte.df.Pp%>%
+  dplyr::filter(LAI!=is.na(LAI))%>%
+  dplyr::filter(Collection!="2010_2012")%>%
+  dplyr::filter(Name!="Iversen_121DefoliationLLFDFD5"|GrowthRotation!="13")
+df<-data.frame(a=c(2, 4.3, 7.8, 10,11),b=c(0, 1, 4, 6,7))
+dfs<-data.frame(c=c(6,7.5,10.5,11),d=c(0,1,3,3.4))
+Leaf_Node%>%
+ dplyr::filter(NodeNumber.y<=11)%>%
+  #dplyr::filter(Name=="Iversen_91DefoliationLL")%>%
+  ggplot(aes(x=NodeNumber.y,y=LAI, color=Name))+theme_bw()+xlab("Node Number")+ylab("LAI(m^2/m^2)")+ 
+  geom_line(data=df,aes(x=a,y=b), color="red")+
+  geom_line(data=dfs,aes(x=c,y=d),color="blue")+
+  geom_point(size=2)+
+  #geom_smooth(method = "lm", se = TRUE,linetype=1 , colour="black")+
+  #geom_text()+
+  facet_wrap(~Stage,ncol=1)+
+  #facet_grid(Trend~Stage)+
+  theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
+ theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
+  
+  
+```
+
+####analysis
+```{r}
+Leaf_Node1<-Leaf_Node%>%
+  dplyr::filter(Stage!="Seedling")
+x=Leaf_Node1$NodeNumber.y
+y=Leaf_Node1$LAI
+
+#mdl1 <- lm(y ~ x, data = Leaf_Node1)
+#mdl2 <- lm(y ~ x + I(x^2), data = Leaf_Node1)
+#mdl3 <- lm(y ~ x + I(x^2) + I(x^3), data = Leaf_Node1)
+mdl4 <- lm(y ~ I(x^2), data = Leaf_Node1)
+#mdl5<-lm(y ~ poly(x, 2, raw=TRUE),data = Leaf_Node1 )
+summary(mdl4)
+
+prd <- data.frame(x = seq(2, 14, by = 0.1))
+
+result <- prd
+#result$mdl1 <- predict(mdl1, newdata = prd)
+#result$mdl2 <- predict(mdl2, newdata = prd)
+#result$mdl3 <- predict(mdl3, newdata = prd)
+result$mdl4 <- predict(mdl4, newdata = prd)
+#result$mdl5 <- predict(mdl5, newdata = prd)
+
+result <-  melt(result, id.vars = "x", variable.name = "model",
+                value.name = "fitted")
+ggplot(result, aes(x = x, y = fitted)) +
+  theme_bw() +
+  facet_wrap(~Stage,ncol=2)+
+  geom_point(data = Leaf_Node1, aes(x = x, y = y)) +xlab("Main node number")+ylab("LAI (m^2/m^2)")+
+  geom_line(aes(colour = model), size = 1)+
+  theme(legend.title=element_blank(),legend.position = "blank")+
+  theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
+ theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
+```
+###LAI aganist node number
+
 ```{r,fig.height=6, fig.width=10}
-obsLAI<-ObsL%>%
-  dplyr::filter(Name=="Iversen_8Waterirr")
+Leaf_Nodef<-Leaf_Node%>%
+  dplyr::filter(Name=="Iversen_8Waterirr")%>%
+  dplyr::filter(NodeNumber.y<=11)
+
+Leaf_Nodef%>%
+  ggplot(aes(x=NodeNumber.y, y=LAI))+geom_point(size=2)+theme_bw()+ylab("LAI (m^2/m^2)")+xlab("Node number")+ 
+  geom_smooth(method = "lm", se = TRUE,linetype=1 , colour="black")+
+ facet_grid(GrowthSeason.x~Rotation.x)+ggtitle("Iversen_8Waterirr")+
+  theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
+ theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
+
+```
+```{r,fig.height=6, fig.width=10}
+Leaf_Node2<-Leaf_Node%>%
+  dplyr::filter(Name=="Iversen_91DefoliationLL")%>%
+  dplyr::filter(NodeNumber.y<=11)
+
+Leaf_Node2%>%
+  ggplot(aes(x=NodeNumber.y, y=LAI))+geom_point(size=2)+theme_bw()+ylab("LAI (m^2/m^2)")+xlab("Node number")+ 
+ geom_smooth(method = "lm", se = TRUE,linetype=1 , colour="black")+
+  #stat_smooth(method="nls",formula =  y~a*exp(-x*b),method.args=list(start=c(a=2,b=2)),se=F,color="red")+
+  #stat_smooth(method="lm",formula =  y~exp(-x),se=F,color="blue")
+ facet_grid(GrowthSeason.x~Rotation.x)+ggtitle("Iversen_91DefoliationLL")+
+  theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
+ theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
+
+```
+```{r,fig.height=4, fig.width=10}
+Leaf_Node3<-Leaf_Node%>%
+  dplyr::filter(Name=="Iversen_9SowingDateSD1Waterirr")%>%
+  dplyr::filter(NodeNumber.y<=11)
+
+Leaf_Node3%>%
+  ggplot(aes(x=NodeNumber.y, y=LAI))+geom_point(size=2)+theme_bw()+ylab("LAI (m^2/m^2)")+xlab("Node number")+ 
+  geom_smooth(method = "lm", se = TRUE,linetype=1 , colour="black")+
+  #stat_smooth(method="nls",formula =  y~a*exp(-x*b),method.args=list(start=c(a=2,b=2)),se=F,color="red")+
+  #stat_smooth(method="lm",formula =  y~exp(-x),se=F,color="blue")
+ facet_grid(GrowthSeason.x~Rotation.x)+ggtitle("Iversen_9SowingDateSD1Waterirr")+
+  theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
+ theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
+
+```
+```{r,fig.height=3, fig.width=10}
+Leaf_Node4<-Leaf_Node%>%
+  dplyr::filter(Name=="Iversen_9SowingDateSD2Waterirr")%>%
+  dplyr::filter(NodeNumber.y<=11)
+
+Leaf_Node4%>%
+  ggplot(aes(x=NodeNumber.y, y=LAI))+geom_point(size=2)+theme_bw()+ylab("LAI (m^2/m^2)")+xlab("Node number")+ 
+  geom_smooth(method = "lm", se = TRUE,linetype=1 , colour="black")+
+  #stat_smooth(method="nls",formula =  y~a*exp(-x*b),method.args=list(start=c(a=2,b=2)),se=F,color="red")+
+  #stat_smooth(method="lm",formula =  y~exp(-x),se=F,color="blue")
+ facet_grid(GrowthSeason.x~Rotation.x)+ggtitle("Iversen_9SowingDateSD2Waterirr")+
+  theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
+ theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
+
+```
+
+```{r,fig.height=3, fig.width=10}
+Leaf_Node5<-Leaf_Node%>%
+  dplyr::filter(Name=="Iversen_9SowingDateSD3Waterirr")%>%
+  dplyr::filter(NodeNumber.y<=11)
+
+Leaf_Node5%>%
+  ggplot(aes(x=NodeNumber.y, y=LAI))+geom_point(size=2)+theme_bw()+ylab("LAI (m^2/m^2)")+xlab("Node number")+ 
+  geom_smooth(method = "lm", se = TRUE,linetype=1 , colour="black")+
+  #stat_smooth(method="nls",formula =  y~a*exp(-x*b),method.args=list(start=c(a=2,b=2)),se=F,color="red")+
+  #stat_smooth(method="lm",formula =  y~exp(-x),se=F,color="blue")
+ facet_grid(GrowthSeason.x~Rotation.x)+ggtitle("Iversen_9SowingDateSD3Waterirr")+
+  theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
+ theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
+
+```
+```{r,fig.height=4, fig.width=10}
+Leaf_Node6<-Leaf_Node%>%
+  dplyr::filter(Name=="Iversen_9SowingDateSD4Waterirr")%>%
+  dplyr::filter(NodeNumber.y<=11)
+
+Leaf_Node6%>%
+  ggplot(aes(x=NodeNumber.y, y=LAI))+geom_point(size=2)+theme_bw()+ylab("LAI (m^2/m^2)")+xlab("Node number")+ 
+  geom_smooth(method = "lm", se = TRUE,linetype=1 , colour="black")+
+  #stat_smooth(method="nls",formula =  y~a*exp(-x*b),method.args=list(start=c(a=2,b=2)),se=F,color="red")+
+  #stat_smooth(method="lm",formula =  y~exp(-x),se=F,color="blue")
+ facet_grid(GrowthSeason.x~Rotation.x)+ggtitle("Iversen_9SowingDateSD4Waterirr")+
+  theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
+ theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
+
+```
+
+
+```{r,fig.height=4, fig.width=10}
+Leaf_Node7<-Leaf_Node%>%
+  dplyr::filter(Name=="Iversen_121DefoliationLLFDFD5")%>%
+  dplyr::filter(NodeNumber.y<=11)
+
+Leaf_Node7%>%
+  ggplot(aes(x=NodeNumber.y, y=LAI))+geom_point(size=2)+theme_bw()+ylab("LAI (m^2/m^2)")+xlab("Node number")+ 
+  geom_smooth(method = "lm", se = TRUE,linetype=1 , colour="black")+
+  #stat_smooth(method="nls",formula =  y~a*exp(-x*b),method.args=list(start=c(a=2,b=2)),se=F,color="red")+
+  #stat_smooth(method="lm",formula =  y~exp(-x),se=F,color="blue")
+ facet_grid(GrowthSeason.x~Rotation.x)+ggtitle("Iversen_121DefoliationLLFDFD5")+
+  theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
+ theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
+
+```
+```{r}
+SlopeLN<-Leaf_Node%>%
+  dplyr::filter(NodeNumber.y<=11)%>%
+  group_by(Name,GrowthSeason.x,Rotation.x,Tmean,Ppm,Stage,Ps,Collection,GrowthRotation,Trend)%>%
+ do(mod = lm(LAI~NodeNumber.y,data=.)) %>%
+  mutate(slopeLN = summary(mod)$coeff[2]) %>%
+  dplyr::select(-mod)
+
+SlopeLN%>%
+  dplyr::filter(Stage!="Seedling")%>%
+   ggplot(aes(x=Tmean, y=slopeLN,color=Name,label=GrowthRotation))+
+  #geom_point(size=2)+
+  geom_text()+
+  theme_bw()+ylab("LAI per node")+xlab("Photoperiod (h)")+ 
+  geom_smooth(method = "lm", se = TRUE,linetype=1 , colour="black")+
+  #stat_smooth(method="nls",formula =  y~a*exp(-x*b),method.args=list(start=c(a=2,b=2)),se=F,color="red")+
+  #stat_smooth(method="lm",formula =  y~exp(-x),se=F,color="blue")+
+ #facet_wrap(~Trend,ncol=2)+
+  theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
+ theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
+
+
+```
+
+
+###leaf and node appearance in the same Tt before interpolate
+```{r,fig.height=6, fig.width=10}
+obsLAI<-ObsLF%>%
+  dplyr::filter(Name=="Iversen_8Waterirr")%>%
+  dplyr::filter(Variable=="LAI")
+obsNode<-ObsLF%>%
+  dplyr::filter(Name=="Iversen_8Waterirr")%>%
+  dplyr::filter(Variable=="NodeNumber")
 obsLAI%>%
-  ggplot(aes(x=Tt_broken_sum, y=Observed))+geom_point(size=2)+theme_bw()+xlab("Thermal time(°Cd)")+ylab("LAI (m^2/m^2)")+
+  ggplot(aes(x=Tt_broken_sum, y=Observed))+geom_point(size=2)+theme_bw()+xlab("Thermal time(°Cd)")+ylab("Node Number")+ 
+  geom_point(data=obsNode, aes(x=Tt_broken_sum, y=Observed),colour="green",size=3)+
   #geom_smooth(method = "lm", se = TRUE,linetype=1 , colour="black")+
   #stat_smooth(method="nls",formula =  y~a*exp(-x*b),method.args=list(start=c(a=2,b=2)),se=F,color="red")+
   #stat_smooth(method="lm",formula =  y~exp(-x),se=F,color="blue")
@@ -75,10 +344,14 @@ obsLAI%>%
 #Iversen_91DefoliationLL
 ```{r,fig.height=6, fig.width=10}
 obsLAI1<-ObsL%>%
-  dplyr::filter(Name=="Iversen_91DefoliationLL")
+  dplyr::filter(Name=="Iversen_91DefoliationLL")%>%
+  dplyr::filter(Variable=="LAI")
+obsNode1<-ObsL%>%
+  dplyr::filter(Name=="Iversen_91DefoliationLL")%>%
+  dplyr::filter(Variable=="NodeNumber")
 obsLAI1%>%
-  ggplot(aes(x=Tt_broken_sum, y=Observed), colour=factor(Name))+
-  geom_point(size=2)+theme_bw()+xlab("Thermal time(°Cd)")+ylab("LAI (m^2/m^2) ")+ggtitle("Iversen_91DefoliationLL")+
+  ggplot(aes(x=Tt_broken_sum, y=Observed))+geom_point(size=2)+theme_bw()+xlab("Thermal time(°Cd)")+ylab("Node Number ")+ggtitle("Iversen_91DefoliationLL")+
+  geom_point(data=obsNode1, aes(x=Tt_broken_sum, y=Observed),colour="green",size=3)+
  facet_grid(GrowthSeason.x~Rotation.x)+
   #geom_smooth(method = "lm", se = TRUE,linetype=1 , colour="black")+
   theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
@@ -88,11 +361,16 @@ obsLAI1%>%
 ##Iversen_9SowingDateSD1Waterirr
 ```{r,fig.height=4, fig.width=10}
 
-obsLAI2<-ObsL%>%
-  dplyr::filter(Name=="Iversen_9SowingDateSD1Waterirr")
+obsLAI2<-ObsLF%>%
+  dplyr::filter(Name=="Iversen_9SowingDateSD1Waterirr")%>%
+  dplyr::filter(Variable=="LAI")
+obsNode2<-ObsLF%>%
+  dplyr::filter(Name=="Iversen_9SowingDateSD1Waterirr")%>%
+  dplyr::filter(Variable=="NodeNumber")
  
 obsLAI2%>%
   ggplot(aes(x=Tt_broken_sum, y=Observed), colour=factor(Name))+geom_point(size=2)+theme_bw()+xlab("Thermal time(°Cd)")+ylab("LAI (m^2/m^2) ")+ggtitle("Iversen_9SowingDateSD1Waterirr")+
+  geom_point(data=obsNode2, aes(x=Tt_broken_sum, y=Observed),colour="green",size=3)+
   geom_smooth(method = "glm",family = gaussian(link="log"), aes(colour = "Exponential"))+
  facet_grid(GrowthSeason.x~Rotation.x)+
   #geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="black")+
@@ -103,11 +381,16 @@ obsLAI2%>%
 ##Iversen_9SowingDateSD2Waterirr
 ```{r,fig.height=3, fig.width=10}
 
-obsLAI3<-ObsL%>%
-  dplyr::filter(Name=="Iversen_9SowingDateSD2Waterirr")
+obsLAI3<-ObsLF%>%
+  dplyr::filter(Name=="Iversen_9SowingDateSD2Waterirr")%>%
+  dplyr::filter(Variable=="LAI")
+obsNode3<-ObsLF%>%
+  dplyr::filter(Name=="Iversen_9SowingDateSD2Waterirr")%>%
+  dplyr::filter(Variable=="NodeNumber")
  
 obsLAI3%>%
   ggplot(aes(x=Tt_broken_sum, y=Observed), colour=factor(Name))+geom_point(size=2)+theme_bw()+xlab("Thermal time(°Cd)")+ylab("LAI (m^2/m^2) ")+ggtitle("Iversen_9SowingDateSD2Waterirr")+
+  geom_point(data=obsNode3, aes(x=Tt_broken_sum, y=Observed),colour="green",size=3)+
  facet_grid(GrowthSeason.x~Rotation.x)+
   geom_smooth(method = "glm",family = gaussian(link="log"), aes(colour = "Exponential"))+
   #geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="black")+
@@ -118,13 +401,19 @@ obsLAI3%>%
 ##Iversen_9SowingDateSD3Waterirr
 ```{r,fig.height=3, fig.width=10}
 
-obsLAI4<-ObsL%>%
-  dplyr::filter(Name=="Iversen_9SowingDateSD3Waterirr")
+obsLAI4<-ObsLF%>%
+  dplyr::filter(Name=="Iversen_9SowingDateSD3Waterirr")%>%
+  dplyr::filter(Variable=="LAI")
+
+obsNode4<-ObsLF%>%
+  dplyr::filter(Name=="Iversen_9SowingDateSD3Waterirr")%>%
+  dplyr::filter(Variable=="NodeNumber")
  
 obsLAI4
 obsLAI4%>%
   ggplot(aes(x=Tt_broken_sum, y=Observed), colour=factor(Name))+geom_point(size=2)+theme_bw()+xlab("Thermal time(°Cd)")+ylab("LAI (m^2/m^2) ")+ggtitle("Iversen_9SowingDateSD3Waterirr")+
   geom_smooth(method = "glm",family = gaussian(link="log"), aes(colour = "Exponential"))+ 
+  geom_point(data=obsNode4, aes(x=Tt_broken_sum, y=Observed),colour="green",size=3)+
  facet_grid(GrowthSeason.x~Rotation.x)+
  #geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="blue")+
   theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
@@ -134,10 +423,18 @@ obsLAI4%>%
 ##Iversen_9SowingDateSD4Waterirr
 ```{r,fig.height=3, fig.width=10}
 
-obsLAI5<-ObsL%>%
-  dplyr::filter(Name=="Iversen_9SowingDateSD4Waterirr")
+obsLAI5<-ObsLF%>%
+  dplyr::filter(Name=="Iversen_9SowingDateSD4Waterirr")%>%
+  dplyr::filter(Variable=="LAI")
+
+obsNode5<-ObsLF%>%
+  dplyr::filter(Name=="Iversen_9SowingDateSD4Waterirr")%>%
+  dplyr::filter(Variable=="NodeNumber")
+
 obsLAI5%>%
-  ggplot(aes(x=Tt_broken_sum, y=Observed), colour=factor(Name))+geom_point(size=2)+theme_bw()+xlab("Thermal time(°Cd)")+ylab("LAI (m^2/m^2) ")+ggtitle("Iversen_9SowingDateSD4Waterirr")+ facet_grid(GrowthSeason.x~Rotation.x)+
+  ggplot(aes(x=Tt_broken_sum, y=Observed), colour=factor(Name))+geom_point(size=2)+theme_bw()+xlab("Thermal time(°Cd)")+ylab("LAI (m^2/m^2) ")+ggtitle("Iversen_9SowingDateSD4Waterirr")+
+  geom_point(data=obsNode5, aes(x=Tt_broken_sum, y=Observed),colour="green",size=3)+
+  facet_grid(GrowthSeason.x~Rotation.x)+
   #geom_smooth(method = "glm",family = gaussian(link="log"), aes(colour = "Exponential"))+  
   #geom_smooth(method = "lm", se = TRUE, linetype = 1, aes(colour = "lm"))+
   theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
@@ -147,65 +444,23 @@ obsLAI5%>%
 ##Iverson12DefoliationFD5
 ```{r,fig.height=6, fig.width=10}
 
-# obsLAI6<-ObsL%>%
-#   dplyr::filter(Name=="Iversen_121DefoliationLLFDFD5")
-# 
-# obsLAI6%>%
-#   ggplot(aes(x=Tt_broken_sum, y=Observed), colour=factor(Name))+geom_point(size=2)+
-#   theme_bw()+xlab("Thermal time(°Cd)")+ylab("LAI (m^2/m^2)")+ggtitle("Iversen_121DefoliationLLFDFD5")+
-#  facet_grid(GrowthSeason.x~Rotation.x)+
-#   #geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="black")+
-#   theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
-#  theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
-#  
+obsLAI6<-ObsLF%>%
+  dplyr::filter(Name=="Iversen_121DefoliationLLFDFD5")%>%
+  dplyr::filter(Variable=="LAI")
+obsNode6<-ObsLF%>%
+  dplyr::filter(Name=="Iversen_121DefoliationLLFDFD5")%>%
+  dplyr::filter(Variable=="NodeNumber")
+
+obsLAI6%>%
+  ggplot(aes(x=Tt_broken_sum, y=Observed), colour=factor(Name))+geom_point(size=2)+
+  theme_bw()+xlab("Thermal time(°Cd)")+ylab("LAI (m^2/m^2)")+ggtitle("Iversen_121DefoliationLLFDFD5")+
+ facet_grid(GrowthSeason.x~Rotation.x)+
+  geom_point(data=obsNode6, aes(x=Tt_broken_sum, y=Observed),colour="green",size=3)+
+  #geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="black")+
+  theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
+ theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
+
 ```
-###Expnional regression excise
-```{r}
-# DP = data.frame(Activity = c(100,67.7,6.29,16.55),
-#                 Conc = c(0, 83, 166, 416))
-# 
-# p.dp.1 <- ggplot(data = DP,
-#                aes(x = Conc,
-#                    y = Activity)) + 
-#   ylab("Activity") + 
-#   xlab("Concentration") +
-#   geom_point() + 
-#   theme_bw(base_size = 8) +
-#   geom_smooth(method = "lm", 
-#               aes(colour = "Linear")) +
-#   scale_color_manual(name = "Fits",
-#                      breaks = c("Linear"),
-#                      values = c("blue"))
-# p.dp.2 <- p.dp.1 +
-#   geom_smooth(method = "glm",
-#               family = gaussian(link="log"), 
-#               aes(colour = "Exponential")) 
-#   # scale_color_manual(name = "Fits",
-#   #                    breaks = c("Linear","Exponential"),
-#   #                    values = c("red","blue"))
-```
-
-
-
-```{r}
-# p.dp.2 <- p.dp.1 +
-#   geom_smooth(method = "glm",
-#               family = gaussian(link="log"), 
-#               aes(colour = "Exponential")) +
-#   scale_color_manual(name = "Fits",
-#                      breaks = c("Linear","Exponential"),
-#                      values = c("red","blue"))
-```
-
-
-
-
-
-
-
-
-
-
 
 ###LEAR
 ```{r}
@@ -217,6 +472,7 @@ LEAR<-ObsL%>%
   
 LEAR%>%
   dplyr::filter(Collection!="2010_2012")%>%
+  dplyr::filter(Name!="Iversen_121DefoliationLLFDFD2")%>%
   ggplot(aes(x=Ppm, y=LEAR, colour=factor(Name)))+geom_point(size=2)+theme_bw()+
   geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="darkgrey")+xlab("Photoperiod (h)")+ylab("LEAR (m^2/m^2/°Cd)")+
   theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
@@ -224,7 +480,7 @@ LEAR%>%
   
 ```
 #load Rotation and Growth season
-```{r,fig.height=4, fig.width=10}
+```{r,fig.height=6, fig.width=10}
 phyll <- "D:\\R\\"
 StartGrazing <- read.table(paste0(phyll, "ExperimentList.txt"), 
                       header = TRUE)
@@ -239,8 +495,8 @@ LEARPp%>%
   ggplot(aes(x=Ppm, y=LEAR,label=GrowthRotation,color=Name))+geom_text()+theme_bw()+xlab("Mean photoperiod(h) ")+ylab("LEAR (m^2/m^2/°Cd)")+
   geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="red")+
   #geom_smooth(method = "lm", se = TRUE, formula=y ~ poly(x, 2, raw=TRUE), colour="darkgrey")+
-  #facet_grid(Trend~Stage)+
-  facet_wrap(~Stage,ncol = 2)+
+  facet_grid(Trend~Stage)+
+  #facet_wrap(~Stage,ncol = 2)+
   #geom_point(size=2)+
   theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
  theme(axis.title.y=element_text(face="bold",colour="black",size = 12))+
@@ -272,14 +528,362 @@ XV<-seq(min(X),max(X),0.01)
 yv<-predict(model2,list(X=XV,Xsq=XV^2))
 lines(XV,yv,col="blue")
   
+```
+
+####Sen
+```{r,fig.height=6, fig.width=10}
+ObsLSen<-ObsL.Raw%>%
+  mutate(GrowthRotation=as.factor(paste0(GrowthSeason.x,Rotation.x)))%>%
+  dplyr::filter(Water.x=="irr")%>%
+  dplyr::filter(Defoliation.x=="LL")%>%
+  dplyr::filter(Variable=="Senescence"|Variable=="NodeNumber")%>%
+  dplyr::filter(Tb==1)
+ObsSen<-ObsLSen%>%
+  dplyr::filter(Variable=="Senescence")%>%
+  dplyr::select(Clock.Today,Name,Collection,GrowthSeason.x,Rotation.x,Variable,Observed,StdDEV,Tt_broken_sum,Ppm,Tmean,GrowthRotation)
+ObsNode<-ObsLSen%>%
+  dplyr::filter(Variable=="NodeNumber")%>%
+  dplyr::select(Clock.Today,Name,Collection,GrowthSeason.x,Rotation.x,Variable,Observed,StdDEV,Tt_broken_sum,Ppm,Tmean,GrowthRotation)
+ObsSen_Node<-merge(ObsSen,ObsNode,by=c("Clock.Today","Name","Collection","GrowthSeason.x","Rotation.x","Tt_broken_sum","Ppm","Tmean","GrowthRotation"))
+ObsSen_Node%>%
+  dplyr::filter(Name=="Iversen_121DefoliationLLFDFD5")%>%
+  ggplot(aes(x=Observed.y, y=Observed.x,label=GrowthRotation))+theme_bw()+xlab("NodeNumber")+ylab("Senescence")+
+  #geom_smooth(method = "lm", se = TRUE, formula=y ~ poly(x, 2, raw=TRUE), colour="darkgrey")+
+   facet_grid(GrowthSeason.x~Rotation.x)+
+  #facet_wrap(~Stage,ncol = 2)+
+  geom_point(size=2)+
+  theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
+ theme(axis.title.y=element_text(face="bold",colour="black",size = 12))+
+  theme(legend.title=element_blank())
+  
   
 ```
 
+```{r}
+ObsSen_Node%>%
+  dplyr::filter(Name=="Iversen_121DefoliationLLFDFD5")%>%
+  dplyr::filter(Tt_broken_sum>200)%>%
+  ggplot(aes(x=Tt_broken_sum, y=Observed.x,label=GrowthRotation))+theme_bw()+ylab("Senescence")+xlab("Thermal time")+
+  #geom_smooth(method = "lm", se = TRUE, formula=y ~ poly(x, 2, raw=TRUE), colour="darkgrey")+
+   facet_grid(GrowthSeason.x~Rotation.x)+
+  #facet_wrap(~Stage,ncol = 2)+
+  geom_point(size=2)+
+  theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
+ theme(axis.title.y=element_text(face="bold",colour="black",size = 12))+
+  theme(legend.title=element_blank())
+
+```
+```{r}
+ObsSN.rate<-ObsSen_Node%>%
+  group_by(Name,GrowthSeason.x,Rotation.x,Collection,Tmean,Ppm,GrowthRotation) %>%
+  do(mod = lm(Observed.x~Observed.y,data=.)) %>%
+  mutate(slope = summary(mod)$coeff[2]) %>%
+  dplyr::select(-mod)
+
+phyll <- "D:\\R\\"
+StartGrazing <- read.table(paste0(phyll, "ExperimentList.txt"), 
+                      header = TRUE)
+StartGrazing1<-StartGrazing %>%
+  mutate(GrowthRotation= as.factor(paste0(GrowthSeason,Rotation)))
+ObsSNPp<- merge(StartGrazing1,ObsSN.rate,by=c("Name","Collection","GrowthRotation"))
+ObsSNPp%>%
+  dplyr::filter(Name!="Iversen_91DefoliationLL")%>%
+  dplyr::filter(Name!="Iversen_121DefoliationLLFDFD5"|GrowthRotation!="13")%>%
+  dplyr::filter(Name!="Iversen_121DefoliationLLFDFD5"|GrowthRotation!="31")%>%
+  ggplot(aes(x=Ppm, y=slope,label=GrowthRotation,color=Name))+theme_bw()+xlab("Photoperiod")+ylab("Senescence rate")+
+  #geom_smooth(method = "lm", se = TRUE, formula=y ~ poly(x, 2, raw=TRUE), colour="darkgrey")+
+   #facet_grid(GrowthSeason.x~Rotation.x)+
+  #facet_wrap(~Trend,ncol = 2)+
+  #geom_point(size=2)+
+  geom_text()+
+  theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
+ theme(axis.title.y=element_text(face="bold",colour="black",size = 12))+
+  theme(legend.title=element_blank())
+
+```
+```{r}
+ObsST.rate<-ObsSen_Node%>%
+  dplyr::filter(Tt_broken_sum>200)%>%
+  group_by(Name,GrowthSeason.x,Rotation.x,Collection,Tmean,Ppm,GrowthRotation) %>%
+  do(mod = lm(Tt_broken_sum~Observed.x,data=.)) %>%
+  mutate(slope = summary(mod)$coeff[2]) %>%
+  dplyr::select(-mod)
+
+phyll <- "D:\\R\\"
+StartGrazing <- read.table(paste0(phyll, "ExperimentList.txt"), 
+                      header = TRUE)
+StartGrazing1<-StartGrazing %>%
+  mutate(GrowthRotation= as.factor(paste0(GrowthSeason,Rotation)))
+ObsSTPp<- merge(StartGrazing1,ObsST.rate,by=c("Name","Collection","GrowthRotation"))
+ObsSTPp%>%
+  dplyr::filter(Name!="Iversen_91DefoliationLL"|GrowthRotation!="16")%>%
+  dplyr::filter(Name!="Iversen_91DefoliationLL"|GrowthRotation!="27")%>%
+  dplyr::filter(Name!="Iversen_91DefoliationLL"|GrowthSeason.x!="1")%>%
+  ggplot(aes(x=Ppm, y=slope,label=GrowthRotation,color=Name))+theme_bw()+xlab("Photoperiod")+ylab("Sen per node")+
+  #geom_smooth(method = "lm", se = TRUE, formula=y ~ poly(x, 2, raw=TRUE), colour="darkgrey")+
+   #facet_grid(GrowthSeason.x~Rotation.x)+
+  facet_wrap(~Trend,ncol = 2)+
+  #geom_point(size=2)+
+  geom_text()+
+  theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
+ theme(axis.title.y=element_text(face="bold",colour="black",size = 12))+
+  theme(legend.title=element_blank())
+
+```
+
+
+```{r,fig.height=6, fig.width=10}
+ObsSen_Node%>%
+  dplyr::filter(Name=="Iversen_91DefoliationLL")%>%
+  ggplot(aes(x=Observed.y, y=Observed.x,label=GrowthRotation))+theme_bw()+xlab("NodeNumber")+ylab("Senescence")+
+  #geom_smooth(method = "lm", se = TRUE, formula=y ~ poly(x, 2, raw=TRUE), colour="darkgrey")+
+   facet_grid(GrowthSeason.x~Rotation.x)+
+  #facet_wrap(~Stage,ncol = 2)+
+  geom_point(size=2)+
+  theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
+ theme(axis.title.y=element_text(face="bold",colour="black",size = 12))+
+  theme(legend.title=element_blank())
+```
+
+
+####Braching
+```{r,fig.height=6, fig.width=10}
+ObsLbranch<-ObsL.Raw%>%
+  mutate(GrowthRotation=as.factor(paste0(GrowthSeason.x,Rotation.x)))%>%
+  dplyr::filter(Water.x=="irr")%>%
+  dplyr::filter(Defoliation.x=="LL")%>%
+  dplyr::filter(Variable=="Branch"|Variable=="NodeNumber")%>%
+  dplyr::filter(Tb==1)
+Obsbranch<-ObsLbranch%>%
+  dplyr::filter(Variable=="Branch")%>%
+  dplyr::select(Clock.Today,Name,Collection,GrowthSeason.x,Rotation.x,Variable,Observed,StdDEV,Tt_broken_sum,Ppm,Tmean,GrowthRotation)
+ObsNode<-ObsLbranch%>%
+  dplyr::filter(Variable=="NodeNumber")%>%
+  dplyr::select(Clock.Today,Name,Collection,GrowthSeason.x,Rotation.x,Variable,Observed,StdDEV,Tt_broken_sum,Ppm,Tmean,GrowthRotation)
+ObsBr_Node<-merge(Obsbranch,ObsNode,by=c("Clock.Today","Name","Collection","GrowthSeason.x","Rotation.x","Tt_broken_sum","Ppm","Tmean","GrowthRotation"))
+ObsBr_Node%>%
+  #dplyr::filter(Observed.y>4)%>%
+  ggplot(aes(x=Observed.y, y=Observed.x,label=GrowthRotation))+geom_point()+theme_bw()+xlab("NodeNumber")+ylab("Branch")+
+  #geom_smooth(method = "lm", se = TRUE, formula=y ~ poly(x, 2, raw=TRUE), colour="darkgrey")+
+  facet_grid(GrowthSeason.x~Rotation.x)+
+  #facet_wrap(~Stage,ncol = 2)+
+  geom_point(size=2)+
+  theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
+ theme(axis.title.y=element_text(face="bold",colour="black",size = 12))+
+  theme(legend.title=element_blank())
+  
+  
+```
+###Branching data prepare for interpolate with LAI
+```{r,fig.height=6, fig.width=10}
+ObsLBL<-ObsL.Raw%>%
+  mutate(GrowthRotation=as.factor(paste0(GrowthSeason.x,Rotation.x)))%>%
+  dplyr::filter(Water.x=="irr")%>%
+  dplyr::filter(Defoliation.x=="LL")%>%
+  dplyr::filter(Variable=="Branch"|Variable=="LAI")%>%
+  dplyr::filter(Tb==1)%>%
+  dplyr::filter(Name=="Iversen_121DefoliationLLFDFD5")%>%
+  dplyr::filter(Clock.Today<"2016-07-01")%>%
+  dplyr::filter(GrowthRotation!="14")
+  
+```
+###Branching interpolate for each rotation
+```{r}
+
+# add function to "turn-off" rowise() in dplyr. FIXME: maybe there's a better/simpler solution?
+
+UniExp <- unique(ObsLBL$ExpUnitCode)
+
+InteBL.df<- data.frame()
+  
+for(i in 1:length(UniExp))
+{
+  
+  ObsLBL.sub<-ObsLBL%>%
+   filter(ExpUnitCode==UniExp[i])
+  
+ LB<- ObsLBL.sub%>%
+  unique()%>%
+  tidyr::spread(Variable,Observed)
+ 
+ LB.data<-LB%>%
+  mutate( Branch.y=approx(LB$Clock.Today, LB$Branch, xout =LB$Clock.Today, 
+         method="linear", 
+         rule = 2)$y)##interpolate function 
+  
+
+ InteBL.df <- rbind(InteBL.df, LB.data)
+
+}
+
+summary(InteBL.df)
+InteBL.df
+#write.csv(df.all,"D:/R/TtAll/df.all.csv", row.names = FALSE)
+
+```
+##Branch against LAI
+```{r}
+InteBL.df%>%
+  dplyr::filter(GrowthRotation!="11")%>%
+  ggplot(aes(x=Branch.y, y=LAI,label=GrowthRotation))+theme_bw()+ylab("LAI")+xlab("Branch")+
+  #geom_smooth(method = "lm", se = TRUE, formula=y ~ poly(x, 2, raw=TRUE), colour="darkgrey")+
+  #facet_grid(GrowthSeason.x~Rotation.x)+
+  #facet_wrap(~Stage,ncol = 2)+
+  geom_text()+
+  #geom_point(size=2)+
+  theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
+ theme(axis.title.y=element_text(face="bold",colour="black",size = 12))+
+  theme(legend.title=element_blank())
+```
+
+###Branching per node in Increase and decrease photoperiods
+
+```{r}
+ObsBr.rate<-ObsBr_Node%>%
+   dplyr::filter(Observed.y>4)%>%
+  group_by(Name,GrowthSeason.x,Rotation.x,Collection,Tmean,Ppm,GrowthRotation) %>%
+  do(mod = lm(Observed.x~Observed.y,data=.)) %>%
+  mutate(slope = summary(mod)$coeff[2]) %>%
+  dplyr::select(-mod)
+
+phyll <- "D:\\R\\"
+StartGrazing <- read.table(paste0(phyll, "ExperimentList.txt"), 
+                      header = TRUE)
+StartGrazing1<-StartGrazing %>%
+  mutate(GrowthRotation= as.factor(paste0(GrowthSeason,Rotation)))
+ObsBrPp<- merge(StartGrazing1,ObsBr.rate,by=c("Name","Collection","GrowthRotation"))
+
+ObsBrPp%>%
+  dplyr::filter(GrowthRotation!="26")%>%
+  dplyr::filter(GrowthRotation!="36")%>%
+  # dplyr::filter(GrowthRotation!="24")%>%
+  # dplyr::filter(GrowthRotation!="34")%>%
+  ggplot(aes(x=Tmean, y=slope,label=GrowthRotation))+geom_text()+theme_bw()+ylab("Branch per node")+xlab("Mean temperature")+
+  #geom_smooth(method = "lm", se = TRUE, formula=y ~ poly(x, 2, raw=TRUE), colour="darkgrey")+
+  #facet_grid(GrowthSeason.x~Rotation.x)+
+  facet_wrap(~Trend,ncol = 2)+
+  #geom_point(size=2)+
+  theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
+ theme(axis.title.y=element_text(face="bold",colour="black",size = 12))+
+  theme(legend.title=element_blank())
+
+
+```
+###shoot population number
+```{r}
+ObsSP<-ObsL.Raw %>%
+  mutate(GrowthRotation=as.factor(paste0(GrowthSeason.x,Rotation.x)))%>%
+  dplyr::filter(Water.x=="irr")%>%
+  dplyr::filter(Defoliation.x=="LL")%>%
+  dplyr::filter(FD.x=="FD5")%>%
+  dplyr::filter(Tb==1)%>%
+  dplyr::filter(Variable=="ShootPopulation"|Variable=="PlantPopulation")%>%
+  dplyr::filter(Name=="Iversen_121DefoliationLLFDFD5")%>%
+  tidyr::spread(Variable,Observed)
+ObsSP%>%
+   ggplot(aes(x=PlantPopulation, y=ShootPopulation,label=GrowthRotation))+theme_bw()+ylab("Plant population")+xlab("Shoots population")+
+  #geom_smooth(method = "lm", se = TRUE, formula=y ~ poly(x, 2, raw=TRUE), colour="darkgrey")+
+  #facet_grid(GrowthSeason.x~Rotation.x)+
+  #facet_wrap(~Trend,ncol = 2)+
+  geom_point(size=2)+
+  theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
+ theme(axis.title.y=element_text(face="bold",colour="black",size = 12))+
+  theme(legend.title=element_blank())
 
 
 
+```
+###Plant population 
+```{r}
+ObsSP<-ObsL.Raw %>%
+  mutate(GrowthRotation=as.factor(paste0(GrowthSeason.x,Rotation.x)))%>%
+  dplyr::filter(Water.x=="irr")%>%
+  dplyr::filter(Defoliation.x=="LL")%>%
+  dplyr::filter(FD.x=="FD5")%>%
+  dplyr::filter(Tb==1)%>%
+  dplyr::filter(Variable=="PlantPopulation")%>%
+  dplyr::filter(Name=="Iversen_121DefoliationLLFDFD5")
+ObsSP%>%
+   ggplot(aes(x=Tt_broken_sum, y=Observed,label=GrowthRotation))+theme_bw()+ylab("Plant population")+xlab("Thermal time")+
+  #geom_smooth(method = "lm", se = TRUE, formula=y ~ poly(x, 2, raw=TRUE), colour="darkgrey")+
+  facet_grid(GrowthSeason.x~Rotation.x)+
+  #facet_wrap(~Trend,ncol = 2)+
+  geom_point(size=2)+
+  theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
+ theme(axis.title.y=element_text(face="bold",colour="black",size = 12))+
+  theme(legend.title=element_blank())
 
 
+
+```
+
+###Branching against thermal time
+
+```{r}
+ObsBr_Node%>%
+  dplyr::filter(Observed.y>4)%>%
+  ggplot(aes(x=Tt_broken_sum, y=Observed.x,label=GrowthRotation))+geom_point()+theme_bw()+ylab("Branch")+xlab("Thermal time")+
+  #geom_smooth(method = "lm", se = TRUE, formula=y ~ poly(x, 2, raw=TRUE), colour="darkgrey")+
+  facet_grid(GrowthSeason.x~Rotation.x)+
+  #facet_wrap(~Stage,ncol = 2)+
+  geom_point(size=2)+
+  theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
+ theme(axis.title.y=element_text(face="bold",colour="black",size = 12))+
+  theme(legend.title=element_blank())
+```
+
+###branchchron aganist Photoperiod
+```{r}
+ObsBT.rate<-ObsBr_Node%>%
+   dplyr::filter(Observed.y>4)%>%
+  group_by(Name,GrowthSeason.x,Rotation.x,Collection,Tmean,Ppm,GrowthRotation) %>%
+  do(mod = lm(Tt_broken_sum~Observed.x,data=.)) %>%
+  mutate(slope = summary(mod)$coeff[2]) %>%
+  dplyr::select(-mod)
+
+phyll <- "D:\\R\\"
+StartGrazing <- read.table(paste0(phyll, "ExperimentList.txt"), 
+                      header = TRUE)
+StartGrazing1<-StartGrazing %>%
+  mutate(GrowthRotation= as.factor(paste0(GrowthSeason,Rotation)))
+ObsBTPp<- merge(StartGrazing1,ObsBT.rate,by=c("Name","Collection","GrowthRotation"))
+
+
+ObsBTPp%>%
+  dplyr::filter(GrowthRotation!="26")%>%
+  dplyr::filter(GrowthRotation!="36")%>%
+  dplyr::filter(GrowthRotation!="24")%>%
+  dplyr::filter(GrowthRotation!="34")%>%
+  ggplot(aes(x=Ppm, y=slope,label=GrowthRotation))+geom_text()+theme_bw()+ylab("Branchchron")+xlab("photoperiod")+
+  #geom_smooth(method = "lm", se = TRUE, formula=y ~ poly(x, 2, raw=TRUE), colour="darkgrey")+
+  #facet_grid(GrowthSeason.x~Rotation.x)+
+  facet_wrap(~Trend,ncol = 2)+
+  #geom_point(size=2)+
+  theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
+ theme(axis.title.y=element_text(face="bold",colour="black",size = 12))+
+  theme(legend.title=element_blank())
+  
+```
+###Node number against branching
+
+```{r}
+ObsBN.rate<-ObsBr_Node%>%
+  dplyr::filter(Observed.y>5)%>%
+  group_by(Name,GrowthSeason.x,Rotation.x,Collection,Tmean,Ppm,GrowthRotation) %>%
+  do(mod = lm(Observed.x~Observed.y,data=.)) %>%
+  mutate(slope = summary(mod)$coeff[2]) %>%
+  dplyr::select(-mod)
+ObsBN.rate%>%
+  ggplot(aes(x=Tmean, y=slope,label=GrowthRotation))+geom_text()+theme_bw()+xlab("NodeNumber")+ylab("Branch")+
+  #geom_smooth(method = "lm", se = TRUE, formula=y ~ poly(x, 2, raw=TRUE), colour="darkgrey")+
+  #facet_grid(GrowthSeason.x~Rotation.x)+
+  #facet_wrap(~Trend,ncol = 2)+
+  #geom_point(size=2)+
+  theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
+ theme(axis.title.y=element_text(face="bold",colour="black",size = 12))+
+  theme(legend.title=element_blank())
+  
+```
 
 ## Define stats function
 
@@ -546,7 +1150,7 @@ ggplot(aes(x=Clock.Today,y=Predicted))+geom_line(size=1)+theme_bw()+
 
 
 # Statistic and Graph
-```{r,fig.height=6, fig.width=10}
+```{r,,fig.height=6, fig.width=10}
 mergedf
 summary(mergedf)
 str(mergedf)

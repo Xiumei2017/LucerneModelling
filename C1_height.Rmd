@@ -146,8 +146,6 @@ obsheight1%>%
  
 ```
 
-
-
 ##Iverson12DefoliationFD5
 ```{r,fig.height=5, fig.width=8}
 
