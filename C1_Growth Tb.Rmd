@@ -1,0 +1,362 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+###Growth base temperature analysis
+
+```{r Load, warning=FALSE, fig.height=8, fig.width=8}
+# install.packages("zoo")
+library(dplyr)
+library(ggplot2)
+library(lubridate)   
+library(hydroGOF)
+library(xtable)
+library(knitr)
+library(tidyr)
+library(RSQLite)
+library(agricolae)
+library(scales)
+library(zoo)
+library(lme4)
+library(reshape2)
+```
+
+## lode observed data
+```{r}
+upDir <- "D:/R/CombinedData/"
+obsData <- "D:/R/CombinedData/"
+
+obsAll <- read.table(paste0(obsData, "ObsAll.txt"),
+                   header = TRUE)
+obsA<- obsAll %>%
+  mutate(StartDate=dmy(StartDate),MidDate=dmy(MidDate),FinishDate=dmy(FinishDate),Clock.Today=dmy(Clock.Today)) %>%
+  #mutate(SowingDate=as.factor(ifelse(SowingDate=="no","Sd_No",paste0("Sd_",SowingDate)))) %>% # assume this is typo to be fixed?
+  mutate(GrowthSeason1=as.factor(paste0("Gs_",GrowthSeason))) %>% # creating more intuitive labels here
+  mutate(Rotation1=as.factor(paste0("Rt_",Rotation))) %>%
+  mutate(ExpUnitCode=as.factor(paste0(Name,GrowthSeason1,Rotation1))) %>%
+  mutate(Clock.Today1 = as.POSIXct(paste(Clock.Today,Time),format="%Y-%m-%d %H:%M:%S"))
+  
+summary(obsA)
+obsA
+```
+
+#Load Tt and Join Observed data together
+##Select LAI variable
+```{r}
+upDir <- "D:/R/"
+obsData <- "D:/R/TtAll/"
+
+Tt<- read.table(paste0(obsData, "df.all.txt"),
+               header = TRUE)
+TtA <- Tt %>% mutate(Clock.Today=dmy(Clock.Today), ExpUnitCode=as.factor(ExpName))
+TtA
+ObsL.Raw <-merge(obsA,TtA,by=c("Clock.Today","ExpUnitCode"))
+ObsL<-ObsL.Raw%>%
+  mutate(GrowthRotation=as.factor(paste0(GrowthSeason.x,Rotation.x)))%>%
+  dplyr::filter(Water.x=="irr")%>%
+  dplyr::filter(Defoliation.x=="LL")%>%
+  dplyr::filter(FD.x=="FD5")%>%
+  dplyr::filter(Variable=="LAI")
+summary(ObsL)
+```
+
+```{r,fig.height=6, fig.width=8}
+obsLAI<-ObsL%>%
+  dplyr::filter(Tb==1)%>%
+  dplyr::filter(Name=="Iversen_8Waterirr")
+obsLAI%>%
+  ggplot(aes(x=Tt_broken_sum, y=Observed))+geom_point(size=2)+theme_bw()+xlab("Thermal time (°Cd) ")+ylab("LAI (m^2/m^2)")+ggtitle("Iversen_8Waterirr")  +
+ geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="blue")+
+ facet_grid(GrowthSeason.x~Rotation.x)+
+  theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
+ theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
+
+```
+
+
+```{r,fig.height=6, fig.width=8}
+obsLAI1<-ObsL%>%
+  dplyr::filter(Tb==1)%>%
+  dplyr::filter(Name=="Iversen_91DefoliationLL")
+obsLAI1%>%
+  ggplot(aes(x=Tt_broken_sum, y=Observed))+geom_point(size=2)+theme_bw()+xlab("Thermal time (°Cd) ")+ylab("LAI (m^2/m^2)")+ggtitle("Iversen_91DefoliationLL")  +
+ geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="blue")+
+ facet_grid(GrowthSeason.x~Rotation.x)+
+  theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
+ theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
+
+```
+```{r,fig.height=6, fig.width=8}
+obsLAI2<-ObsL%>%
+  dplyr::filter(Tb==1)%>%
+  dplyr::filter(Collection=="2000_2002")%>%
+  dplyr::filter(Name=="Iversen_9SowingDateSD1Waterirr")
+obsLAI2%>%
+  ggplot(aes(x=Tt_broken_sum, y=Observed))+geom_point(size=2)+theme_bw()+xlab("Thermal time (°Cd) ")+ylab("LAI (m^2/m^2)")+ggtitle("Iversen_9SowingDateSD1Waterirr")  +
+ geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="blue")+
+ facet_grid(GrowthSeason.x~Rotation.x)+
+  theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
+ theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
+
+```
+```{r,fig.height=6, fig.width=8}
+obsLAI3<-ObsL%>%
+  dplyr::filter(Tb==1)%>%
+  dplyr::filter(Collection=="2000_2002")%>%
+  dplyr::filter(Name=="Iversen_9SowingDateSD2Waterirr")
+obsLAI3%>%
+  ggplot(aes(x=Tt_broken_sum, y=Observed))+geom_point(size=2)+theme_bw()+xlab("Thermal time (°Cd) ")+ylab("LAI (m^2/m^2)")+ggtitle("Iversen_9SowingDateSD2Waterirr")  +
+ geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="blue")+
+ facet_grid(GrowthSeason.x~Rotation.x)+
+  theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
+ theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
+
+```
+
+```{r,fig.height=6, fig.width=8}
+obsLAI4<-ObsL%>%
+  dplyr::filter(Tb==1)%>%
+  dplyr::filter(Collection=="2000_2002")%>%
+  dplyr::filter(Name=="Iversen_9SowingDateSD3Waterirr")
+obsLAI4%>%
+  ggplot(aes(x=Tt_broken_sum, y=Observed))+geom_point(size=2)+theme_bw()+xlab("Thermal time (°Cd) ")+ylab("LAI (m^2/m^2)")+ggtitle("Iversen_9SowingDateSD3Waterirr")  +
+ geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="blue")+
+ facet_grid(GrowthSeason.x~Rotation.x)+
+  theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
+ theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
+
+```
+
+
+```{r,fig.height=6, fig.width=8}
+obsLAI5<-ObsL%>%
+  dplyr::filter(Tb==1)%>%
+  dplyr::filter(Collection=="2000_2002")%>%
+  dplyr::filter(Name=="Iversen_9SowingDateSD4Waterirr")
+obsLAI5%>%
+  ggplot(aes(x=Tt_broken_sum, y=Observed))+geom_point(size=2)+theme_bw()+xlab("Thermal time (°Cd) ")+ylab("LAI (m^2/m^2)")+ggtitle("Iversen_9SowingDateSD4Waterirr")  +
+ geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="blue")+
+ facet_grid(GrowthSeason.x~Rotation.x)+
+  theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
+ theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
+
+```
+
+```{r,fig.height=5, fig.width=8}
+obsLAI5<-ObsL%>%
+  dplyr::filter(Tb==1)%>%
+  dplyr::filter(Name=="Iversen_121DefoliationLLFDFD5")
+obsLAI5%>%
+  ggplot(aes(x=Tt_broken_sum, y=Observed))+geom_point(size=2)+theme_bw()+xlab("Thermal time (°Cd) ")+ylab("LAI (m^2/m^2)")+ggtitle("Iversen_121DefoliationLLFDFD5")  +
+ geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="blue")+
+ facet_grid(GrowthSeason.x~Rotation.x)+
+  theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
+ theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
+```
+###R squared and LAER calculation for each rotation
+##TTWES1
+##Tb evaluation 
+```{r}
+
+uniTb <- unique(ObsL$Tb)
+
+LAER_beta.all <- data.frame()
+ 
+for(i in 1:length(uniTb)){
+  
+  ObsL1<- ObsL %>%
+  filter(Tb==uniTb[i])
+  
+   ObsL.sub <- ObsL1 %>%
+  group_by(Name,GrowthSeason.x,Rotation.x,Collection,Tmean,Ppm,Tb) %>%
+    do(mod.beta = lm(Observed~Tt_beta_sum,data=.))%>%
+  mutate(R2WE = summary(mod.beta)$r.squared)%>%
+  mutate(LAERWE = summary(mod.beta)$coeff[2])%>%
+  dplyr::select(-mod.beta)
+
+  LAER_beta.all <- rbind(LAER_beta.all, ObsL.sub)
+}
+  
+LAER_beta.all
+write.csv(LAER_beta.all,"D:/R/LAER/LAER_beta.all.csv", row.names = FALSE)
+
+```
+
+```{r}
+uniTb <- unique(ObsL$Tb)
+
+LAER_broken.all <- data.frame()
+ 
+for(i in 1:length(uniTb)){
+  
+  ObsL1 <- ObsL %>%
+  filter(Tb==uniTb[i])
+  
+   ObsL.sub <-  ObsL1 %>%
+  group_by(Name,GrowthSeason.x,Rotation.x,Collection,Tmean,Ppm,Tb) %>%
+    do(mod.broken = lm(Observed~Tt_broken_sum,data=.))%>%
+    #do(mod.fick = lm(Tt_fick_sum~Observed,data=.))%>% try to calculated three methods in once
+  mutate(R2Br = summary(mod.broken)$r.squared)%>%
+  mutate(LAERBr = summary(mod.broken)$coeff[2])%>%
+  dplyr::select(-mod.broken)
+
+ LAER_broken.all<- rbind(LAER_broken.all, ObsL.sub)
+}
+  
+LAER_broken.all
+write.csv(LAER_broken.all,"D:/R/LAER/LAER_broken.all.csv", row.names = FALSE)
+```
+
+```{r}
+uniTb <- unique(ObsL$Tb)
+
+LAER_fick.all <- data.frame()
+ 
+for(i in 1:length(uniTb)){
+  
+  ObsL1 <- ObsL %>%
+  filter(Tb==uniTb[i])
+  
+   ObsL.sub <- ObsL1 %>%
+  group_by(Name,GrowthSeason.x,Rotation.x,Collection,Tmean,Ppm,Tb) %>%
+    do(mod.fick = lm(Observed~Tt_fick_sum,data=.))%>%
+  mutate(R2fi = summary(mod.fick)$r.squared)%>%
+  mutate(LAERfick = summary(mod.fick)$coeff[2])%>%
+  dplyr::select(-mod.fick)
+
+  LAER_fick.all <- rbind(LAER_fick.all, ObsL.sub)
+}
+  
+LAER_fick.all
+write.csv(LAER_fick.all,"D:/R/LAER/LAER_fick.all.csv", row.names = FALSE)
+```
+### Combine the Phyllo data together
+```{r,fig.height=5, fig.width=10,warning=FALSE}
+multmerge = function(mypath){
+filenames=list.files(path=mypath, full.names=TRUE)
+datalist = lapply(filenames, function(x){read.csv(file=x,header=T)})
+Reduce(function(x,y) {merge(x,y)}, datalist)}
+
+mergeLAER=multmerge("D:/R/LAER")
+mergeLAER
+
+```
+
+```{r}
+
+mergeL<-mergeLAER%>%
+   dplyr::select(Name,GrowthSeason.x,Rotation.x,Collection,Tmean, Ppm,Tb, LAERWE,LAERBr,LAERfick) %>%
+  tidyr::gather("Variable","LAER",LAERWE:LAERfick)%>%
+  mutate(LAERTb=as.factor(paste0(Variable,Tb)))%>%
+  mutate(GrowthRotation=as.factor(paste0(GrowthSeason.x,Rotation.x)))
+unique(mergeL)
+
+```
+
+##Regression coefficient
+```{r,fig.height=8, fig.width=10}
+mergeL%>%
+  dplyr::filter(Collection!="2010_2012")%>%
+ ggplot(aes(x=Tmean, y=LAER, colour=factor(Name)))+geom_point(size=2)+theme_bw()+
+  geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="darkgrey")+xlab("Mean air temperature (°C)")+ylab("Leaf area expansion rate (m^2/m^2/°Cd)")+
+  facet_wrap(~LAERTb,ncol = 2)+
+  theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
+ theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
+  
+```
+
+```{r}
+
+uniLAER <- unique(mergeL$LAERTb)
+Slope.df<-data.frame()
+
+for(i in 1:length(uniLAER) ){
+   mergeL.sub <- mergeL %>%
+     filter(LAERTb==uniLAER[i])%>%
+   group_by(LAERTb) %>%
+    do(modLAER = lm(Tmean~LAER,data=.))%>%
+  mutate(R2 = summary(modLAER)$r.squared)%>%
+  mutate(slope = summary(modLAER)$coeff[2])%>%
+  mutate(P=anova(modLAER)$'Pr(>F)'[1])%>%  
+  dplyr::select(-modLAER)
+     
+   Slope.df <- rbind(Slope.df,mergeL.sub)
+  
+}
+ Slope.df
+
+```
+##CV coeffecient of variation
+```{r,fig.height=4, fig.width=10}
+mergeL
+
+mergeLcv<-mergeL%>%group_by(Collection, Variable)%>%
+ mutate(meanLAER=mean(LAER))%>%
+  mutate(SDLAER=sd(LAER))%>%
+  mutate(CVLAER=SDLAER/meanLAER)
+mergeLcv
+mergeLcv1<-mergeLcv%>%group_by(Variable)%>%
+  mutate(CVmean=mean(CVLAER))
+
+mergeLcv%>%
+  ggplot(aes(x=LAERTb,y=CVLAER,color=factor(Collection)))+geom_point(size=2)+theme_bw()
+  
+mergeLcv1%>%
+  ggplot(aes(x=LAERTb,y=CVmean))+geom_point(size=2)+theme_bw()
+
+```
+###x-intercept method
+
+```{r}
+
+LAER2<-ObsL%>%  
+  group_by(Name,GrowthSeason.x,Rotation.x,Collection,Tmean,Ppm,GrowthRotation) %>%
+  do(mod = lm(Observed~Interval,data=.)) %>%
+  mutate(slope = summary(mod)$coeff[2]) %>%
+  dplyr::select(-mod)
+LAER2
+
+LAER2%>%
+  dplyr::filter(Rotation.x!="6"|Collection!="1997_2001")%>%
+  #dplyr::filter(GrowthRotation!="11"|Collection!="2000_2002")%>%
+   #dplyr::filter()
+ mutate(Name=factor(Name))%>%
+ ggplot(aes(x=Tmean, y=slope,label=GrowthRotation))+geom_text()+theme_bw()+xlab("Mean air temperature (°C)")+ylab("Node appearance rate (leaves/day)")+scale_x_continuous(limits=c(-8,20))+
+  theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
+ theme(axis.title.y=element_text(face="bold",colour="black",size = 12))+
+ facet_wrap(~Collection)+
+ theme(legend.title=element_blank())+
+ geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="darkgrey") 
+
+```
+#load Rotation and Growth season
+```{r,fig.height=6, fig.width=10}
+phyll <- "D:\\R\\"
+StartGrazing <- read.table(paste0(phyll, "ExperimentList.txt"), 
+                      header = TRUE)
+StartGrazing1<-StartGrazing %>%
+  mutate(GrowthRotation= as.factor(paste0(GrowthSeason,Rotation)))
+LAERPp<- merge(StartGrazing1,mergeL,by=c("Name","Collection","GrowthRotation"))
+
+LAERPp
+mergeL
+
+LAERPp%>%
+  #dplyr::filter(Rotation!="1")%>%
+  #dplyr::filter(Rotation!="7")%>%
+   dplyr::filter(Name!="Iversen_121DefoliationLLFDFD5"|GrowthRotation!="21")%>%
+  dplyr::filter(Name!="Iversen_121DefoliationLLFDFD5"|GrowthRotation!="31")%>%
+  dplyr::filter(Collection!="2010_2012")%>%
+  dplyr::filter(LAERTb=="LAERBr1")%>%
+  ggplot(aes(x=Ppm, y=LAER,label=GrowthRotation,color=Name))+geom_text()+theme_bw()+xlab("Mean photoperiod(h) ")+ylab("LAER (m^2/m^2/°Cd)")+
+  geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="darkgrey")+
+  facet_grid(Trend~Stage)+
+  #facet_wrap(~Stage,ncol = 2)+
+  #geom_point(size=2)+
+  theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
+  theme(axis.title.y=element_text(face="bold",colour="black",size = 12))+
+  theme(legend.title=element_blank())
+
+```
+
