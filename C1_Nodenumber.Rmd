@@ -219,6 +219,8 @@ for(i in 1:length(uniTb)){
     #do(mod.fick = lm(Tt_fick_sum~Observed,data=.))%>%
   mutate(R2Br = summary(mod.broken)$r.squared)%>%
   mutate(PhylloBr = summary(mod.broken)$coeff[2])%>%
+  mutate(P=anova(mod.broken)$'Pr(>F)'[1])%>% 
+  mutate(intcp= summary(mod.broken)$coeff[1])%>%  
   dplyr::select(-mod.broken)
 
   Phybroken.all <- rbind(Phybroken.all, ObsH.sub)
@@ -227,6 +229,7 @@ for(i in 1:length(uniTb)){
 Phybroken.all
 write.csv(Phybroken.all,"D:/R/PhyllochronData/Phybroken.all.csv", row.names = FALSE)
 ```
+
 ```{r}
 uniTb <- unique(ObsH$Tb)
 
@@ -371,15 +374,25 @@ LAR2<-ObsH%>%
   group_by(Name,GrowthSeason.x,Rotation.x,Collection,Tmean,Ppm,GrowthRotation) %>%
   do(mod = lm(Observed~Interval,data=.)) %>%
   mutate(slope = summary(mod)$coeff[2]) %>%
+   mutate(R2 = summary(mod)$r.squared)%>%
+  mutate(P=anova(mod)$'Pr(>F)'[1])%>%  
+  mutate(intcp= summary(mod)$coeff[1])%>%
   dplyr::select(-mod)
-LAR2
+LAR.ana<- ObsH%>%  
+  group_by(Collection) %>%
+  do(mod = lm(Observed~Interval,data=.)) %>%
+  mutate(slope = summary(mod)$coeff[2]) %>%
+   mutate(R2 = summary(mod)$r.squared)%>%
+  mutate(P=anova(mod)$'Pr(>F)'[1])%>%  
+  mutate(intcp= summary(mod)$coeff[1])%>%
+  dplyr::select(-mod)
 
 LAR2%>%
   dplyr::filter(Rotation.x!="6"|Collection!="1997_2001")%>%
   #dplyr::filter(GrowthRotation!="11"|Collection!="2000_2002")%>%
-   #dplyr::filter()
+ dplyr::filter(Collection!="2010_2012")
  mutate(Name=factor(Name))%>%
- ggplot(aes(x=Tmean, y=slope,label=GrowthRotation))+geom_text()+theme_bw()+xlab("Mean air temperature (°C)")+ylab("Node appearance rate (leaves/day)")+scale_x_continuous(limits=c(-8,20))+
+ ggplot(aes(x=Tmean, y=slope,label=GrowthRotation))+geom_text()+theme_bw()+xlab("Mean air temperature (°C)")+ylab("Node appearance rate (leaves/day)")+scale_x_continuous(limits=c(0,20))+
   theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
  theme(axis.title.y=element_text(face="bold",colour="black",size = 12))+
  facet_wrap(~Collection)+
@@ -430,6 +443,7 @@ PhyPp%>%
   #dplyr::filter(Name!="Iversen_8Waterirr"|GrowthSeason!="3")%>%
   #dplyr::filter(Stage!="Seedling")%>%
   dplyr::filter(PhylloTb=="PhylloBr1")%>%
+  dplyr::filter(Collection!="2010_2012")%>%
   ggplot(aes(x=Ppm, y=Phyllo,label=GrowthRotation,color=Name))+geom_text()+theme_bw()+xlab("Mean photoperiod(h) ")+ylab("Phyllochron (°Cd/primary leaves)")+
   geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="darkgrey")+
   facet_grid(Trend~Stage)+
@@ -438,9 +452,22 @@ PhyPp%>%
   theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
  theme(axis.title.y=element_text(face="bold",colour="black",size = 12))+
   theme(legend.title=element_blank())
-
-  
 ```
+
+```{r}
+PhyPpD<-PhyPp%>%
+  dplyr::filter(Stage=="Regrowth")%>%
+  dplyr::filter(Trend=="Dec")
+mod<-lm(PhyPpD$Phyllo~PhyPpD$Ppm)
+summary(mod)
+
+PhyPpI<-PhyPp%>%
+  dplyr::filter(Stage=="Regrowth")%>%
+  dplyr::filter(Trend!="Dec")
+mod<-lm(PhyPpI$Phyllo~PhyPpI$Ppm)
+summary(mod)
+```
+
 
 
 
@@ -696,7 +723,10 @@ obsNode4<-obsNode%>%
 simD4<-simD%>%
   mutate(Clock.Today = ymd_hms(Clock.Today))%>%
   dplyr::filter(Variable=="NodeNumber")%>%
-  dplyr::filter(Name=="Iversen_121DefoliationLLFDFD5")
+  dplyr::filter(Name=="Iversen_121DefoliationLLFDFD5")%>%
+  dplyr::filter(Clock.Today>"2015-01-06")%>%
+  dplyr::filter(Clock.Today<"2015-01-29")
+  
 str(simD4)
 simD4%>%
 ggplot(aes(x=Clock.Today,y=Predicted))+geom_line(size=1)+theme_bw()+

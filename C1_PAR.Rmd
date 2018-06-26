@@ -301,7 +301,7 @@ for(i in 1:length(UniExp))
   ObsPARi<-fPAR.df%>%
     
    filter(ExpUnitCode==UniExp[i])%>%
-     mutate(PARi=radn*fPAR1)%>%
+     mutate(PARi=radn*fPAR1)%>% 
    dplyr::select(-fPAR,-StdDEV1)%>%
     unique()
   

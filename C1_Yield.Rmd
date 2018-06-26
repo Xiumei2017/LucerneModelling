@@ -205,13 +205,13 @@ YieldPp%>%
 
 ```
 ```{r}
-YieldPpI<-YieldPp%>%
+YieldPpD<-YieldPp%>%
   dplyr::filter(Stage=="Regrowth")%>%
   dplyr::filter(Trend=="Dec")
 mod<-lm(YieldPpI$GrowthRate~YieldPpI$Tmean)
 summary(mod)
 
-YieldPpD<-YieldPp%>%
+YieldPpI<-YieldPp%>%
   dplyr::filter(Stage=="Regrowth")%>%
   dplyr::filter(Trend!="Dec")
 mod<-lm(YieldPpD$GrowthRate~YieldPpD$Tmean)
@@ -268,6 +268,7 @@ obsRoot2%>%
 
 ###Total DM
 ```{r,fig.height=5, fig.width=10}
+ObsRoot.new<-rbind(obsRoot2,obsRoot1)
 obsSB<-obsYield%>%
   dplyr::select(Clock.Today,ExpUnitCode,Name,Collection,GrowthSeason.x,Rotation.x,VariableUnits,Observed,StdDEV,Ppm,Tmean,GrowthRotation,Tt_broken_sum)%>%
   mutate(Shootbiomass=Observed)%>%
@@ -295,7 +296,7 @@ obsTotal1%>%
   
 
 ```
-```{r,fig.height=5, fig.width=10}
+```{r,fig.height=6, fig.width=10}
 obsTotal1<-obsTotal%>%
   dplyr::filter(Name=="Iversen_121DefoliationLLFDFD5")
 
@@ -467,68 +468,68 @@ Analysis%>%
 ####analysis
 ###Fit a power function
 ```{r}
-# Build the model
-x=RUE.RAW$Biomass
-y=RUE.RAW$Shootbiomass
-
-m<-nls(y ~x^z,data=RUE.RAW,start = list(z =1),trace = T)
-m1 <- lm(y~ x, data = RUE.RAW)
-m2 <- lm(y ~ x + I(x^2), data = RUE.RAW)
-m3 <- lm(y ~ x + I(x^2) + I(x^3), data = RUE.RAW)
-m4 <- lm(y~ I(x^2), data = RUE.RAW)
-m5<-lm(y ~ poly(x, 2, raw=TRUE),data = RUE.RAW )
-summary(m)
-summary(m1)
-summary(m2)
-summary(m3)
-summary(m4)
-summary(m5)
-prd <- data.frame(x=x)
-#prd <- data.frame(x = seq(0, 14000, by = 0.1))
-result <- prd
-result$m  <- predict(m, newdata = prd)
-result$m1 <- predict(m1, newdata = prd)
-result$m2 <- predict(m2, newdata = prd)
-result$m3 <- predict(m3, newdata = prd)
-result$m4 <- predict(m4, newdata = prd)
-result$m5 <- predict(m5, newdata = prd)
-
-result <-  melt(result, id.vars = "x", variable.name = "model",
-                value.name = "predicted")
-
-result%>%
-  filter()
-ggplot(result, aes(x = x, y = predicted)) +
-  theme_bw() +
-  #facet_wrap(~Stage,ncol=2)+
-  geom_point(data = RUE.RAW, aes(x = Biomass, y = Shootbiomass)) +xlab("Biomass")+ylab("Shootbiomass")+
-  geom_line(aes(colour = model), size = 1)+
-  #theme(legend.title=element_blank(),legend.position = "blank")+
-  theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
- theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
+# # Build the model
+# x=RUE.RAW$Biomass
+# y=RUE.RAW$Shootbiomass
+# 
+# m<-nls(y ~x^z,data=RUE.RAW,start = list(z =1),trace = T)
+# m1 <- lm(y~ x, data = RUE.RAW)
+# m2 <- lm(y ~ x + I(x^2), data = RUE.RAW)
+# m3 <- lm(y ~ x + I(x^2) + I(x^3), data = RUE.RAW)
+# m4 <- lm(y~ I(x^2), data = RUE.RAW)
+# m5<-lm(y ~ poly(x, 2, raw=TRUE),data = RUE.RAW )
+# summary(m)
+# summary(m1)
+# summary(m2)
+# summary(m3)
+# summary(m4)
+# summary(m5)
+# prd <- data.frame(x=x)
+# #prd <- data.frame(x = seq(0, 14000, by = 0.1))
+# result <- prd
+# result$m  <- predict(m, newdata = prd)
+# result$m1 <- predict(m1, newdata = prd)
+# result$m2 <- predict(m2, newdata = prd)
+# result$m3 <- predict(m3, newdata = prd)
+# result$m4 <- predict(m4, newdata = prd)
+# result$m5 <- predict(m5, newdata = prd)
+# 
+# result <-  melt(result, id.vars = "x", variable.name = "model",
+#                 value.name = "predicted")
+# 
+# result%>%
+#   filter()
+# ggplot(result, aes(x = x, y = predicted)) +
+#   theme_bw() +
+#   #facet_wrap(~Stage,ncol=2)+
+#   geom_point(data = RUE.RAW, aes(x = Biomass, y = Shootbiomass)) +xlab("Biomass")+ylab("Shootbiomass")+
+#   geom_line(aes(colour = model), size = 1)+
+#   #theme(legend.title=element_blank(),legend.position = "blank")+
+#   theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
+#  theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
 ```
 
 ```{r}
-result1 <- prd
-result1$residules<- resid(m)
-result1$residules2<- resid(m1)
-result1$residules3<- resid(m2)
-result1$residules4<- resid(m3)
-result1$residules5<- resid(m4)
-result1$residules6<- resid(m5)
-
-result1 <-  melt(result1, id.vars = "x", variable.name = "model",
-                value.name = "Residule")
-
-
-ggplot(result1, aes(x = x, y = Residule)) +
-  theme_bw() +
-  #facet_wrap(~Stage,ncol=2)+
-  geom_point(data = RUE.RAW, aes(x = Biomass, y = Shootbiomass)) +xlab("Biomass")+ylab("Shootbiomass")+
-  geom_line(aes(colour = model), size = 1)+
-  #theme(legend.title=element_blank(),legend.position = "blank")+
-  theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
- theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
+# result1 <- prd
+# result1$residules<- resid(m)
+# result1$residules2<- resid(m1)
+# result1$residules3<- resid(m2)
+# result1$residules4<- resid(m3)
+# result1$residules5<- resid(m4)
+# result1$residules6<- resid(m5)
+# 
+# result1 <-  melt(result1, id.vars = "x", variable.name = "model",
+#                 value.name = "Residule")
+# 
+# 
+# ggplot(result1, aes(x = x, y = Residule)) +
+#   theme_bw() +
+#   #facet_wrap(~Stage,ncol=2)+
+#   geom_point(data = RUE.RAW, aes(x = Biomass, y = Shootbiomass)) +xlab("Biomass")+ylab("Shootbiomass")+
+#   geom_line(aes(colour = model), size = 1)+
+#   #theme(legend.title=element_blank(),legend.position = "blank")+
+#   theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
+#  theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
 
 ```
 
@@ -586,7 +587,7 @@ RUEshoot2%>%
  facet_grid(GrowthSeason.x~Rotation.x)+
   theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
  theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
-jpeg("RUEshoot2", width=1000, height=1000, units="px", pointsize=20, quality=100)
+
 ```
 
 ```{r,fig.height=3, fig.width=10}
@@ -680,14 +681,14 @@ RUE.RAW%>%
 
 ###plot RUES and RUEt
 ```{r,fig.height=5, fig.width=10}
-df<-data.frame(a=c(0, 5, 10, 20),b=c(0, 0.45, 0.9, 1.8))
+#df<-data.frame(a=c(0, 5, 10, 20),b=c(0, 0.45, 0.9, 1.8))
 RUETotal%>%
   dplyr::filter(Name!="Iversen_91DefoliationLL"|GrowthRotation!="17")%>%
   dplyr::filter(Name!="Iversen_91DefoliationLL"|GrowthRotation!="26")%>%
   dplyr::filter(Name!="Iversen_91DefoliationLL"|GrowthRotation!="27")%>%
   filter(RUEt1>0)%>%
   ggplot(aes(x=Tmean,y=RUEt1,color=Name))+geom_point()+
-  geom_line(data=df,aes(x=a, y=b),color="red")+
+  #geom_line(data=df,aes(x=a, y=b),color="red")+
   theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
  theme(axis.title.y=element_text(face="bold",colour="black",size = 12))+
   facet_grid(~Stage)+xlab("Mean temperature (°Cd)")+ylab("Total RUE (g DM/MJ)")+
@@ -697,6 +698,20 @@ RUETotal%>%
    geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="blue")
   
 ```
+###Temperature impact on RUE
+```{r}
+RUETotala <- RUETotal%>%
+  dplyr::filter(Name!="Iversen_91DefoliationLL"|GrowthRotation!="17")%>%
+  dplyr::filter(Name!="Iversen_91DefoliationLL"|GrowthRotation!="26")%>%
+  dplyr::filter(Name!="Iversen_91DefoliationLL"|GrowthRotation!="27")
+
+model<-lm(RUETotala$RUEt1~RUETotala$Tmean)
+summary(model)
+
+
+```
+
+
 ###plot RUES and RUEt
 ```{r,fig.height=5, fig.width=10}
 RUEshoots%>%
@@ -1155,6 +1170,7 @@ mergedf %>%
     dplyr::filter(Variable== "shootbiomass") %>% 
   dplyr::filter(Defoliation.x== "LL")%>%
   dplyr::filter(Collection!="2010_2012")%>%
+  dplyr::filter(Clock.Today>"1997-08-01")%>%
   ggplot(aes(x=Observed, y= Predicted, colour= factor(Name),label=GrowthRotation)) +
   geom_point(size=2)+theme_bw()+
   geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="darkgrey") +
@@ -1275,7 +1291,7 @@ ggplot(aes(x=Clock.Today,y=Predicted))+geom_line(size=1)+theme_bw()+
 
 
 # Statistic and Graph
-```{r,,fig.height=6, fig.width=10}
+```{r,,fig.height=4, fig.width=10}
 
 mergedf
 summary(mergedf)
@@ -1324,23 +1340,7 @@ mergedf %>%
 
   
 ```
-###join to table together for root data
-```{r}
-RM<-mergedf %>%
-  dplyr::filter(Variable== "RootWt") %>% 
-   dplyr::filter(Water.x== "irr")%>%
-  dplyr::filter(Defoliation.x== "LL")%>%
-  dplyr::filter(Tb=="1")%>%
-  mutate(RM=Predicted-Observed)%>%
-  dplyr::select(Clock.Today,Name,GrowthRotation,RM,Predicted)
-  
-
-```
-
-
-###Root respiration
-##load soil temperture data
-###Root Respriation analysis
+###Root respiration ##load soil temperture data ###Root Respriation analysis
 ```{r}
 ObsRoot.new<-rbind(obsRoot1,obsRoot2)
 upDir <- "D:/R/"
@@ -1352,7 +1352,7 @@ Tsoil <- Tearth %>% mutate(Clock.Today=dmy(Clock.Today))
 
 Rm<-merge(ObsRoot.new,Tsoil,by=c("Clock.Today")) %>%
   #dplyr::filter(Collection!="2010_2012")%>%
-  mutate(Rm=(0.015*1.8*exp((Tearth-20)/10)*Observed))%>%
+  mutate(Rm=(0.015*1.8*exp((Tearth-20)/10)*Observed*0.1))%>%
   mutate(a=1.8*exp((Tearth-20)/10))%>%
   mutate(b=a*Observed)
 
@@ -1398,4 +1398,9 @@ RmPp%>%
   theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
  theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
 ```
+
+
+
+
+
 
