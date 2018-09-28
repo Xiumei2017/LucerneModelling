@@ -1,0 +1,165 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+###Root and crown analysis
+
+```{r Load, warning=FALSE, fig.height=8, fig.width=8}
+library(dplyr)
+library(ggplot2)
+library(lubridate)   
+library(hydroGOF)
+library(xtable)
+library(knitr)
+library(tidyr)
+library(RSQLite)
+library(agricolae)
+library(scales)
+library(zoo)
+```
+
+
+## lode observed data
+```{r}
+upDir <- "D:/R/CombinedData/"
+obsData <- "D:/R/CombinedData/"
+
+obsAll <- read.table(paste0(obsData, "ObsAll.txt"),
+                   header = TRUE)
+obsA<- obsAll %>%
+  mutate(StartDate=dmy(StartDate),MidDate=dmy(MidDate),FinishDate=dmy(FinishDate),Clock.Today=dmy(Clock.Today)) %>%
+  #mutate(SowingDate=as.factor(ifelse(SowingDate=="no","Sd_No",paste0("Sd_",SowingDate)))) %>% # assume this is typo to be fixed?
+  mutate(GrowthSeason1=as.factor(paste0("Gs_",GrowthSeason))) %>% # creating more intuitive labels here
+  mutate(Rotation1=as.factor(paste0("Rt_",Rotation))) %>%
+  mutate(ExpUnitCode=as.factor(paste0(Name,GrowthSeason1,Rotation1))) %>%
+  mutate(Clock.Today1 = as.POSIXct(paste(Clock.Today,Time),format="%Y-%m-%d %H:%M:%S"))
+  
+summary(obsA)
+obsA
+```
+
+##load thermal time data and RootDM
+```{r}
+upDir <- "D:/R/"
+obsData <- "D:/R/TtAll/"
+
+Tt<- read.table(paste0(obsData, "df.all.txt"),
+               header = TRUE)
+TtA <- Tt %>% mutate(Clock.Today=dmy(Clock.Today), ExpUnitCode=as.factor(ExpName))
+TtA
+ObsRC <-merge(obsA,TtA,by=c("Clock.Today","ExpUnitCode")) %>%
+  mutate(GrowthRotation=as.factor(paste0(GrowthSeason.x,Rotation.x)))%>%
+  dplyr::filter(Water.x=="irr")%>%
+  dplyr::filter(Defoliation.x=="LL")%>%
+  dplyr::filter(Variable=="RootWt"|Variable=="CrownWt")
+
+summary(ObsRC)
+```
+##crown
+```{r,fig.height=8, fig.width=10}
+ObsRC1<-ObsRC%>%
+  dplyr::filter(Tb==1)
+
+ObsC<-ObsRC1%>%
+  dplyr::filter(Variable=="CrownWt")%>%
+  dplyr::filter(Name=="Iversen_91DefoliationLL")
+ObsC%>%
+  ggplot(aes(x=Tt_broken_sum, y=Observed))+geom_point(size=2)+theme_bw()+xlab("Thermal time (°Cd) ")+ylab("Crown (kg DM/ha)")+ggtitle("Iversen_91DefoliationLL")  +
+ geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="blue")+
+ facet_grid(GrowthSeason.x~Rotation.x)+
+  theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
+ theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
+
+```
+
+```{r,fig.height=8, fig.width=10}
+ObsRC1<-ObsRC%>%
+  dplyr::filter(Tb==1)
+
+ObsC1<-ObsRC1%>%
+  dplyr::filter(Variable=="CrownWt")%>%
+  dplyr::filter(Name=="Iversen_121DefoliationLLFDFD5")
+ObsC1%>%
+  ggplot(aes(x=Tt_broken_sum, y=Observed))+geom_point(size=2)+theme_bw()+xlab("Thermal time (°Cd) ")+ylab("Crown (kg DM/ha)")+ggtitle("Iversen_121DefoliationLLFDFD5")  +
+ geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="blue")+
+ facet_grid(GrowthSeason.x~Rotation.x)+
+  theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
+ theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
+
+```
+
+##Root
+```{r,fig.height=8, fig.width=10}
+ObsRC1<-ObsRC%>%
+  dplyr::filter(Tb==1)
+
+ObsRL<-ObsRC1%>%
+  dplyr::filter(Variable!="CrownWt")%>%
+  dplyr::filter(Name=="Iversen_91DefoliationLL")
+ObsRL%>%
+  ggplot(aes(x=Tt_broken_sum, y=Observed))+geom_point(size=2)+theme_bw()+xlab("Thermal time (°Cd) ")+ylab("Crown (kg DM/ha)")+ggtitle("Iversen_91DefoliationLL")  +
+ geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="blue")+
+ facet_grid(GrowthSeason.x~Rotation.x)+
+  theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
+ theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
+
+```
+
+```{r,fig.height=8, fig.width=10}
+ObsRC1<-ObsRC%>%
+  dplyr::filter(Tb==1)
+
+ObsRL1<-ObsRC1%>%
+  dplyr::filter(Variable!="CrownWt")%>%
+  dplyr::filter(Name=="Iversen_121DefoliationLLFDFD5")%>%
+  mutate(Observed=Observed/0.8)
+ ObsRL1%>% 
+  ggplot(aes(x=Tt_broken_sum, y=Observed))+geom_point(size=2)+theme_bw()+xlab("Thermal time (°Cd) ")+ylab("Crown (kg DM/ha)")+ggtitle("Iversen_121DefoliationLLFDFD5")  +
+ geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="blue")+
+ facet_grid(GrowthSeason.x~Rotation.x)+
+  theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
+ theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
+
+```
+### Root convent and combine
+```{r}
+ObsR.new<-rbind(ObsRL,ObsRL1)%>%
+  unique()%>%
+  tidyr::spread(Variable,Observed)%>%
+  mutate(StdDEVR=StdDEV)%>%
+  dplyr::select(Clock.Today,ExpUnitCode,Name,RootWt,StdDEVR)
+
+ObsC.new<-rbind(ObsC,ObsC1)%>%
+  unique()%>%
+  tidyr::spread(Variable,Observed)%>%
+   mutate(StdDEVC=StdDEV)
+
+ObsRC.new<-merge(ObsR.new,ObsC.new,by=c("Clock.Today","ExpUnitCode","Name"))
+
+```
+
+```{r}
+phyll <- "D:\\R\\"
+StartGrazing <- read.table(paste0(phyll, "ExperimentList.txt"), 
+                      header = TRUE)
+StartGrazing1<-StartGrazing %>%
+  mutate(GrowthRotation= as.factor(paste0(GrowthSeason,Rotation)))
+ObsRC.Pp<- merge(StartGrazing1,ObsRC.new,by=c("Name","GrowthRotation"))%>%
+  group_by(Name,GrowthSeason.x,Rotation.x,GrowthRotation,Tmean,Ppm,Stage,Trend) %>%
+  mutate(rootWt=RootWt-CrownWt)%>%
+  do(mod = lm(CrownWt~rootWt,data=.)) %>%
+  mutate(C.R = summary(mod)$coeff[2]) %>%
+  dplyr::select(-mod)
+  
+
+ObsRC.Pp%>%
+  dplyr::filter(C.R>0)%>%
+  dplyr::filter(GrowthRotation!="33")%>%
+  #dplyr::filter(GrowthRotation!="32")%>%
+  ggplot(aes(x=Ppm, y=C.R,Color=Name,label=GrowthRotation))+geom_text()+theme_bw()+xlab("Root biomass(kg DM/ha) ")+ylab("Crown/root ratio")+ggtitle("Iversen_121DefoliationLLFDFD5")  +
+ #geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="blue")+
+ facet_grid(Trend~Stage)+
+  theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
+ theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
+```
+

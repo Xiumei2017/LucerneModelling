@@ -1,0 +1,268 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+library(dplyr)
+library(ggplot2)
+library(lubridate)   
+library(hydroGOF)
+library(xtable)
+library(knitr)
+library(tidyr)
+library(RSQLite)
+library(agricolae)
+library(scales)
+library(zoo)
+
+```
+# ### load obs data
+```{r}
+upDir <- "D:/R/CombinedData/"
+obsData <- "D:/R/CombinedData/"
+
+obsADF <- read.table(paste0(obsData, "Defoliation.txt"),
+                   header = TRUE)
+obsAL<- obsADF %>%
+  dplyr::filter(Variable=="LAI")%>%
+  dplyr::filter(FD=="FD5")%>%
+  mutate(StartDate=dmy(StartDate),MidDate=dmy(MidDate),FinishDate=dmy(FinishDate),Clock.Today=dmy(Clock.Today))%>%
+  mutate(GrowthSeason1=as.factor(paste0("Gs_",GrowthSeason))) %>% # creating more intuitive labels here
+  mutate(Rotation1=as.factor(paste0("Rt_",Rotation))) %>%
+  mutate(ExpUnitCode=as.factor(paste0(Name,GrowthSeason1,Rotation1))) %>%
+  mutate(Clock.Today1 = as.POSIXct(paste(Clock.Today,Time),format="%Y-%m-%d %H:%M:%S"))%>%
+  mutate(GrowthSeason2=as.factor(paste0("Y",GrowthSeason,"(",Period,")"))) %>%
+ mutate(Rotation2=as.factor(paste0("R",Rotation)))
+  
+ obsAL
+```
+
+
+```{r}
+upDir <- "D:/R/"
+obsData <- "D:/R/TtAll/"
+
+Tt<- read.table(paste0(obsData, "df.all1.txt"),
+               header = TRUE)
+TtA <- Tt %>% mutate(Clock.Today=dmy(Clock.Today), ExpUnitCode=as.factor(ExpName))%>%
+  dplyr::filter(Tb==1)
+
+
+obsDL <-merge(obsAL,TtA,by=c("Clock.Today","ExpUnitCode")) %>%
+  mutate(GrowthRotation=as.factor(paste0(GrowthSeason.x,Rotation.x)))%>%
+  dplyr::filter(Variable=="LAI")
+  summary(obsDH)
+  obsDH
+  
+```
+
+```{r}
+mytheme1<-theme(
+     panel.spacing=unit(.01, "lines"),
+     panel.border = element_rect(colour = "black",size=1), 
+     panel.grid.major = element_blank(),
+     panel.grid.minor = element_blank(),
+     axis.line = element_line(colour = "black",size = 1),
+     axis.text.x = element_text(face = "plain", color = "black", size = 14,angle=90, vjust=0.5, hjust = 1),
+     axis.text.y = element_text(face = "plain", color = "black", size = 14),
+     axis.title.x=element_text(face="bold",colour="black",size = 14),
+     axis.title.y=element_text(face="bold",colour="black",size = 14),
+     strip.background = element_rect(colour = "black", fill = "white",size=1),
+     strip.text.x = element_text(size=14, angle=0, face = "plain"), 
+     strip.text.y = element_text(size=14, face="plain"),
+     legend.title = element_text(colour="black", size=14, face="bold"),
+     axis.text = element_text(face = "bold", vjust = 0.5, size = 14))
+
+mytheme3<-theme(
+     legend.title = element_text(colour="black", size=14, face="bold"),
+     legend.text = element_text(colour="black", size = 14,face="plain"),
+     panel.spacing=unit(.01, "lines"),
+     panel.border = element_rect(colour = "black",size=1), 
+     panel.grid.major = element_blank(),
+     panel.grid.minor = element_blank(),
+     axis.line = element_line(colour = "black",size = 1),
+     axis.text.x = element_text(face = "plain", color = "black", size = 14, vjust=0.5, hjust = 1),
+     axis.text.y = element_text(face = "plain", color = "black", size = 14),
+     axis.title.x=element_text(face="bold",colour="black",size = 14),
+     axis.title.y=element_text(face="bold",colour="black",size = 14),
+     strip.background = element_rect(colour = "black", fill = "white",size=1),
+     strip.text.x = element_text(size=14, angle=0, face = "plain"), 
+     strip.text.y = element_text(size=14, face="plain"),
+     axis.text = element_text(face = "bold", vjust = 0.5, size = 14),
+    legend.position = "right", legend.box = "vertical")
+```
+
+###LS
+```{r,fig.height=6, fig.width=8}
+  obsDL0<-obsDL%>%
+  dplyr::filter(ID=="E3ILS")
+  obsH0$Rotation2<- factor(obsH0$Rotation2,
+                          levels=c("R1", "R2", "R3", "R4","R5","R6","R7","R8","R9","R10"))
+ obsDL0%>%  
+  ggplot(aes(x=Tt_broken_sum, y=Observed))+geom_point(size=2)+theme_bw()+xlab("Thermal time (°Cd) ")+ylab(bquote(bold('LAI ('*m^2~m^-2*')')))+ggtitle(paste0("E3ILS","(Iversen_91DefoliationLS)"))  +
+  scale_x_continuous(breaks = seq(0, 550, by =200), limits=c(0,500))+
+  scale_y_continuous(breaks = seq(0, 8, by =3), limits=c(0,8))+
+ geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="blue")+
+ facet_grid(GrowthSeason2~Rotation2)+mytheme1
+ggsave("D:/R/Pictures/C5/LAI/Iversen_91DefoliationLSLAI.png", width=8, height=6, dpi=500)
+
+```
+
+###SL
+```{r,fig.height=6, fig.width=8}
+  obsL1<-obsDL%>%
+  dplyr::filter(ID=="E3ISL")
+  obsL1$Rotation2<- factor( obsL1$Rotation2, levels=c("R1", "R2", "R3", "R4", "R5","R6", "R7","R8","R9","R10"))
+  obsL1%>%  
+  ggplot(aes(x=Tt_broken_sum, y=Observed))+geom_point(size=2)+theme_bw()+xlab("Thermal time (°Cd) ")+ylab(bquote(bold('LAI ('*m^2~m^-2*')')))+ggtitle(paste0("E3ISL","(Iversen_91DefoliationSL)"))  +
+   scale_x_continuous(breaks = seq(0, 550, by =200), limits=c(0,500))+
+  scale_y_continuous(breaks = seq(0, 8, by =3), limits=c(0,8))+
+ geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="blue")+
+ facet_grid(GrowthSeason2~Rotation2)+mytheme1
+ggsave("D:/R/Pictures/C5/LAI/Iversen_91DefoliationSLLAI.png", width=8, height=6, dpi=500)
+
+```
+###SS
+```{r,fig.height=6, fig.width=8}
+  obsL2<-obsDL%>%
+  dplyr::filter(ID=="E3ISS")
+  obsL2$Rotation2<- factor(obsL2$Rotation2, levels=c("R1", "R2", "R3", "R4", "R5","R6", "R7","R8","R9","R10"))
+  obsL2%>%  
+  ggplot(aes(x=Tt_broken_sum, y=Observed))+geom_point(size=2)+theme_bw()+xlab("Thermal time (°Cd) ")+ylab(bquote(bold('LAI ('*m^2~m^-2*')')))+ggtitle(paste0("E3ISS","(Iversen_91DefoliationSS)"))  +
+  scale_x_continuous(breaks = seq(0, 550, by =200), limits=c(0,500))+
+  scale_y_continuous(breaks = seq(0, 5, by =2), limits=c(0,5))+
+ geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="blue")+
+ facet_grid(GrowthSeason2~Rotation2)+mytheme1
+ggsave("D:/R/Pictures/C5/LAI/Iversen_91DefoliationSSLAI.png", width=8, height=6, dpi=500)
+
+```
+###SS
+```{r,fig.height=6, fig.width=8}
+  obsL3<-obsDL%>%
+  dplyr::filter(ID=="E5ISSF5")
+  obsL3$Rotation2<- factor(obsL3$Rotation2, levels=c("R1", "R2", "R3", "R4", "R5","R6", "R7","R8","R9","R10"))
+  obsL3%>%  
+  ggplot(aes(x=Tt_broken_sum, y=Observed))+geom_point(size=2)+theme_bw()+xlab("Thermal time (°Cd) ")+ylab(bquote(bold('LAI ('*m^2~m^-2*')')))+ggtitle(paste0("E5ISSF5","(Iversen_121DefoliationSSFDFD5)"))  +
+  scale_x_continuous(breaks = seq(0, 550, by =200), limits=c(0,500))+
+  scale_y_continuous(breaks = seq(0, 5, by =2), limits=c(0,5))+
+ geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="blue")+
+ facet_grid(GrowthSeason2~Rotation2)+mytheme1
+ggsave("D:/R/Pictures/C5/LAI/Iversen_121DefoliationSSFD5Height.png", width=8, height=6, dpi=500)
+
+```
+
+###HH
+```{r,fig.height=6, fig.width=8}
+  obsL3<-obsDL%>%
+  dplyr::filter(ID=="E5IHHF5")
+  obsL3$Rotation2<- factor(obsL3$Rotation2, levels=c("R1", "R2", "R3", "R4", "R5","R6", "R7","R8","R9","R10"))
+  obsL3%>%  
+  ggplot(aes(x=Tt_broken_sum, y=Observed))+geom_point(size=2)+theme_bw()+xlab("Thermal time (°Cd) ")+ylab(bquote(bold('LAI ('*m^2~m^-2*')')))+ggtitle(paste0("E5ISSF5","(Iversen_121DefoliationHHFDFD5)"))  +
+  # scale_x_continuous(breaks = seq(0, 550, by =200), limits=c(0,500))+
+  # scale_y_continuous(breaks = seq(0, 5, by =2), limits=c(0,5))+
+ geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="blue")+
+ facet_grid(GrowthSeason2~Rotation2)+mytheme1
+ggsave("D:/R/Pictures/C5/LAI/Iversen_121DefoliationHHFD5Height.png", width=8, height=6, dpi=500)
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+###LEAR
+```{r}
+detach(package:plyr)
+LEAR<-ObsL%>%
+  dplyr::filter(Variable=="LAI")%>%
+  group_by(Name,GrowthSeason.x,Rotation.x,Tmean,Ppm,Collection,GrowthRotation,ID,ExperimentID)%>%
+  do(mod = lm(Observed~Tt_broken_sum,data=.)) %>%
+  mutate(LEAR = summary(mod)$coeff[2]) %>%
+  dplyr::select(-mod)
+  
+LEAR%>%
+  dplyr::filter(Collection!="2010_2012")%>%
+  dplyr::filter(Name!="Iversen_121DefoliationLLFDFD2")%>%
+  ggplot(aes(x=Ppm, y=LEAR, colour=factor(Name)))+geom_point(size=2)+theme_bw()+
+  geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="darkgrey")+xlab("Photoperiod (h)")+ylab("LEAR (m^2/m^2/°Cd)")+
+  theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
+ theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
+  
+```
+#load Rotation and Growth season
+```{r,fig.height=5, fig.width=10}
+library(plyr)
+phyll <- "D:\\R\\"
+StartGrazing <- read.table(paste0(phyll, "ExperimentList.txt"), 
+                      header = TRUE)
+StartGrazing1<-StartGrazing %>%
+  mutate(GrowthRotation= as.factor(paste0(GrowthSeason,Rotation)))
+LEARPp<- merge(StartGrazing1,LEAR,by=c("Name","Collection","GrowthRotation"))
+
+
+LEARPp1<-LEARPp%>%
+  dplyr::filter(Collection!="2010_2012")%>%
+  #dplyr::filter(Collection!="2002_2004")%>%
+  dplyr::filter(Name!="Iversen_121DefoliationLLFDFD5"|GrowthRotation!="24")%>%
+  dplyr::filter(Name!="Iversen_121DefoliationLLFDFD5"|GrowthRotation!="21")
+
+lm_eqn2 <- function(LEARPp1){
+  m <- lm(LEAR~Ppm , LEARPp1);
+  eq <- substitute(italic(y) == Ppm + LEAR %.% italic(Ppm)*","~~italic(R)^2~"="~r2, 
+                   list(Ppm = format(coef(m)[1], digits = 2), 
+                        LEAR = format(coef(m)[2], digits = 2), 
+                        r2 = format(summary(m)$r.squared, digits = 3)))
+  as.character(as.expression(eq));                 
+}
+
+
+eqs1 <- ddply(LEARPp1,.(Trend,Stage),lm_eqn2)
+
+
+LEARPp1%>%
+  #dplyr::filter(Stage!="Seedling")%>%
+  ggplot(aes(x=Ppm, y=LEAR,label=GrowthRotation,color=ID))+geom_text()+theme_bw()+
+  xlab("Mean photoperiod (h) ")+ylab(bquote(bold('LEAR ('*m^2~m^-2~'°Cd'^-1*')')))+ 
+  geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="darkgrey")+
+  #geom_smooth(method = "lm", se = TRUE, formula=y ~ poly(x, 2, raw=TRUE), colour="darkgrey")+
+  facet_grid(Trend~Stage)+
+  geom_text(data = eqs1, aes(y =0.03, x = 13.5, label = V1), 
+          color = 'black',  parse = TRUE)+
+  theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
+ theme(axis.title.y=element_text(face="bold",colour="black",size = 12))+
+  theme(legend.title=element_blank())+mytheme3
+ detach(package:plyr)
+  ggsave("D:/R/Pictures/LAI/LEARPP.png", width=8.5, height=6, dpi=500) 
+```
+
+
