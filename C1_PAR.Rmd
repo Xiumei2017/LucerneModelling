@@ -62,20 +62,38 @@ ObsPAR<-ObsL.Raw%>%
 summary(ObsPAR)
 ObsPAR
 ```
+```{r}
+mytheme3<-theme(
+     #legend.title = element_text(), 
+     legend.text = element_text(colour="black", size = 12,face="plain"),
+     panel.spacing=unit(.01, "lines"),
+     panel.border = element_rect(colour = "black",size=1), 
+     panel.grid.major = element_blank(),
+     panel.grid.minor = element_blank(),
+     axis.line = element_line(colour = "black",size = 1),
+     axis.text.x = element_text(face = "plain", color = "black", size = 14, vjust=0.5, hjust = 1),
+     axis.text.y = element_text(face = "plain", color = "black", size = 14),
+     axis.title.x=element_text(face="bold",colour="black",size = 14),
+     axis.title.y=element_text(face="bold",colour="black",size = 14),
+     strip.background = element_rect(colour = "black", fill = "white",size=1),
+     strip.text.x = element_text(size=14, angle=0, face = "plain"), 
+     strip.text.y = element_text(size=14, face="plain"),
+     axis.text = element_text(face = "bold", vjust = 0.5, size = 14))
+```
 
 ###LAI and PAR
 ```{r,fig.height=5, fig.width=10}
 ObsLP<-ObsPAR%>%
   unique()%>%
   dplyr::filter(Collection!="2010_2012")%>%
-  dplyr::select(Clock.Today,ExpUnitCode,Name,Collection,GrowthSeason.x,Rotation.x,StartDate,MidDate,FinishDate,Interval,Variable,VariableUnits,Time,Observed,StdDEV,GrowthRotation)
+  dplyr::select(Clock.Today,ExpUnitCode,Name,Collection,GrowthSeason.x,Rotation.x,StartDate,MidDate,FinishDate,Interval,Variable,VariableUnits,Time,Observed,StdDEV,GrowthRotation,ID,ExperimentID)
 
 ObsLAI <- ObsLP%>%
   dplyr::filter(Variable=="LAI")
 ObsP <- ObsLP%>%
   dplyr::filter(Variable=="Fraction")
   
-ObsPL<-merge(ObsLAI,ObsP,by=c("Clock.Today","ExpUnitCode","Name","Collection","GrowthSeason.x","Rotation.x","StartDate","MidDate","FinishDate","Interval","Time","GrowthRotation"))
+ObsPL<-merge(ObsLAI,ObsP,by=c("Clock.Today","ExpUnitCode","Name","Collection","GrowthSeason.x","Rotation.x","StartDate","MidDate","FinishDate","Interval","Time","GrowthRotation","ID","ExperimentID"))
 
 phyll <- "D:\\R\\"
 StartGrazing <- read.table(paste0(phyll, "ExperimentList.txt"), 
@@ -83,29 +101,70 @@ StartGrazing <- read.table(paste0(phyll, "ExperimentList.txt"),
 StartGrazing1<-StartGrazing %>%
   mutate(GrowthRotation= as.factor(paste0(GrowthSeason,Rotation)))
 ObsPL1<- merge(StartGrazing1,ObsPL,by=c("Name","Collection","GrowthRotation"))%>%
-  dplyr::filter(Name!="Iversen_121DefoliationLLFDFD5"|GrowthSeason.x!="2")
+ dplyr::filter(Name!="Iversen_121DefoliationLLFDFD5"|GrowthSeason.x!="2")%>%
+  dplyr::filter(Name!="Iversen_121DefoliationLLFDFD5"|GrowthRotation!="13")
 
-
+test1 <- function(x) {1-exp(-0.76*x)}
+stat_function(fun = test1)
+ 
 ObsPL1%>%
-  ggplot(aes(x=Observed.x,y=Observed.y,color=Name,label=GrowthRotation))+geom_text()+theme_bw()+ylab("Franctional radiation interception")+xlab("LAI")+ 
-  #geom_point(size=2)+
+  dplyr::filter(Stage=="Regrowth")%>%
+  ggplot(aes(x=Observed.x,y=Observed.y,color=ID,label=GrowthRotation))+theme_bw()+ylab("Franctional radiation interception")+xlab(bquote(bold('LAI ('*m^2~m^-2*')')))+
+  geom_point(size=2)+theme(legend.title = element_blank())+
   facet_wrap(~Stage,ncol = 2)+
+  stat_function(fun = test1,color="black",size=1)+
   theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
- theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
+ theme(axis.title.y=element_text(face="bold",colour="black",size = 12))+mytheme3+
+ annotate("text", x=1.5, y=1, size = 5, label ="paste(y == 1-exp(-0.76*x),~~R^2==0.93 )", parse=T)
+  #ggsave("D:/R/Pictures/PAR/Regrowth.png", width=8, height=5  , dpi=500) 
 ```
+###seedling crop
+```{r,fig.height=5, fig.width=10}
+test1 <- function(x) {1-exp(-0.61*x)}
+stat_function(fun = test1)
+ 
+ObsPL1%>%
+   dplyr::filter(Stage=="Seedling")%>%
+  ggplot(aes(x=Observed.x,y=Observed.y,color=ID,label=GrowthRotation))+theme_bw()+ylab("Franctional radiation interception")+xlab(bquote(bold('LAI ('*m^2~m^-2*')')))+
+  geom_point(size=2)+
+  facet_wrap(~Stage,ncol = 2)+
+  stat_function(fun = test1,color="black",size=1)+mytheme3+theme(legend.title = element_blank())+
+ annotate("text", x=1.5, y=1, size = 5, label ="paste(y == 1-exp(-0.61*x),~~R^2==0.90 )", parse=T)
+  #ggsave("D:/R/Pictures/PAR/Seedling.png", width=8, height=5  , dpi=500) 
+```
+
+
 #### Extinction_coef evaluation
 ```{r,fig.height=5, fig.width=10}
+library(plyr)
 Exc.K<-ObsPL1%>%
   mutate(Fra=1-Observed.y)%>%
   mutate(lnFI=log(Fra))
+
+lm_eqn3 <- function(Exc.K){
+  m <- lm(lnFI~Observed.x, Exc.K);
+  eq <- substitute(italic(y) == Observed.x + lnFI %.% italic(Observed.x)*","~~italic(R)^2~"="~r2, 
+                   list(Observed.x = format(coef(m)[1], digits = 2), 
+                       lnFI = format(coef(m)[2], digits = 2), 
+                        r2 = format(summary(m)$r.squared, digits = 3)))
+  as.character(as.expression(eq));                 
+}
+
+
+eqs2 <- ddply(Exc.K,.(Stage),lm_eqn3)
+
+
 Exc.K%>%
-  ggplot(aes(x=Observed.x,y=lnFI,color=Name,label=GrowthRotation))+geom_text()+theme_bw()+ylab("ln(I/IO)")+xlab("LAI")+ 
+  ggplot(aes(x=Observed.x,y=lnFI,color=Name,label=GrowthRotation,shape=Stage))+geom_text()+theme_bw()+xlab("ln(I/IO)")+ylab(bquote(bold('LAI ('*m^2~m^-2*')')))+
   #geom_point(size=2)+
    geom_smooth(method = "lm", se = TRUE,linetype=1 , colour="black")+
   facet_wrap(~Stage,ncol = 2)+
+  mytheme2+
+  geom_text(data = eqs2, aes(y =0, x = 3.5, label = V1), 
+          color = 'black',  parse = TRUE)+
   theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
  theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
-  
+  detach(package:plyr)
 ```
 
 ```{r}
@@ -114,15 +173,54 @@ Exc.KS<-Exc.K%>%
 Exc.KR<-Exc.K%>%
   dplyr::filter(Stage=="Regrowth")
 
+##seedling analysis
 x1=Exc.KS$Observed.x
 y1=Exc.KS$lnFI
 mod1<-lm(y1~x1)
 summary(mod1)
+m.e.s<-nls(Observed.y~1-I(exp(1)^(a*Observed.x)), data=Exc.KS,start=list(a=1), trace=T)
+summary(m.e.s)$coefficients
+plot(m.e.s)
 
+R2=1-RSS/TSS
+
+RSS.P<-sum(residuals(m.e.s)^2)
+TSS<-sum((Exc.KS$Observed.y-mean(Exc.KS$Observed.y))^2)
+R2<-1-(RSS.P/TSS)
+
+##regrowth analysis
 x2=Exc.KR$Observed.x
 y2=Exc.KR$lnFI
 mod2<-lm(y2~x2)
 summary(mod2)
+m.e.r<-nls(Observed.y~1-I(exp(1)^(a*Observed.x)), data=Exc.KR,start=list(a=1), trace=T)
+summary(m.e.r)$coefficients
+plot(m.e.r)
+
+RSS.P<-sum(residuals(m.e.r)^2)
+TSS<-sum((Exc.KR$Observed.y-mean(Exc.KR$Observed.y))^2)
+R2<-1-(RSS.P/TSS)
+
+
+##seedling and regrowth analysis
+x3=Exc.K$Observed.x
+y3=Exc.K$lnFI
+mod3<-lm(y3~x3)
+summary(mod3)
+
+Exc.K
+
+x4=Exc.K$Observed.x
+y4=Exc.K$Observed.y
+m.e<-nls(y4~1-I(exp(1)^(a*x4)), data=Exc.K,start=list(a=1), trace=T)
+summary(m.e)$coefficients
+plot(m.e)
+plot(y4~x4)
+
+RSS.P<-sum(residuals(m.e)^2)
+TSS<-sum((Exc.K$Observed.y-mean(Exc.K$Observed.y))^2)
+R2<-1-(RSS.P/TSS)
+
 
 
 ```

@@ -5,7 +5,8 @@ output: html_notebook
 ###NodeNumber analysis
 
 ```{r Load, warning=FALSE, fig.height=8, fig.width=8}
-# install.packages("zoo")
+
+library(plyr)
 library(dplyr)
 library(ggplot2)
 library(lubridate)   
@@ -17,7 +18,10 @@ library(RSQLite)
 library(agricolae)
 library(scales)
 library(zoo)
+
+detach(package:plyr)
 ```
+
 # ### load obs data
 ```{r}
 upDir <- "D:/R/CombinedData/"
@@ -25,16 +29,55 @@ obsData <- "D:/R/CombinedData/"
 
 obsAll <- read.table(paste0(obsData, "ObsAll.txt"),
                    header = TRUE)
-obsA<- obsAll %>%
+obsA1<- obsAll %>%
+  dplyr::filter(Collection=="2000_2002")%>%
   mutate(StartDate=dmy(StartDate),MidDate=dmy(MidDate),FinishDate=dmy(FinishDate),Clock.Today=dmy(Clock.Today)) %>%
   #mutate(SowingDate=as.factor(ifelse(SowingDate=="no","Sd_No",paste0("Sd_",SowingDate)))) %>% # assume this is typo to be fixed?
   mutate(GrowthSeason1=as.factor(paste0("Gs_",GrowthSeason))) %>% # creating more intuitive labels here
   mutate(Rotation1=as.factor(paste0("Rt_",Rotation))) %>%
   mutate(ExpUnitCode=as.factor(paste0(Name,GrowthSeason1,Rotation1))) %>%
-  mutate(Clock.Today1 = as.POSIXct(paste(Clock.Today,Time),format="%Y-%m-%d %H:%M:%S"))
+  mutate(Clock.Today1 = as.POSIXct(paste(Clock.Today,Time),format="%Y-%m-%d %H:%M:%S"))%>%
+  mutate(GrowthSeason2=as.factor(paste0("Y",GrowthSeason,"(",Period,")"))) %>%
+ mutate(Rotation2=as.factor(ifelse(Rotation=="1",paste0("S",Rotation),paste0("R",Rotation))))
+
+obsA4<- obsAll %>%
+  dplyr::filter(Collection=="2014_2018")%>%
+  mutate(StartDate=dmy(StartDate),MidDate=dmy(MidDate),FinishDate=dmy(FinishDate),Clock.Today=dmy(Clock.Today)) %>%
+  #mutate(SowingDate=as.factor(ifelse(SowingDate=="no","Sd_No",paste0("Sd_",SowingDate)))) %>% # assume this is typo to be fixed?
+  mutate(GrowthSeason1=as.factor(paste0("Gs_",GrowthSeason))) %>% # creating more intuitive labels here
+  mutate(Rotation1=as.factor(paste0("Rt_",Rotation))) %>%
+  mutate(ExpUnitCode=as.factor(paste0(Name,GrowthSeason1,Rotation1))) %>%
+  mutate(Clock.Today1 = as.POSIXct(paste(Clock.Today,Time),format="%Y-%m-%d %H:%M:%S"))%>%
+  mutate(GrowthSeason2=as.factor(paste0("Y",GrowthSeason,"(",Period,")"))) %>%
+  mutate(Rotation2=as.factor(ifelse(Rotation=="1",paste0("S",Rotation),paste0("R",Rotation))))
+ 
+
+  obsA2<- obsAll %>%
+  dplyr::filter(Collection=="1997_2001")%>%
+  mutate(StartDate=dmy(StartDate),MidDate=dmy(MidDate),FinishDate=dmy(FinishDate),Clock.Today=dmy(Clock.Today)) %>%
+  #mutate(SowingDate=as.factor(ifelse(SowingDate=="no","Sd_No",paste0("Sd_",SowingDate)))) %>% # assume this is typo to be fixed?
+  mutate(GrowthSeason1=as.factor(paste0("Gs_",GrowthSeason))) %>% # creating more intuitive labels here
+  mutate(Rotation1=as.factor(paste0("Rt_",Rotation))) %>%
+  mutate(ExpUnitCode=as.factor(paste0(Name,GrowthSeason1,Rotation1))) %>%
+  mutate(Clock.Today1 = as.POSIXct(paste(Clock.Today,Time),format="%Y-%m-%d %H:%M:%S"))%>%
+  mutate(GrowthSeason2=as.factor(paste0("Y",GrowthSeason,"(",Period,")"))) %>%
+  mutate(Rotation2=as.factor(paste0("R",Rotation)))
   
+
+  obsA3<- obsAll %>%
+  dplyr::filter(Collection=="2002_2004")%>%
+  mutate(StartDate=dmy(StartDate),MidDate=dmy(MidDate),FinishDate=dmy(FinishDate),Clock.Today=dmy(Clock.Today)) %>%
+  #mutate(SowingDate=as.factor(ifelse(SowingDate=="no","Sd_No",paste0("Sd_",SowingDate)))) %>% # assume this is typo to be fixed?
+  mutate(GrowthSeason1=as.factor(paste0("Gs_",GrowthSeason))) %>% # creating more intuitive labels here
+  mutate(Rotation1=as.factor(paste0("Rt_",Rotation))) %>%
+  mutate(ExpUnitCode=as.factor(paste0(Name,GrowthSeason1,Rotation1))) %>%
+  mutate(Clock.Today1 = as.POSIXct(paste(Clock.Today,Time),format="%Y-%m-%d %H:%M:%S"))%>%
+  mutate(GrowthSeason2=as.factor(paste0("Y",GrowthSeason,"(",Period,")"))) %>%
+  mutate(Rotation2=as.factor(paste0("R",Rotation)))
+  
+obsA<-rbind(obsA2,obsA3,obsA1,obsA4)
 summary(obsA)
-obsA
+ obsA
 ```
 ```{r}
 upDir <- "D:/R/"
@@ -49,72 +92,127 @@ ObsH <-merge(obsA,TtA,by=c("Clock.Today","ExpUnitCode")) %>%
   dplyr::filter(Water.x=="irr")%>%
   dplyr::filter(Defoliation.x=="LL")%>%
   dplyr::filter(Variable=="NodeNumber")
-  
+  summary(ObsH)
 
-summary(ObsH)
+```
+```{r}
+mytheme1<-theme(
+     panel.spacing=unit(.01, "lines"),
+     panel.border = element_rect(colour = "black",size=1), 
+     panel.grid.major = element_blank(),
+     panel.grid.minor = element_blank(),
+     axis.line = element_line(colour = "black",size = 1),
+     axis.text.x = element_text(face = "plain", color = "black", size = 14,angle=90, vjust=0.5, hjust = 1),
+     axis.text.y = element_text(face = "plain", color = "black", size = 14),
+     axis.title.x=element_text(face="bold",colour="black",size = 14),
+     axis.title.y=element_text(face="bold",colour="black",size = 14),
+     strip.background = element_rect(colour = "black", fill = "white",size=1),
+     strip.text.x = element_text(size=14, angle=0, face = "plain"), 
+     strip.text.y = element_text(size=14, face="plain"),
+     legend.title = element_text(colour="black", size=14, face="bold"),
+     axis.text = element_text(face = "bold", vjust = 0.5, size = 14))
+
+mytheme3<-theme(
+     legend.title = element_text(colour="black", size=14, face="bold"),
+     legend.text = element_text(colour="black", size = 14,face="plain"),
+     panel.spacing=unit(.01, "lines"),
+     panel.border = element_rect(colour = "black",size=1), 
+     panel.grid.major = element_blank(),
+     panel.grid.minor = element_blank(),
+     axis.line = element_line(colour = "black",size = 1),
+     axis.text.x = element_text(face = "plain", color = "black", size = 14, vjust=0.5, hjust = 1),
+     axis.text.y = element_text(face = "plain", color = "black", size = 14),
+     axis.title.x=element_text(face="bold",colour="black",size = 14),
+     axis.title.y=element_text(face="bold",colour="black",size = 14),
+     strip.background = element_rect(colour = "black", fill = "white",size=1),
+     strip.text.x = element_text(size=14, angle=0, face = "plain"), 
+     strip.text.y = element_text(size=14, face="plain"),
+     axis.text = element_text(face = "bold", vjust = 0.5, size = 14),
+    legend.position = "right", legend.box = "vertical")
+```
+
+###Examples for order text 
+```{r}
+
+x1 <- c("white","white","blue","green","red","blue","red")
+ ord <- c("red","white","blue","green")
+ f1 <- factor(x1,levels=ord)
+ sort(f1)
+x2 <- as.character(sort(f1))
+
+x <- c("white","white","blue","green","red","blue","red")
+y <- c("red","white","blue","green")
+x[order(match(x, y))]
+
+
 ```
 
 ```{r,fig.height=6, fig.width=8}
 obsNode<-ObsH%>%
   dplyr::filter(Tb==1)
- 
-obsNode
-# phyll <- "D:\\R\\Data statistic\\"
-# StartGrazing <- read.table(paste0(phyll, "obsTphy.txt"), 
-#                       header = TRUE)
-# StartGrazing1<-StartGrazing %>%
-#   mutate(StartDate = dmy(StartDate))%>%
-#   mutate(MidDate = dmy(MidDate))%>%
-#   mutate(FinishDate= dmy(FinishDate))%>%
-#   mutate(Rotation=as.factor(Rotation))
-# 
-# StartGrazing1
-# 
-# obsf<- merge(obsNode,StartGrazing1,by=c("Name","Collection","GrowthSeason","Rotation","GrowthRotation"))
-# obsf
-# obsef<-obsf%>%
-#   mutate(BudV=dmy(BudV))%>%
-#   mutate(Flowering=dmy(Flowering))%>%
-#   mutate(Ture=ifelse(Clock.Today<=BudV,"Yes","No"))
-# 
-# obsef
-#  
-# obsef1<-obsef %>%
-#       mutate(Ture = ifelse(is.na(Ture),"A",Ture))
-#   
-obsNodeF<-obsNode%>%
-  #dplyr::filter(Ture!="No")%>%
-  dplyr::filter(Name=="Iversen_8Waterirr")%>%
-  ggplot(aes(x=Tt_broken_sum, y=Observed))+geom_point(size=2)+theme_bw()+xlab("Thermal time (°Cd) ")+ylab("Node number"   )+ggtitle("Iversen_8Waterirr")  +
+
+  obsNode0<-obsNode%>%
+  dplyr::filter(Name=="Iversen_8Waterirr")
+  obsNode0$Rotation2<- factor(obsNode0$Rotation2, levels=c("R1", "R2", "R3", "R4", "R5","R6", "R7"))
+  obsNode0%>%  
+  ggplot(aes(x=Tt_broken_sum, y=Observed))+geom_point(size=2)+theme_bw()+xlab("Thermal time (°Cd) ")+ylab("Node number")+ggtitle(paste0("E1ILL","(Iversen_8Waterirr)"))  +
+  scale_x_continuous(breaks = seq(0, 550, by =200), limits=c(0,450))+
+  scale_y_continuous(breaks = seq(0, 18, by =6), limits=c(0,16))+
  geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="blue")+
- facet_grid(GrowthSeason.x~Rotation.x)+
-  theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
- theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
+ facet_grid(GrowthSeason2~Rotation2)+mytheme1
+#to save a final graph 
+#ggsave("D:/R/Pictures/Node/Iversen_8Waterirrnode.png", width=8, height=6, dpi=500)
 
 ```
 
-```{r,fig.height=4, fig.width=8}
+```{r}
+#fig.height=4, fig.width=8
 obsNode1<-obsNode%>%
   #dplyr::filter(Ture!="No")%>%
   dplyr::filter(Collection=="2000_2002")%>%
   dplyr::filter(Name=="Iversen_9SowingDateSD1Waterirr")
+obsNode1$Rotation2<- factor(obsNode1$Rotation2, levels=c("S1", "R2", "R3", "R4", "R5","R6"))
 obsNode1%>%
-  ggplot(aes(x=Tt_beta_sum, y=Observed), colour=factor(Name))+geom_point(size=2)+theme_bw()+xlab("Thermal time(°Cd) ")+ylab("Node number")+ggtitle("Iversen_9SowingDateSD1Waterirr")+
+  ggplot(aes(x=Tt_beta_sum, y=Observed), colour=factor(Name))+geom_point(size=2)+theme_bw()+xlab("Thermal time (°Cd) ")+scale_x_continuous(limits=c(0,425))+
+  ylab("Node number")+ggtitle(paste0("E2ILLS1","(Iversen_9SowingDateSD1Waterirr)"))+
+  scale_x_continuous(breaks = seq(0, 550, by =200), limits=c(0,450))+
+  scale_y_continuous(breaks = seq(0, 18, by =6), limits=c(0,16))+
   geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="blue")+
- facet_grid(GrowthSeason.x~Rotation.x)+theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
- theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
-  
+ facet_grid(GrowthSeason2~Rotation2)+
+ theme(axis.title.y=element_text(face="bold",colour="black",size = 14))+mytheme1
+  #ggsave("D:/R/Pictures/Node/Iversen_9SowingDateSD1Waterirrnode.png", width=8, height=4, dpi=500)
+   
 ```
+
 ```{r,fig.height=3, fig.width=10}
 obsNode2<-obsNode%>%
   #dplyr::filter(Ture!="No")%>%
   dplyr::filter(Collection=="2000_2002")%>%
   dplyr::filter(Name=="Iversen_9SowingDateSD2Waterirr")
+obsNode2$Rotation2<- factor(obsNode2$Rotation2, levels=c("S1", "R2", "R3", "R4", "R5","R6"))
 obsNode2%>%
-  ggplot(aes(x=Tt_beta_sum, y=Observed), colour=factor(Name))+geom_point(size=2)+theme_bw()+xlab("Thermal time (°Cd)")+ylab("Node number")+ggtitle("Iversen_9SowingDateSD2Waterirr")+
+  ggplot(aes(x=Tt_beta_sum, y=Observed), colour=factor(Name))+geom_point(size=2)+theme_bw()+xlab("Thermal time (°Cd)")+ylab("Node number")+ggtitle(paste0("E2ILLS2","(Iversen_9SowingDateSD2Waterirr)"))+
   geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="blue")+
- facet_grid(GrowthSeason.x~Rotation.x)+theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
- theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
+ facet_grid(GrowthSeason2~Rotation2)+
+  scale_x_continuous(breaks = seq(0, 550, by =200), limits=c(0,450))+
+  scale_y_continuous(breaks = seq(0, 18, by =6), limits=c(0,16))+
+#remove grid lines 
+  theme(
+     panel.spacing=unit(.01, "lines"),
+     panel.border = element_rect(colour = "black",size=1), 
+     panel.grid.major = element_blank(),
+     panel.grid.minor = element_blank(),
+     axis.line = element_line(colour = "black",size = 1),
+     axis.text.x = element_text(face = "plain", color = "black", size = 14, vjust=0.5, hjust = 1),
+     axis.text.y = element_text(face = "plain", color = "black", size = 14),
+     axis.title.x=element_text(face="bold",colour="black",size = 14),
+     axis.title.y=element_text(face="bold",colour="black",size = 14),
+     strip.background = element_rect(colour = "black", fill = "white",size=1),
+     strip.text.x = element_text(size=14, angle=0, face = "plain"), 
+     strip.text.y = element_text(size=14, face="plain"),
+     legend.title = element_text(colour="black", size=14, face="bold"),
+     axis.text = element_text(face = "bold", vjust = 0.5, size = 14))
+   #ggsave("D:/R/Pictures/Node/Iversen_9SowingDateSD2Waterirrnode.png", width=8, height=3, dpi=500)
   
 ```
 
@@ -123,11 +221,29 @@ obsNode1<-obsNode%>%
   #dplyr::filter(Ture!="No")%>%
   dplyr::filter(Collection=="2000_2002")%>%
   dplyr::filter(Name=="Iversen_9SowingDateSD3Waterirr")
+obsNode1$Rotation2<- factor(obsNode1$Rotation2, levels=c("S1", "R2", "R3", "R4", "R5","R6"))
 obsNode1%>%
-  ggplot(aes(x=Tt_beta_sum, y=Observed), colour=factor(Name))+geom_point(size=2)+theme_bw()+xlab("Thermal time (°Cd)")+ylab("Node number")+ggtitle("Iversen_9SowingDateSD3Waterirr")+
+  ggplot(aes(x=Tt_beta_sum, y=Observed), colour=factor(Name))+geom_point(size=2)+theme_bw()+xlab("Thermal time (°Cd)")+ylab("Node number")+ggtitle("E2ILLS3(Iversen_9SowingDateSD3Waterirr)")+
   geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="blue")+
- facet_grid(GrowthSeason.x~Rotation.x)+theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
- theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
+ facet_grid(GrowthSeason2~Rotation2)+theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
+ theme(axis.title.y=element_text(face="bold",colour="black",size = 14))+
+  #remove grid lines 
+   theme(
+     panel.spacing=unit(.01, "lines"),
+     panel.border = element_rect(colour = "black",size=1), 
+     panel.grid.major = element_blank(),
+     panel.grid.minor = element_blank(),
+     axis.line = element_line(colour = "black",size = 1),
+     axis.text.x = element_text(face = "plain", color = "black", size = 14, vjust=0.5, hjust = 1),
+     axis.text.y = element_text(face = "plain", color = "black", size = 14),
+     axis.title.x=element_text(face="bold",colour="black",size = 14),
+     axis.title.y=element_text(face="bold",colour="black",size = 14),
+     strip.background = element_rect(colour = "black", fill = "white",size=1),
+     strip.text.x = element_text(size=14, angle=0, face = "plain"), 
+     strip.text.y = element_text(size=14, face="plain"),
+     legend.title = element_text(colour="black", size=14, face="bold"),
+     axis.text = element_text(face = "bold", vjust = 0.5, size = 14))
+   #ggsave("D:/R/Pictures/Node/Iversen_9SowingDateSD3Waterirrnode.png", width=8, height=3, dpi=500)
   
 ```
 ```{r,fig.height=3, fig.width=10}
@@ -135,35 +251,64 @@ obsNode1<-obsNode%>%
   #dplyr::filter(Ture!="No")%>%
   dplyr::filter(Collection=="2000_2002")%>%
   dplyr::filter(Name=="Iversen_9SowingDateSD4Waterirr")
+obsNode1$Rotation2<- factor(obsNode1$Rotation2, levels=c("S1", "R2", "R3", "R4", "R5","R6"))
 obsNode1%>%
-  ggplot(aes(x=Tt_beta_sum, y=Observed), colour=factor(Name))+geom_point(size=2)+theme_bw()+xlab("Thermal time(°Cd)")+ylab("Node number")+ggtitle("Iversen_9SowingDateSD4Waterirr")+
+  ggplot(aes(x=Tt_beta_sum, y=Observed), colour=factor(Name))+geom_point(size=2)+theme_bw()+xlab("Thermal time (°Cd)")+ylab("Node number")+ggtitle("E2ILLS4(Iversen_9SowingDateSD4Waterirr)")+
   geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="blue")+
- facet_grid(GrowthSeason.x~Rotation.x)+theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
- theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
+ facet_grid(GrowthSeason2~Rotation2)+theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
+  #remove grid lines 
+  theme(
+     panel.spacing=unit(.01, "lines"),
+     panel.border = element_rect(colour = "black",size=1), 
+     panel.grid.major = element_blank(),
+     panel.grid.minor = element_blank(),
+     axis.line = element_line(colour = "black",size = 1),
+     axis.text.x = element_text(face = "plain", color = "black", size = 14, vjust=0.5, hjust = 1),
+     axis.text.y = element_text(face = "plain", color = "black", size = 14),
+     axis.title.x=element_text(face="bold",colour="black",size = 14),
+     axis.title.y=element_text(face="bold",colour="black",size = 14),
+     strip.background = element_rect(colour = "black", fill = "white",size=1),
+     strip.text.x = element_text(size=14, angle=0, face = "plain"), 
+     strip.text.y = element_text(size=14, face="plain"),
+     legend.title = element_text(colour="black", size=14, face="bold"),
+     axis.text = element_text(face = "bold", vjust = 0.5, size = 14))
+   #ggsave("D:/R/Pictures/Node/Iversen_9SowingDateSD4Waterirrnode.png", width=8, height=3, dpi=500)
   
 ```
 
 
-```{r,fig.height=4, fig.width=8}
-obsNode%>%
+```{r,fig.height=6, fig.width=8}
+obsNode4<-obsNode%>%
   #dplyr::filter(Ture!="No")%>%  
-  dplyr::filter(Name=="Iversen_91DefoliationLL")%>%
-  ggplot(aes(x=Tt_beta_sum, y=Observed), colour=factor(Name))+geom_point(size=2)+theme_bw()+xlab("Thermal time (°Cd)")+ylab("Node number")+ggtitle("Iversen_91DefoliationLL")+
+  dplyr::filter(Name=="Iversen_91DefoliationLL")
+obsNode4$Rotation2<- factor(obsNode4$Rotation2, levels=c("R1", "R2", "R3", "R4", "R5","R6","R7")) 
+
+obsNode4%>%
+ggplot(aes(x=Tt_beta_sum, y=Observed), colour=factor(Name))+geom_point(size=2)+theme_bw()+xlab("Thermal time (°Cd)")+ylab("Node number")+
+  ggtitle("E3ILL(Iversen_91DefoliationLL)")+
+  scale_x_continuous(breaks = seq(0, 550, by =200), limits=c(0,450))+
+  scale_y_continuous(breaks = seq(0, 18, by =6), limits=c(0,16))+
   geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="blue")+
- facet_grid(GrowthSeason.x~Rotation.x)+
-  theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
- theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
+ facet_grid(GrowthSeason2~Rotation2)+
+  mytheme1
+  #ggsave("D:/R/Pictures/Node/Iversen_91DefoliationLLnode.png", width=8, height=5, dpi=500)
+ # ggsave("D:/R/Pictures/Poster/nodenumberE3.png", width=8, height=4, dpi=500)
 ```
 
-```{r,fig.height=5, fig.width=8}
+```{r,fig.height=6, fig.width=8}
 obsNodeLL<-obsNode%>%
   dplyr::filter(Name=="Iversen_121DefoliationLLFDFD5")
+obsNodeLL$Rotation2<- factor(obsNodeLL$Rotation2, levels=c("S1", "R2", "R3", "R4", "R5","R6","R7")) 
+
 obsNodeLL%>%
-  ggplot(aes(x=Tt_beta_sum, y=Observed), colour=factor(Name))+geom_point(size=2)+theme_bw()+xlab("Thermal time(°Cd)")+ylab("Node number")+ggtitle("Iverson_121DefoliationLLFDFD5")+
+  ggplot(aes(x=Tt_beta_sum, y=Observed), colour=factor(Name))+geom_point(size=2)+theme_bw()+xlab("Thermal time (°Cd)")+scale_x_continuous(limits=c(0,430))+
+  ylab("Node number")+ggtitle("E5ILLF5(Iverson_121DefoliationLLFDFD5)")+
  geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="blue")+
- facet_grid(GrowthSeason.x~Rotation.x)+
-  theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
- theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
+   scale_x_continuous(breaks = seq(0, 550, by =200), limits=c(0,450))+
+  scale_y_continuous(breaks = seq(0, 18, by =6), limits=c(0,16))+
+ facet_grid(GrowthSeason2~Rotation2)+
+   mytheme1
+  # ggsave("D:/R/Pictures/Node/Iversen_121DefoliationLLFDFD5node.png", width=8, height=6, dpi=500)
 
 ```
 
@@ -190,7 +335,7 @@ for(i in 1:length(uniTb)){
   filter(Tb==uniTb[i])
   
    ObsH.sub <- ObsH1 %>%
-  group_by(Name,GrowthSeason.x,Rotation.x,Collection,Tmean,Ppm,Tb) %>%
+  group_by(Name,GrowthSeason.x,Rotation.x,Collection,Tmean,Ppm,Tb,ID,ExperimentID) %>%
     do(mod.beta = lm(Tt_beta_sum~Observed,data=.))%>%
   mutate(R2WE = summary(mod.beta)$r.squared)%>%
   mutate(PhylloWE = summary(mod.beta)$coeff[2])%>%
@@ -214,7 +359,7 @@ for(i in 1:length(uniTb)){
   filter(Tb==uniTb[i])
   
    ObsH.sub <- ObsH1 %>%
-  group_by(Name,GrowthSeason.x,Rotation.x,Collection,Tmean,Ppm,Tb) %>%
+  group_by(Name,GrowthSeason.x,Rotation.x,Collection,Tmean,Ppm,Tb,ID,ExperimentID) %>%
     do(mod.broken = lm(Tt_broken_sum~Observed,data=.))%>%
     #do(mod.fick = lm(Tt_fick_sum~Observed,data=.))%>%
   mutate(R2Br = summary(mod.broken)$r.squared)%>%
@@ -241,7 +386,7 @@ for(i in 1:length(uniTb)){
   filter(Tb==uniTb[i])
   
    ObsH.sub <- ObsH1 %>%
-  group_by(Name,GrowthSeason.x,Rotation.x,Collection,Tmean,Ppm,Tb) %>%
+  group_by(Name,GrowthSeason.x,Rotation.x,Collection,Tmean,Ppm,Tb,ID,ExperimentID) %>%
     do(mod.fick = lm(Tt_fick_sum~Observed,data=.))%>%
   mutate(R2fi = summary(mod.fick)$r.squared)%>%
   mutate(Phyllofick = summary(mod.fick)$coeff[2])%>%
@@ -295,7 +440,7 @@ mergephy
 ```{r}
 
 mergeP<-mergephy%>%
-   dplyr::select(Name,GrowthSeason.x,Rotation.x,Collection,Tmean, Ppm,Tb, PhylloWE,PhylloBr,Phyllofick) %>%
+   dplyr::select(Name,GrowthSeason.x,Rotation.x,Collection,Tmean, Ppm,Tb, PhylloWE,PhylloBr,Phyllofick,ID,ExperimentID) %>%
   tidyr::gather("Variable","Phyllo",PhylloWE:Phyllofick)%>%
   mutate(PhylloTb=as.factor(paste0(Variable,Tb)))%>%
   mutate(GrowthRotation=as.factor(paste0(GrowthSeason.x,Rotation.x)))
@@ -371,7 +516,7 @@ mergePcv1
 ```{r}
 
 LAR2<-ObsH%>%  
-  group_by(Name,GrowthSeason.x,Rotation.x,Collection,Tmean,Ppm,GrowthRotation) %>%
+  group_by(Name,GrowthSeason.x,Rotation.x,Collection,Tmean,Ppm,GrowthRotation,ExperimentID,ID) %>%
   do(mod = lm(Observed~Interval,data=.)) %>%
   mutate(slope = summary(mod)$coeff[2]) %>%
    mutate(R2 = summary(mod)$r.squared)%>%
@@ -379,27 +524,69 @@ LAR2<-ObsH%>%
   mutate(intcp= summary(mod)$coeff[1])%>%
   dplyr::select(-mod)
 LAR.ana<- ObsH%>%  
-  group_by(Collection) %>%
+  group_by(Collection,ExperimentID) %>%
   do(mod = lm(Observed~Interval,data=.)) %>%
   mutate(slope = summary(mod)$coeff[2]) %>%
    mutate(R2 = summary(mod)$r.squared)%>%
   mutate(P=anova(mod)$'Pr(>F)'[1])%>%  
   mutate(intcp= summary(mod)$coeff[1])%>%
   dplyr::select(-mod)
-
-LAR2%>%
-  dplyr::filter(Rotation.x!="6"|Collection!="1997_2001")%>%
-  #dplyr::filter(GrowthRotation!="11"|Collection!="2000_2002")%>%
- dplyr::filter(Collection!="2010_2012")
- mutate(Name=factor(Name))%>%
- ggplot(aes(x=Tmean, y=slope,label=GrowthRotation))+geom_text()+theme_bw()+xlab("Mean air temperature (°C)")+ylab("Node appearance rate (leaves/day)")+scale_x_continuous(limits=c(0,20))+
-  theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
- theme(axis.title.y=element_text(face="bold",colour="black",size = 12))+
- facet_wrap(~Collection)+
- theme(legend.title=element_blank())+
- geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="darkgrey") 
-
 ```
+
+```{r,width=8, height=6}
+library(plyr)
+LAR.NEW<-LAR2%>%
+  dplyr::filter(Rotation.x!="6"|Collection!="1997_2001")%>%
+  mutate(NAR=slope)%>%
+  dplyr::filter(Collection!="2014_2019")%>%
+  dplyr::filter(Collection!="2010_2012")%>%
+  dplyr::select(Name, Collection, GrowthRotation, NAR,Tmean,Ppm,ExperimentID,ID)
+ #dplyr::filter(Collection==C("2000_2002","1997_2001","2014_2018","2002_2004"))
+LAR.NEW$Collection
+
+lm_eqn <- function(LAR.NEW){
+  m <- lm(NAR ~ Tmean, LAR.NEW);
+  eq <- substitute(italic(y) == Tmean + NAR %.% italic(Tmean)*","~~italic(R)^2~"="~r2, 
+                   list(Tmean = format(coef(m)[1], digits = 2), 
+                        NAR = format(coef(m)[2], digits = 2), 
+                        r2 = format(summary(m)$r.squared, digits = 3)))
+  as.character(as.expression(eq));                 
+}
+
+
+eqns <- ddply(LAR.NEW,.(ExperimentID),lm_eqn)
+#df2 <- data.frame(eq = unclass(eqns), Collection = as.numeric(names(eqns)))
+
+
+a<-ggplot(LAR.NEW, aes(x=Tmean, y=NAR))+
+  geom_point()+theme_bw()+xlab("Mean air temperature (°C)")+
+  geom_text(data = eqns, aes(x = 13, y = 0.48, label = V1), size=4.7,
+          color = 'black',  parse = TRUE)+
+ ylab(bquote(bold('Node appearance rate ('*node~day^-1*')')))+
+  scale_x_continuous(limits=c(5,20))+
+  facet_wrap(~ExperimentID)+
+  geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="darkgrey")+
+  #remove grid lines 
+   theme(
+     panel.spacing=unit(.01, "lines"),
+     panel.border = element_rect(colour = "black",size=1), 
+     panel.grid.major = element_blank(),
+     panel.grid.minor = element_blank(),
+     axis.line = element_line(colour = "black",size = 1),
+     axis.text.x = element_text(face = "plain", color = "black", size = 14),
+     axis.text.y = element_text(face = "plain", color = "black", size = 14),
+     axis.title.x=element_text(face="bold",colour="black",size = 14),
+     axis.title.y=element_text(face="bold",colour="black",size = 14),
+     strip.background = element_rect(colour = "black", fill = "white",size=1),
+     strip.text.x = element_text(size=14, angle=0, face = "plain"), 
+     strip.text.y = element_text(size=14, face="plain"),
+     legend.title = element_text(colour="black", size=14, face="bold"))
+    #ggsave("D:/R/Pictures/Node/Node apparence rate.png", width=8, height=6, dpi=500)
+a
+detach(package:plyr)
+```
+
+
 
 ```{r}
 LAR2
@@ -426,13 +613,28 @@ predict(LAR2.lm, LAR2, interval="predict")
 
 
 #load Rotation and Growth season
-```{r,fig.height=6, fig.width=10}
+```{r,fig.height=6, fig.width=8}
+library(plyr)
 phyll <- "D:\\R\\"
 StartGrazing <- read.table(paste0(phyll, "ExperimentList.txt"), 
                       header = TRUE)
 StartGrazing1<-StartGrazing %>%
   mutate(GrowthRotation= as.factor(paste0(GrowthSeason,Rotation)))
 PhyPp<- merge(StartGrazing1,mergeP,by=c("Name","Collection","GrowthRotation"))
+
+lm_eqn1 <- function(PhyPp){
+  m <- lm(Phyllo~Ppm , PhyPp);
+  eq <- substitute(italic(y) == Ppm + Phyllo %.% italic(Ppm)*","~~italic(R)^2~"="~r2, 
+                   list(Ppm = format(coef(m)[1], digits = 2), 
+                        Phyllo = format(coef(m)[2], digits = 2), 
+                        r2 = format(summary(m)$r.squared, digits = 3)))
+  as.character(as.expression(eq));                 
+}
+
+
+eqs <- ddply(PhyPp,.(Trend,Stage),lm_eqn1)
+#df2 <- data.frame(eq = unclass(eqns), Collection = as.numeric(names(eqns)))
+#ylab(bquote(bold('LEAR ('*m^2~m^-2~'°Cd'^-1*')')))
 
 PhyPp
 mergeP
@@ -444,15 +646,67 @@ PhyPp%>%
   #dplyr::filter(Stage!="Seedling")%>%
   dplyr::filter(PhylloTb=="PhylloBr1")%>%
   dplyr::filter(Collection!="2010_2012")%>%
-  ggplot(aes(x=Ppm, y=Phyllo,label=GrowthRotation,color=Name))+geom_text()+theme_bw()+xlab("Mean photoperiod(h) ")+ylab("Phyllochron (°Cd/primary leaves)")+
+  ggplot(aes(x=Ppm, y=Phyllo,label=GrowthRotation,color=ID))+geom_text()+theme_bw()+xlab("Mean photoperiod (h)")+ylab(bquote(bold('Phyllochron ('*'°Cd'~'main node'^-1*')')))+
+  geom_text(data = eqs, aes(x =13, y = 78, label = V1), 
+          color = 'black',  parse = TRUE)+
   geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="darkgrey")+
   facet_grid(Trend~Stage)+
   #facet_wrap(~Stage,ncol = 2)+
   #geom_point(size=2)+
-  theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
- theme(axis.title.y=element_text(face="bold",colour="black",size = 12))+
-  theme(legend.title=element_blank())
+   scale_y_continuous(breaks = seq(0, 70, by =20), limits=c(0,78))+
+  mytheme3+theme(legend.title = element_blank())
+ #ggsave("D:/R/Pictures/Node/phyll.png", width=8, height=6, dpi=500)
+   detach(package:plyr)
 ```
+#load Rotation and Growth season for poster
+```{r,fig.height=6, fig.width=8}
+library(plyr)
+phyll <- "D:\\R\\"
+StartGrazing <- read.table(paste0(phyll, "ExperimentList.txt"), 
+                      header = TRUE)
+StartGrazing1<-StartGrazing %>%
+  mutate(GrowthRotation= as.factor(paste0(GrowthSeason,Rotation)))
+PhyPp<- merge(StartGrazing1,mergeP,by=c("Name","Collection","GrowthRotation"))
+
+lm_eqn1 <- function(PhyPp){
+  m <- lm(Phyllo~Ppm , PhyPp);
+  eq <- substitute(italic(y) == Ppm + Phyllo %.% italic(Ppm)*","~~italic(R)^2~"="~r2, 
+                   list(Ppm = format(coef(m)[1], digits = 2), 
+                        Phyllo = format(coef(m)[2], digits = 2), 
+                        r2 = format(summary(m)$r.squared, digits = 3)))
+  as.character(as.expression(eq));                 
+}
+
+
+eqs <- ddply(PhyPp,.(Trend,Stage),lm_eqn1)
+#df2 <- data.frame(eq = unclass(eqns), Collection = as.numeric(names(eqns)))
+#ylab(bquote(bold('LEAR ('*m^2~m^-2~'°Cd'^-1*')')))
+
+PhyPp
+mergeP
+
+PhyPp%>%
+  #dplyr::filter(Rotation!="1")%>%
+  #dplyr::filter(Rotation!="7")%>%
+  #dplyr::filter(Name!="Iversen_8Waterirr"|GrowthSeason!="3")%>%
+  #dplyr::filter(Stage!="Seedling")%>%
+  dplyr::filter(PhylloTb=="PhylloBr1")%>%
+  dplyr::filter(Collection!="2010_2012")%>%
+  ggplot(aes(x=Ppm, y=Phyllo,label=GrowthRotation,color=ID))+geom_text()+theme_bw()+xlab("Mean photoperiod (h)")+ylab(bquote(bold('Phyllochron ('*'°Cd'~'main node'^-1*')')))+
+  geom_text(data = eqs, aes(x =13, y = 78, label = V1), 
+          color = 'black',  parse = TRUE)+
+  geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="darkgrey")+
+  facet_grid(Trend~Stage)+
+  #facet_wrap(~Stage,ncol = 2)+
+  #geom_point(size=2)+
+   scale_y_continuous(breaks = seq(0, 70, by =20), limits=c(0,78))+
+  mytheme3+theme(legend.title = element_blank())
+ #ggsave("D:/R/Pictures/Node/phyll.png", width=8, height=6, dpi=500)
+   detach(package:plyr)
+```
+
+
+
 
 ```{r}
 PhyPpD<-PhyPp%>%
@@ -640,11 +894,27 @@ obsNode1<-obsA%>%
  str(simD1)
  simD1%>%
  ggplot(aes(x=Clock.Today,y=Predicted))+geom_line(size=1)+theme_bw()+
- facet_wrap(~Name,ncol = 2)+
+ facet_wrap(~ID,ncol = 2)+
  geom_point(data=obsNode1, aes(x=Clock.Today1, y=Observed),colour="green",size=3)+
  theme(legend.title=element_blank(),legend.position = "blank")+xlab("Date")+ylab("Node number")+
- theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
- theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
+    #remove grid lines 
+  theme(
+     panel.spacing=unit(.01, "lines"),
+     panel.border = element_rect(colour = "black",size=1), 
+     panel.grid.major = element_blank(),
+     panel.grid.minor = element_blank(),
+     axis.line = element_line(colour = "black",size = 1),
+     axis.text.x = element_text(face = "plain", color = "black", size = 14, vjust=0.5, hjust = 1),
+     axis.text.y = element_text(face = "plain", color = "black", size = 14),
+     axis.title.x=element_text(face="bold",colour="black",size = 14),
+     axis.title.y=element_text(face="bold",colour="black",size = 14),
+     strip.background = element_rect(colour = "black", fill = "white",size=1),
+     strip.text.x = element_text(size=14, angle=0, face = "plain"), 
+     strip.text.y = element_text(size=14, face="plain"),
+     legend.title = element_text(colour="black", size=14, face="bold"),
+     axis.text = element_text(face = "bold", vjust = 0.5, size = 14))+
+   annotate("text", x=ymd_hms("1999-10-24 12:00:00"), y=17, size = 5, label ="paste(R_RMSD == 21.8,'%')", parse=T)
+ #ggsave("D:/R/Pictures/Node/Iversen_8Waterirrnodenumber.png", width=8, height=4, dpi=500)
 
 ```
 
@@ -664,16 +934,35 @@ simD2<-simD%>%
 str(simD2)
 simD2%>%
 ggplot(aes(x=Clock.Today,y=Predicted))+geom_line(size=1)+theme_bw()+
-  facet_wrap(~Name,ncol = 1)+
-  geom_point(data=obsNode2, aes(x=Clock.Today1, y=Observed),colour="green",size=3)+
+  #facet_wrap(~ID,ncol = 1)+
+  geom_point(data=obsNode2, aes(x=Clock.Today1, y=Observed),colour="blue",size=3)+
   theme(legend.title=element_blank(),legend.position = "blank")+xlab("Date")+ylab("Node number")+
-  theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
-  theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
-  
+  #remove grid lines 
+  theme(
+     panel.spacing=unit(.01, "lines"),
+     panel.border = element_rect(colour = "black",size=1), 
+     panel.grid.major = element_blank(),
+     panel.grid.minor = element_blank(),
+     axis.line = element_line(colour = "black",size = 1),
+     axis.text.x = element_text(face = "plain", color = "black", size = 14, vjust=0.5, hjust = 1),
+     axis.text.y = element_text(face = "plain", color = "black", size = 14),
+     axis.title.x=element_text(face="bold",colour="black",size = 14),
+     axis.title.y=element_text(face="bold",colour="black",size = 14),
+     strip.background = element_rect(colour = "black", fill = "white",size=1),
+     strip.text.x = element_text(size=14, angle=0, face = "plain"), 
+     strip.text.y = element_text(size=14, face="plain"),
+     legend.title = element_text(colour="black", size=14, face="bold"),
+     axis.text = element_text(face = "bold", vjust = 0.5, size = 14))+
+  annotate("text", x=ymd_hms("2003-07-24 12:00:00"), y=17, size = 5, label ="paste(R_RMSD == 21.9,'%')", parse=T)
+   #ggsave("D:/R/Pictures/Node/Iversen_91DefoliationLLnodenumber.png", width=8, height=4, dpi=500)
+  ggsave("D:/R/Pictures/Poster/E3.png", width=8, height=4, dpi=500)
   
 
 
 ```
+
+
+
 ##2000-2002
 ```{r,  fig.height=8, fig.width=8}
 obsNode3<-obsNode%>%
@@ -681,36 +970,47 @@ obsNode3<-obsNode%>%
   dplyr::filter(Variable=="NodeNumber")
  obsNode3 
 
-simD3<-simD%>%
+simD3a<-simD%>%
   mutate(Clock.Today = ymd_hms(Clock.Today))%>%
   dplyr::filter(Clock.Today>"2000-10-24 12:00:00")%>%
   dplyr::filter(Clock.Today<"2002-07-01 12:00:00")%>%
-  dplyr::filter(Name!="Iversen_8Waterdry")%>%
-  dplyr::filter(Name!="Iversen_8Waterirr")%>%
-  dplyr::filter(Name!="Iversen_91DefoliationLL")%>%
-  dplyr::filter(Name!="Iversen_91DefoliationLS")%>%
-  dplyr::filter(Name!="Iversen_91DefoliationSL")%>%
-  dplyr::filter(Name!="Iversen_91DefoliationSS")%>%
-  dplyr::filter(Name!="Iversen_91DefoliationSS")%>%
-  dplyr::filter(Name!="MooraDefoliation")%>%
-  dplyr::filter(Name!="NekiaDefoliation")%>%
-  dplyr::filter(Name!="QuairadingDefoliation")%>%
-  dplyr::filter(Name!="RoseworthyWaterdry")%>%
-  dplyr::filter(Name!="RoseworthyWaterirr")%>%
-  dplyr::filter(Name!="Iversen_9SowingDateSD1Waterdry")%>%
-  dplyr::filter(Name!="Iversen_9SowingDateSD2Waterdry")%>%
-  dplyr::filter(Name!="Iversen_9SowingDateSD3Waterdry")%>%
-  dplyr::filter(Name!="Iversen_9SowingDateSD4Waterdry")%>%
+  dplyr::filter(Name==c("Iversen_9SowingDateSD1Waterirr","Iversen_9SowingDateSD2Waterirr","Iversen_9SowingDateSD3Waterirr","Iversen_9SowingDateSD4Waterirr"))%>%
   dplyr::filter(Variable=="NodeNumber")
-  str(simD3)
-simD3%>%
+
+DF<-data.frame(Name=c("Iversen_9SowingDateSD1Waterirr","Iversen_9SowingDateSD2Waterirr","Iversen_9SowingDateSD3Waterirr","Iversen_9SowingDateSD4Waterirr"),ID= c("E2ILLS1","E2ILLS2","E2ILLS3","E2ILLS4"))
+simD3<-merge(DF,simD3a, by=c("Name"))
+ G<-simD3%>%
 ggplot(aes(x=Clock.Today,y=Predicted))+geom_line(size=1)+theme_bw()+
-  facet_wrap(~Name,ncol = 2)+
   geom_point(data=obsNode3, aes(x=Clock.Today1, y=Observed),colour="green",size=3)+
-  facet_wrap(~Name,ncol = 2)+
+   facet_wrap(~ID,ncol = 2)+
   theme(legend.title=element_blank(),legend.position = "blank")+xlab("Date")+ylab("Node number")+
-  theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
-  theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
+  theme(
+     panel.spacing=unit(.01, "lines"),
+     panel.border = element_rect(colour = "black",size=1), 
+     panel.grid.major = element_blank(),
+     panel.grid.minor = element_blank(),
+     axis.line = element_line(colour = "black",size = 1),
+     axis.text.x = element_text(face = "plain", color = "black", size = 14, vjust=0.5, hjust = 1),
+     axis.text.y = element_text(face = "plain", color = "black", size = 14),
+     axis.title.x=element_text(face="bold",colour="black",size = 14),
+     axis.title.y=element_text(face="bold",colour="black",size = 14),
+     strip.background = element_rect(colour = "black", fill = "white",size=1),
+     strip.text.x = element_text(size=14, angle=0, face = "plain"), 
+     strip.text.y = element_text(size=14, face="plain"),
+     legend.title = element_text(colour="black", size=14, face="bold"),
+    axis.text = element_text(face = "bold", vjust = 0.5, size = 14))
+
+
+dat_text1 <- data.frame(
+  label = c("R_RMSE=27.7%", "R_RMSE=28%", "R_RMSE=21.8%","R_RMSE=24.5%"),
+  ID= c("E2ILLS1","E2ILLS2","E2ILLS3","E2ILLS4"),
+  x= ymd_hms("2001-03-24 12:00:00", "2001-03-24 12:00:00","2001-03-24 12:00:00","2001-03-24 12:00:00"),
+  y=c(17,17,17,17))
+
+ G+geom_text(data=dat_text1, mapping = aes(x=x,y=y, label = label),hjust   = -0.1,vjust   = -1,size=5)
+
+#ggsave("D:/R/Pictures/Node/Iversen_9SowingDatenodenumber.png", width=8, height=8, dpi=500)
+  
   
 ```
 ##2014-2018
@@ -720,21 +1020,43 @@ obsNode4<-obsNode%>%
   dplyr::filter(Variable=="NodeNumber")%>%
   dplyr::filter(Name=="Iversen_121DefoliationLLFDFD5")
 
-simD4<-simD%>%
+simD4a<-simD%>%
   mutate(Clock.Today = ymd_hms(Clock.Today))%>%
   dplyr::filter(Variable=="NodeNumber")%>%
   dplyr::filter(Name=="Iversen_121DefoliationLLFDFD5")%>%
-  dplyr::filter(Clock.Today>"2015-01-06")%>%
-  dplyr::filter(Clock.Today<"2015-01-29")
+  dplyr::filter(Clock.Today<"2015-01-06")
+
+simD4b<-simD%>%
+  mutate(Clock.Today = ymd_hms(Clock.Today))%>%
+  dplyr::filter(Variable=="NodeNumber")%>%
+  dplyr::filter(Name=="Iversen_121DefoliationLLFDFD5")%>%
+  dplyr::filter(Clock.Today>"2015-01-30")
+simD4<-rbind(simD4a,simD4b)
   
 str(simD4)
 simD4%>%
 ggplot(aes(x=Clock.Today,y=Predicted))+geom_line(size=1)+theme_bw()+
-  facet_wrap(~Name,ncol = 1)+
+  facet_wrap(~ID,ncol = 1)+
   geom_point(data=obsNode4, aes(x=Clock.Today1, y=Observed),colour="green",size=3)+
   theme(legend.title=element_blank(),legend.position = "blank")+xlab("Date")+ylab("Node number")+
-  theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
-  theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
+  #remove grid lines 
+   theme(
+     panel.spacing=unit(.01, "lines"),
+     panel.border = element_rect(colour = "black",size=1), 
+     panel.grid.major = element_blank(),
+     panel.grid.minor = element_blank(),
+     axis.line = element_line(colour = "black",size = 1),
+     axis.text.x = element_text(face = "plain", color = "black", size = 14, vjust=0.5, hjust = 1),
+     axis.text.y = element_text(face = "plain", color = "black", size = 14),
+     axis.title.x=element_text(face="bold",colour="black",size = 14),
+     axis.title.y=element_text(face="bold",colour="black",size = 14),
+     strip.background = element_rect(colour = "black", fill = "white",size=1),
+     strip.text.x = element_text(size=14, angle=0, face = "plain"), 
+     strip.text.y = element_text(size=14, face="plain"),
+     legend.title = element_text(colour="black", size=14, face="bold"),
+     axis.text = element_text(face = "bold", vjust = 0.5, size = 14))+
+   annotate("text", x=ymd_hms("2016-07-24 12:00:00"), y=18, size = 5, label ="paste(R_RMSD == 30,'%')", parse=T)
+   #ggsave("D:/R/Pictures/Node/Iversen_121DefoliationLLFDFD5nodenumber.png", width=8, height=4, dpi=500)
   
   
 
@@ -742,12 +1064,12 @@ ggplot(aes(x=Clock.Today,y=Predicted))+geom_line(size=1)+theme_bw()+
 ```
 
 # Statistic and Graph
-```{r,fig.height=6, fig.width=10}
+```{r,fig.height=6, fig.width=8}
 mergedf
 summary(mergedf)
 str(mergedf)
 
-mergedf %>%
+d<-mergedf %>%
     dplyr::filter(Variable== "NodeNumber") %>% 
    dplyr::filter(Water== "irr")%>%
   dplyr::filter(Defoliation== "LL")%>%
@@ -758,11 +1080,91 @@ mergedf %>%
   geom_abline(intercept = 0, slope = 1) +
   coord_fixed(ratio = 1)+
   ggtitle("Node Number")+
-  facet_wrap(~Collection, ncol = 4)+
-  theme(legend.title=element_blank())+xlab("Observed")+ylab("Predicted")+
-  theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
-  theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
+  facet_wrap(~ID, ncol = 4)+
+  theme(legend.title=element_blank(),legend.position = "blank")+xlab("Observed")+ylab("Predicted")+
+  theme(
+     panel.spacing=unit(.01, "lines"),
+     panel.border = element_rect(colour = "black",size=1), 
+     panel.grid.major = element_blank(),
+     panel.grid.minor = element_blank(),
+     axis.line = element_line(colour = "black",size = 1),
+     axis.text.x = element_text(face = "plain", color = "black", size = 14, vjust=0.5, hjust = 1),
+     axis.text.y = element_text(face = "plain", color = "black", size = 14),
+     axis.title.x=element_text(face="bold",colour="black",size = 14),
+     axis.title.y=element_text(face="bold",colour="black",size = 14),
+     strip.background = element_rect(colour = "black", fill = "white",size=1),
+     strip.text.x = element_text(size=14, angle=0, face = "plain"), 
+     strip.text.y = element_text(size=14, face="plain"),
+     legend.title = element_text(colour="black", size=14, face="bold"),
+     axis.text = element_text(face = "bold", vjust = 0.5, size = 14))
+   #ggsave("D:/R/Pictures/Node/nodenumber.png", width=8, height=6, dpi=500)
 ```
+
+```{r,fig.height=4, fig.width=8}
+# # fit model and get lower/upper 95% confidence limits at the observed x's
+# m <- lm(yvalues ~ xvalues, data = d)
+# mp <- predict(m, interval = 'conf')
+# 
+# # bind predictions to original data and plot
+# d2 <- cbind(d, mp)
+# p <- ggplot(d2, aes(x = xvalues, y = yvalues))
+# p + geom_point() + geom_smooth(method = 'lm', se = FALSE) +
+#     geom_line(aes(y = upr), color = 'red', linetype = 2) +
+#     geom_line(aes(y = lwr), color = 'red', linetype = 2) 
+
+
+mergedf1<-mergedf%>%
+  dplyr::filter(Variable== "NodeNumber") %>% 
+   dplyr::filter(Water== "irr")%>%
+  dplyr::filter(Defoliation== "LL")%>%
+  dplyr::filter(Collection!="2010_2012")%>%
+  dplyr::filter(ID==c("E3ILL","E5ILLF5"))
+summary(mergedf1)
+str(mergedf1)
+m <- lm(Predicted ~ Observed, data = mergedf1)
+mp <- predict(m, interval = 'conf')
+d2 <- cbind(mergedf1, mp)
+
+p1<-d2 %>%
+    
+  ggplot(aes(x=Observed, y= Predicted,color=ID))+
+geom_point(size=2,colour="blue")+theme_bw()+ geom_smooth(method = 'lm', se = FALSE, color="black") +
+    geom_line(aes(y = upr), color = 'black', linetype = 3,size=1) +
+    geom_line(aes(y = lwr), color = 'black', linetype = 3,size=1)+
+  #geom_smooth(method = "lm", se = TRUE, linetype = 3, colour="black") +
+  geom_abline(intercept = 0, slope = 1,size=1,color="purple") +
+  coord_fixed(ratio = 1)+
+  ggtitle("Node Number")+
+  #facet_wrap(~ID, ncol = 4)+
+  theme(legend.title=element_blank(),legend.position = "blank")+
+  xlab("Observed")+ylab("Predicted")+
+  theme(
+     panel.spacing=unit(.01, "lines"),
+     panel.border = element_rect(colour = "black",size=1), 
+     panel.grid.major = element_blank(),
+     panel.grid.minor = element_blank(),
+     axis.line = element_line(colour = "black",size = 1),
+     axis.text.x = element_text(face = "plain", color = "black", size = 14, vjust=0.5, hjust = 1),
+     axis.text.y = element_text(face = "plain", color = "black", size = 14),
+     axis.title.x=element_text(face="bold",colour="black",size = 14),
+     axis.title.y=element_text(face="bold",colour="black",size = 14),
+     strip.background = element_rect(colour = "black", fill = "white",size=1),
+     strip.text.x = element_text(size=14, angle=0, face = "plain"), 
+     strip.text.y = element_text(size=14, face="plain"),
+     legend.title = element_text(colour="black", size=14, face="bold"),
+     axis.text = element_text(face = "bold", vjust = 0.5, size = 14))
+   ggsave("D:/R/Pictures/Poster/nodenumber.png", width=8, height=4, dpi=500)
+```
+
+
+
+
+
+
+
+
+
+
 
 
 ## 2002-2004
@@ -887,16 +1289,16 @@ mergedf %>%
    dplyr::filter(Water== "irr")%>%
   dplyr::filter(Defoliation== "LL")%>%
  #filter(Variable == "NodeNumber") %>%
- #filter(Collection=="2010-2012")%>%
+ filter(Collection!="2010_2012")%>%
   mutate(Rotation= as.factor(Rotation))%>%
   mutate(GrowthSeason=as.factor(GrowthSeason))%>%
-  group_by(Name) %>%
+  group_by(ID) %>%
   summarise(
     n = n(),
     r2 = gauchStats(Predicted,Observed)[5],
   #  rmse = round(rmse(Predicted,Observed),0),
     r_rmse = round(rmse(Predicted,Observed)/mean(Observed)*100,1),
-    nse = round(NSE(Predicted,Observed),1),
+    nse = round(NSE(Predicted,Observed),2),
     sb = gauchStats(Predicted,Observed)[1],
   nu = gauchStats(Predicted,Observed)[2],
   lc = gauchStats(Predicted,Observed)[3]

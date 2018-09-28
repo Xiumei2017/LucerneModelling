@@ -7,7 +7,6 @@ output: html_notebook
 ## calculate Tt and Ttsum
 
 ```{r Load, warning=FALSE, fig.height=8, fig.width=8}
-# install.packages("zoo")
 library(dplyr)
 library(ggplot2)
 library(lubridate)   
@@ -93,6 +92,25 @@ tt.df <- Met.sub %>%
 }
 
 ```
+##load Rotation and Growth season
+```{r}
+mytheme3<-theme(
+     #legend.title = element_text(), 
+     legend.text = element_text(colour="black", size = 12,face="plain"),
+     panel.spacing=unit(.01, "lines"),
+     panel.border = element_rect(colour = "black",size=1), 
+     panel.grid.major = element_blank(),
+     panel.grid.minor = element_blank(),
+     axis.line = element_line(colour = "black",size = 1),
+     axis.text.x = element_text(face = "plain", color = "black", size = 14, vjust=0.5, hjust = 1),
+     axis.text.y = element_text(face = "plain", color = "black", size = 14),
+     axis.title.x=element_text(face="bold",colour="black",size = 14),
+     axis.title.y=element_text(face="bold",colour="black",size = 14),
+     strip.background = element_rect(colour = "black", fill = "white",size=1),
+     strip.text.x = element_text(size=14, angle=0, face = "plain"), 
+     strip.text.y = element_text(size=14, face="plain"),
+     axis.text = element_text(face = "bold", vjust = 0.5, size = 14))
+```
 
 ```{r}
 Buds<-flower%>%
@@ -100,8 +118,10 @@ Buds<-flower%>%
 Buds.all
 merge.BV<-merge(Buds.all,Buds,by=c("Clock.Today","ExpUnitCode","Water","GrowthSeason","Rotation"))
 metPp<-metTtData%>%
-  dplyr::select(-year,-day,-rain,-maxt,-mint,-mean,-radn,-wind,-vp,-Tb,-Tbb,-TTbroken,-TbF,-TTfick,-TTbeta)
-merge.BVs<-merge(merge.BV, metPp, by.x=c("StartDate"), by.y=c("Clock.Today"))%>%
+  dplyr::select(-year,-day,-rain,-maxt,-mint,-mean,-radn,-wind,-vp,-Tb,-Tbb,-TTbroken,-TbF,-TTfick,-TTbeta)%>%
+  mutate(StartDate=Clock.Today)%>%
+  dplyr::select(-Clock.Today)
+merge.BVs<-merge(merge.BV, metPp, by="StartDate")%>%
   mutate(Pps=Pp.y)%>%
   mutate(Trend=ifelse(Ppm_BV>Pps,"Inc","Dec"))
 ```
@@ -153,14 +173,19 @@ tt.df <- Met.sub %>%
 
 ```
 
+
+
 ```{r}
 flowering<-flower1%>%
         mutate(Clock.Today=ymd(FloDate))
 flower.all
 merge.fl<-merge(flower.all,flowering,by=c("Clock.Today","ExpUnitCode","Water","GrowthSeason","Rotation"))
-metPp<-metTtData%>%
-  dplyr::select(-year,-day,-rain,-maxt,-mint,-mean,-radn,-wind,-vp,-Tb,-Tbb,-TTbroken,-TbF,-TTfick,-TTbeta)
-merge.fls<-merge(merge.fl, metPp, by.x=c("StartDate"), by.y=c("Clock.Today"))%>%
+metPp1<-metTtData%>%
+  dplyr::select(-year,-day,-rain,-maxt,-mint,-mean,-radn,-wind,-vp,-Tb,-Tbb,-TTbroken,-TbF,-TTfick,-TTbeta)%>%
+  mutate(StartDate=Clock.Today)%>%
+  dplyr::select(-Clock.Today)
+  
+merge.fls<-merge(merge.fl,metPp1, by="StartDate")%>%
   mutate(Pps=Pp.y)%>%
   mutate(Trend=ifelse(Ppm_fl>Pps,"Inc","Dec"))
 
@@ -183,13 +208,35 @@ merge.BVs
 BudsD<-merge.BVs%>%
   dplyr::filter(Water=="irr")
 BudsD%>%
-  ggplot(aes(x=Ppm_BV, y=Tt_beta_sum_BV, colour=factor(Name)))+geom_point(size=2)+theme_bw()+xlab("Mean photoperiod ")+ylab("Tt0-bv")+
+  ggplot(aes(x=Pps, y=Tt_broken_sum_BV, colour=factor(ID)))+geom_point(size=2)+theme_bw()+xlab("Photoperiod at start of regrowth (h) ")+ylab("Tt0-bv (°Cd)")+
  facet_wrap(~Stage)+theme(legend.title=element_blank())+
   geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="darkgrey")+
   theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
- theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
+ theme(axis.title.y=element_text(face="bold",colour="black",size = 12))+
+  mytheme3
+ggsave("D:/R/Pictures/Buds/Ttbuds.png", width=8, height=4, dpi=500)
 
 ```
+
+```{r,width=10, height=5}
+BudsDrt<-BudsD%>%
+  mutate(Rate=1/Tt_broken_sum_BV)
+
+
+BudsDrt%>%
+  ggplot(aes(x=Pps, y=Rate, colour=factor(ID)))+geom_point(size=2)+theme_bw()+xlab("Photoperiod at start of regrowth (h) ")+ylab(bquote(bold('Rate of bud appearance ('*1~'°Cd'^-1*')')))+
+ facet_wrap(~Stage)+theme(legend.title=element_blank())+
+  geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="darkgrey")+
+  theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
+ theme(axis.title.y=element_text(face="bold",colour="black",size = 12))+
+  mytheme3+
+  scale_x_continuous(breaks = seq(0, 16, by =4), limits=c(0,16.5))+
+  scale_y_continuous(breaks = seq(0,0.005 , by =0.001), limits=c(0,0.005))
+ggsave("D:/R/Pictures/Buds/budsrate.png", width=8, height=4, dpi=500)
+
+```
+
+
 ```{r}
 merge.BVs
 BudsD<-merge.BVs%>%
@@ -197,19 +244,37 @@ BudsD<-merge.BVs%>%
   #dplyr::filter(Defoliation=="LL")
 
 BudsD%>%
-  ggplot(aes(x=Ppm_BV, y=Tt_beta_sum_BV, colour=factor(Name)))+geom_point(size=2)+theme_bw()+xlab("Mean photoperiod ")+ylab("Tt0-bv")+
+  ggplot(aes(x=Pps, y=Tt_broken_sum_BV, colour=factor(ID)))+geom_point(size=2)+theme_bw()+xlab("Photoperiod at start of regrowth (h) ")+ylab("Tt0-bv (°Cd)")+
  facet_grid(Trend~Stage)+theme(legend.title=element_blank())+
   geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="darkgrey")+
   theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
- theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
+ theme(axis.title.y=element_text(face="bold",colour="black",size = 12))+
+  mytheme3
+ggsave("D:/R/Pictures/Buds/Ttbuds1.png", width=8, height=6, dpi=500)
+```
+
+###analysis of flower and period
+```{r}
+BudsD1<-BudsD%>%
+  dplyr::filter(Stage!="Seedling")%>%
+  dplyr::filter(Trend=="Dec")
+model1<-lm(BudsD1$Tt_beta_sum_BV~BudsD1$Ppm_BV)
+# model2<-lm(flowerD1$Tt0.bv~flowerD1$Psbv)
+summary(model1)
+
+BudsD2<-BudsD%>%
+  dplyr::filter(Stage!="Seedling")%>%
+  dplyr::filter(Trend!="Dec")
+model2<-lm(BudsD2$Tt_beta_sum_BV~BudsD2$Ppm_BV)
+# model2<-lm(flowerD1$Tt0.bv~flowerD1$Psbv)
+summary(model2)
 
 ```
 
 
-
-
-```{r}
-# flowerD1<-flowerD%>%dplyr::filter(Stage!="Seedling")
+ ```{r}
+# flowerD1<-flowerD%>%
+#   dplyr::filter(Stage!="Seedling")
 # model1<-lm(flowerD1$Tt0.bv~flowerD1$Ps)
 # model2<-lm(flowerD1$Tt0.bv~flowerD1$Psbv)
 # summary(model1)
@@ -218,17 +283,18 @@ BudsD%>%
 # abline(model1)
 ```
 
-```{r}
+```{r,width=10, height=5}
 flowerD<-merge.fls%>%
   dplyr::filter(Water=="irr")
   #dplyr::filter(Defoliation=="LL")
 flowerD%>%
-  ggplot(aes(x=Ppm_fl, y=Tt_broken_sum_fl, colour=factor(Name)))+geom_point(size=2)+theme_bw()+xlab("Mean photoperiod ")+ylab("Tt0-fl")+
+  ggplot(aes(x=Ppm_fl, y=Tt_broken_sum_fl, colour=factor(ID)))+geom_point(size=2)+theme_bw()+xlab("Mean photoperiod (h)")+ylab("Tt0-fl (°Cd)")+
  facet_wrap(~Stage)+theme(legend.title=element_blank())+
   geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="darkgrey")+
   theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
- theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
-
+ theme(axis.title.y=element_text(face="bold",colour="black",size = 12))+
+  mytheme3
+ggsave("D:/R/Pictures/Buds/TtFlo.png", width=8, height=4, dpi=500)
 ```
 
 ```{r}
@@ -240,18 +306,43 @@ abline(model1)
 ```
 
 
-```{r}
+```{r, width=10, height=6}
 flowerD<-merge.fls%>%
   dplyr::filter(Water=="irr")
   #dplyr::filter(Defoliation=="LL")
 flowerD%>%
-  ggplot(aes(x=Ppm_fl, y=Tt_broken_sum_fl, colour=factor(Name)))+geom_point(size=2)+theme_bw()+xlab("Mean photoperiod ")+ylab("Tt0-fl")+
+  ggplot(aes(x=Ppm_fl, y=Tt_broken_sum_fl, colour=factor(ID)))+geom_point(size=2)+theme_bw()+xlab("Mean photoperiod (h)")+ylab("Tt0-fl (°Cd)")+
  facet_grid(Trend~Stage)+ theme(legend.title=element_blank())+
   geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="darkgrey")+
   theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
- theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
-
+ theme(axis.title.y=element_text(face="bold",colour="black",size = 12))+
+  mytheme3
+ggsave("D:/R/Pictures/Buds/Ttfl1.png", width=8, height=6, dpi=500)
 ```
+```{r, width=12, height=4}
+BudsD1<-BudsD%>%
+   mutate(GrowthRotation=paste0(GrowthSeason,Rotation))%>%
+  dplyr::select(StartDate,ExpUnitCode,Tt_broken_sum_BV,Stage,Trend,Name,GrowthRotation,ID,ExperimentID)
+       
+flowerD1<-flowerD%>%
+  dplyr::select(StartDate,Tt_broken_sum_fl)
+
+mergeBF<-merge(BudsD1,flowerD1, by="StartDate")
+  
+
+mergeBF%>%
+  dplyr::filter(Name!="Iversen_8Waterirr"|GrowthRotation!="54")%>%
+  dplyr::filter(Name!="Iversen_9SowingDateSD4Waterirr"|GrowthRotation!="11")%>%
+  #dplyr::filter(Name!="Iversen_9SowingDateSD3Waterirr"|GrowthRotation!="11")%>%
+  ggplot(aes(x=Tt_broken_sum_BV, y=Tt_broken_sum_fl, label=GrowthRotation, colour=factor(ID)))+geom_point(size=2)+theme_bw()+xlab("Tt0-bv (°Cd)")+ylab("Tt0-fl (°Cd)")+
+ facet_grid(~Stage)+ 
+  theme(legend.title=element_blank())+
+  geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="darkgrey")+
+  mytheme3
+ggsave("D:/R/Pictures/Buds/budsflo.png", width=8, height=4, dpi=500)
+```
+
+
 ## Load simulated database
 ## create function to read data (Justin's script)
 ```{r LoadSim, include = FALSE, echo=FALSE, warning=FALSE, fig.height=8, fig.width=8}
@@ -308,12 +399,16 @@ simD <- myDb %>%
   mutate(Name = as.factor(Name)) %>%
   mutate(Clock.Today = ymd_hms(Clock.Today))%>%
   mutate(Floweringdays=as.factor(Lucerne.Phenology.FloweringDaysAfterCutting.Value..),Cuttingdays= as.factor(Lucerne.Phenology.DaysAfterCutting.Value..))%>%
-  dplyr::select(-Lucerne.Phenology.FloweringDaysAfterCutting.Value..,-Lucerne.Phenology.DaysAfterCutting.Value..)
+  dplyr::select(-Lucerne.Phenology.FloweringDaysAfterCutting.Value..,-Lucerne.Phenology.DaysAfterCutting.Value..)%>%
+  dplyr::filter(Name!="Iversen_8Waterdry")
+  #dplyr::filter(Name!="Iversen_8Waterirr")
 
 head(simD)
 simD
 obsF<-flower %>%
-  mutate(Clock.Today= ymd(FloDate))
+  mutate(Clock.Today= ymd(FloDate))%>%
+  mutate(Name1=as.factor(Name))%>%
+  mutate(Name=as.factor(Names))
 head(obsF)
 
 mergedf<-merge(obsF,simD,by=c("Name","Clock.Today"))
@@ -321,19 +416,28 @@ mergedf<-merge(obsF,simD,by=c("Name","Clock.Today"))
 summary(mergedf)
 str(mergedf)
 mergedf
+write.csv(mergedf,"D:/R/mergedf.csv", row.names = FALSE)
 
 ```
 
-```{r,fig.height=5, fig.width=7}
+```{r,fig.height=6, fig.width=8}
 
 mergedf%>%
  dplyr::filter(Floweringdays!=0)%>%
-ggplot(aes(x=Days,y=Floweringdays, colour=factor(Name)))+geom_point(size=2)+theme_bw()+xlab("Observed")+ ylab("Predicted")+
+ # dplyr::filter(Name!="Iversen_91FLLGR21")%>%
+ #  dplyr::filter(Name!="Iversen_91F1SSGR21")%>%
+ #  dplyr::filter(Name!="Iversen_91FLLGR11")%>%
+ #  dplyr::filter(Name!="Iversen_9SowingDateSD6Waterirr")%>%
+ mutate(GrowthRotation=as.factor(paste0(GrowthSeason,Rotation)))%>%
+ggplot(aes(x=FloDays,y=Floweringdays, label=GrowthRotation, color=ID))+
+  geom_point(size=2)+theme_bw()+xlab("Observed")+ ylab("Predicted")+
 # facet_wrap(~Name)+
+  ggtitle(" 50% flowering")+
+   geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="darkgrey") +
+  # geom_abline(intercept = 0, slope = 1) +
+  # coord_fixed(ratio = 1)+
   theme(legend.title=element_blank())+
- #geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="darkgrey") +
-  theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
- theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
+ mytheme3
 
 ```
 
@@ -385,10 +489,15 @@ gauchStats <- function(sim, meas) {
 
 ```{r}
 mergedf %>%
+  dplyr::filter(Floweringdays!=0)%>%
+ dplyr::filter(Name!="Iversen_91FLLGR21")%>%
+  dplyr::filter(Name!="Iversen_91F1SSGR21")%>%
+  dplyr::filter(Name!="Iversen_91FLLGR11")%>%
+  dplyr::filter(Name!="Iversen_9SowingDateSD6Waterirr")%>%
   mutate(Observed= as.numeric(Days))%>%
   mutate(Predicted=as.numeric(Floweringdays))%>%
-dplyr::filter(Collection=="2014_2018")%>%
-group_by(Name) %>%
+#dplyr::filter(Collection=="2014_2018")%>%
+group_by(Name1) %>%
   summarise(
     n = n(),
     r2 = gauchStats(Predicted,Observed)[5],

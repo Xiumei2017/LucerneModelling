@@ -460,7 +460,15 @@ tt.df <- Met.sub %>%
 
 summary(df.all)
 df.all
-write.csv(df.all,"D:/R/TtAll/df.all.csv", row.names = FALSE)
+write.csv(df.all,"D:/R/TtAll/df.all.CSV", row.names = FALSE)
 
+```
+```{r}
+df.all1<-df.all%>%
+  dplyr::filter(ExpName=="Iversen_92DefoliationLSGs_1Rt_8")
+  
+  
+  
+  
 ```
 
