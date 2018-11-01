@@ -1,0 +1,2007 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+
+library(corrplot)
+library(doBy)
+library(psych)
+library(car)
+library(corrplot)
+library(ggplot2)
+library(RColorBrewer)
+library(candisc)
+library(grid)
+library(gridExtra)
+library(MASS)
+library(predictmeans)
+library(scales)
+library(plyr)
+library(reshape2)
+library(bindr)
+library(mime)
+library(bindrcpp)
+library(curl)
+library(Rcpp)
+
+setwd('~/Statistics/Data/')
+
+ex4 <- read.table(file="Exp4.NEW1.csv", sep=",", header=TRUE,strip.white = TRUE )
+ex5 <- read.table(file="Exp5.NEW1.csv", sep=",", header=TRUE,strip.white = TRUE )
+ex6 <- read.table(file="Exp6.NEW1.csv", sep=",", header=TRUE,strip.white = TRUE )
+ex7 <- read.table(file="Exp7.NEW1.csv", sep=",", header=TRUE,strip.white = TRUE )
+
+ex4a <- ex4[which(ex4$Treatment!="No Rhizobia, No N"),]
+ex4b <- ex4a[which(ex4a$Treatment!="No Rhizobia, + N"),]
+
+ex5a <- ex5[which(ex5$Treatment!="No Rhizobia, No N"),]
+ex5b <- ex5a[which(ex5a$Treatment!="No Rhizobia, + N"),]
+
+ex6a <- ex6[which(ex6$Treatment!="No Rhizobia, No N"),]
+ex6b <- ex6a[which(ex6a$Treatment!="No Rhizobia, + N"),]
+
+ex7a <- ex7[which(ex7$Treatment!="No Rhizobia, No N"),]
+ex7b <- ex7a[which(ex7a$Treatment!="No Rhizobia, + N"),]
+
+ex4b$TrtbyCult <- interaction(ex4b$Treatment,ex4b$Cultivar)
+ex5b$TrtbyCult <- interaction(ex5b$Treatment,ex5b$Cultivar)
+ex6b$TrtbyCult <- interaction(ex6b$Treatment,ex6b$Cultivar)
+ex7b$TrtbyCult <- interaction(ex7b$Treatment,ex7b$Cultivar)
+
+TribTA14 <- ex4[which(ex4$Cultivar=="Tribute (2003)"&ex4$Treatment=="TA1"),]
+TribTA15 <- ex5[which(ex5$Cultivar=="Tribute (2003)"&ex5$Treatment=="TA1"),]
+TribTA16 <- ex6[which(ex6$Cultivar=="Tribute (2003)"&ex6$Treatment=="TA1"),]
+TribTA17 <- ex7[which(ex7$Cultivar=="Tribute (2003)"&ex7$Treatment=="TA1"),]
+
+TribTA14mean <- mean(TribTA14$SDM)
+ex4$SDMsc <- ex4$SDM/TribTA14mean
+
+TribTA14mean <- mean(TribTA14$RDM)
+ex4$RDMsc <- ex4$RDM/TribTA14mean
+
+TribTA15mean <- mean(TribTA15$SDM)
+ex5$SDMsc <- ex5$SDM/TribTA15mean
+
+TribTA15mean <- mean(TribTA15$RDM)
+ex5$RDMsc <- ex5$RDM/TribTA15mean
+
+TribTA16mean <- mean(TribTA16$SDM)
+ex6$SDMsc <- ex6$SDM/TribTA16mean
+
+TribTA16mean <- mean(TribTA16$RDM)
+ex6$RDMsc <- ex6$RDM/TribTA16mean
+
+TribTA17mean <- mean(TribTA17$SDM)
+ex7$SDMsc <- ex7$SDM/TribTA17mean
+
+TribTA17mean <- mean(TribTA17$RDM)
+ex7$RDMsc <- ex7$RDM/TribTA17mean
+
+
+Allexps <- NULL
+Allexps$Cultivar <- as.factor(c(as.character(ex4$Cultivar),as.character(ex5$Cultivar),as.character(ex6$Cultivar),as.character(ex7$Cultivar)))
+Allexps$Treatment <- as.factor(c(as.character(ex4$Treatment),as.character(ex5$Treatment),as.character(ex6$Treatment),as.character(ex7$Treatment)))
+Allexps$Block <- c(ex4$Block, ex5$Block, ex6$Block, ex7$Block)
+Allexps$SDM <- c(ex4$SDM, ex5$SDM, ex6$SDM, ex7$SDM)
+Allexps$SDMsc <- c(ex4$SDMsc, ex5$SDMsc, ex6$SDMsc, ex7$SDMsc)
+Allexps$SDM_SP <- c(ex4$SDM_SP, ex5$SDM_SP, ex6$SDM_SP, ex7$SDM_SP)
+Allexps$RDM <- c(ex4$RDM, ex5$RDM, ex6$RDM, ex7$RDM)
+Allexps$RDMsc <- c(ex4$RDMsc, ex5$RDMsc, ex6$RDMsc, ex7$RDMsc)
+Allexps$RDM_SP <- c(ex4$RDM_SP, ex5$RDM_SP, ex6$RDM_SP, ex7$RDM_SP)
+Allexps$RSR <- c(ex4$RSR, ex5$RSR, ex6$RSR, ex7$RSR)
+Allexps$PinkNod <- c(ex4$PinkNod, ex5$PinkNod, ex6$PinkNod, ex7$PinkNod)
+Allexps$WhiteNod <- c(ex4$WhiteNod, ex5$WhiteNod, ex6$WhiteNod, ex7$WhiteNod)
+Allexps$Leaf.Size <- as.factor(c(as.character(ex4$Leaf.Size),as.character(ex5$Leaf.Size),as.character(ex6$Leaf.Size),as.character(ex7$Leaf.Size)))
+Allexps$Decade <- as.factor(c(as.character(ex4$Decade),as.character(ex5$Decade),as.character(ex6$Decade),as.character(ex7$Decade)))
+Allexps$Exp <- c(rep("Four",length(ex4$Cultivar)),rep("Five",length(ex5$Cultivar)),rep("Six",length(ex6$Cultivar)),rep("Seven",length(ex7$Cultivar)))
+Allexps$TrtbyCult <- interaction(Allexps$Treatment,Allexps$Cultivar)
+
+Allexps <- as.data.frame(Allexps)
+
+Allexpsa <- droplevels(Allexps[which(Allexps$Treatment!="No Rhizobia, No N"),])
+Allexpsb <- droplevels(Allexpsa[which(Allexpsa$Treatment!="No Rhizobia, + N"),])
+
+Allexpsb$TrtbyCult <- interaction(Allexpsb$Treatment,Allexpsb$Cultivar)
+Allexpsb$SDMln <- log(Allexpsb$SDMsc+0.005)
+Allexpsb$SDMsqrt <- sqrt(Allexpsb$SDMsc)
+Allexpsb$RDMln <- log(Allexpsb$RDMsc)
+Allexpsb$RDMscsqrt <- sqrt(Allexpsb$RDMsc)
+
+Allexpsb$Blockf <- as.factor(Allexpsb$Block)
+Allexpsb$trtbyexp <- interaction(Allexpsb$Treatment,Allexpsb$Exp)
+
+#Axis fromat code
+
+
+Allexps$Cultivar <- factor(Allexps$Cultivar,levels = c("Tianshan (Ecotype)", "Dutch (1920)", "Kent (1930)", "Louisiana (1930s)", "S100 (1935)", "S184 (1942)", 
+                                               "Huia (1957)", "Regal (1962)", "Pitau (1978)", "Rivendel (1980)", "Kopu II (1990s)","Barblanca (1990)", "Prestige (1993)", "Klondike (1996)", 
+                                               "AberLasting (2000)", "Riesling (2000s)", "Tribute (2003)"))
+
+
+Allexpsb$Cultivar <- factor(Allexpsb$Cultivar,levels = c("Tianshan (Ecotype)", "Dutch (1920)", "Kent (1930)", "Louisiana (1930s)", "S100 (1935)", "S184 (1942)", 
+                                                 "Huia (1957)", "Regal (1962)", "Pitau (1978)", "Rivendel (1980)", "Kopu II (1990s)","Barblanca (1990)", "Prestige (1993)", "Klondike (1996)", 
+                                                 "AberLasting (2000)", "Riesling (2000s)", "Tribute (2003)"))
+
+
+
+#Custom order to interaction
+
+Allexpsb$TrtbyCult <- factor(Allexpsb$TrtbyCult,levels = c("S12N10.Tianshan (Ecotype)", "TA1.Tianshan (Ecotype)", "S12N10.Dutch (1920)", "TA1.Dutch (1920)", "S12N10.Kent (1930)", "TA1.Kent (1930)", "S12N10.Louisiana (1930s)", "TA1.Louisiana (1930s)", "S12N10.S100 (1935)", "TA1.S100 (1935)", "S12N10.S184 (1942)", "TA1.S184 (1942)", 
+                                                         "S12N10.Huia (1957)", "TA1.Huia (1957)", "S12N10.Regal (1962)", "TA1.Regal (1962)", "S12N10.Pitau (1978)", "TA1.Pitau (1978)", "S12N10.Rivendel (1980)", "TA1.Rivendel (1980)", "S12N10.Kopu II (1990s)", "TA1.Kopu II (1990s)", "S12N10.Barblanca (1990)", "TA1.Barblanca (1990)", "S12N10.Prestige (1993)", "TA1.Prestige (1993)", "S12N10.Klondike (1996)", "TA1.Klondike (1996)", 
+                                                         "S12N10.AberLasting (2000)", "TA1.AberLasting (2000)", "S12N10.Riesling (2000s)", "TA1.Riesling (2000s)", "S12N10.Tribute (2003)", "TA1.Tribute (2003)"))
+
+
+#Individual experiments cultivar order
+
+ex4b$Cultivar <- factor(ex4b$Cultivar,levels = c("Tribute (2003)", "AberLasting (2000)", "Rivendel (1980)","Huia (1957)"))
+
+ex5b$Cultivar <- factor(ex5b$Cultivar,levels = c("Tribute (2003)", "Riesling (2000s)", "Klondike (1996)", "Barblanca (1990)"))
+
+ex6b$Cultivar <- factor(ex6b$Cultivar,levels = c("Tribute (2003)", "Pitau (1978)", "Regal (1962)", "Tianshan (Ecotype)")) 
+
+ex7b$Cultivar <- factor(ex7b$Cultivar,levels = c("Tribute (2003)", "Prestige (1993)", "Kopu II (1990s)", "S184 (1942)", "S100 (1935)", "Louisiana (1930s)", "Kent (1930)", "Dutch (1920)"))
+
+
+
+
+######################################################################################################################################################################
+
+
+#Custom themes
+
+mytheme = theme(legend.title = element_text(colour="black", size=18, face="bold"), 
+                legend.text = element_text(colour="black", size = 16),
+                panel.border=element_rect(colour="black",size=0.5, fill = NA),
+                axis.line = element_line(colour = "black", size = 0.5),
+                panel.grid.major.y = element_line(colour = "white", size = 0.2),
+                panel.grid.major.x = element_line(colour = "white", size = 0.2),
+                panel.background = element_rect(fill = "white", size = 0.5),
+                panel.spacing = unit(0.2, "lines"),
+                axis.title.x = element_text(face = "bold", colour = "Black", size = 18), 
+                axis.title.y = element_text(face = "bold", colour = "black", size = 18), 
+                axis.text = element_text(face = "bold", vjust = 0.5, size = 18),
+                axis.text.x  = element_text(angle=90, vjust=0.5, hjust = 1),
+                strip.text.x = element_text(size=18, angle=0, face = "bold"), 
+                strip.text.y = element_text(size=18, face="bold"), 
+                strip.background = element_rect(colour="red", fill="#CCCCFF"))
+
+
+mytheme1 = theme(plot.title = element_text(lineheight=.4, face="bold", colour = "Black", size = 18),
+                legend.title = element_text(colour="black", size=18, face="bold"), 
+                legend.text = element_text(colour="black", size = 16),
+                panel.border=element_rect(colour="black",size=0.5, fill = NA),
+                axis.line = element_line(colour = "black", size = 0.5),
+                panel.grid.major.y = element_line(colour = "white", size = 0.2),
+                panel.grid.major.x = element_line(colour = "white", size = 0.2),
+                panel.background = element_rect(fill = "white", size = 0.5),
+                panel.spacing = unit(0.2, "lines"),
+                axis.title.x = element_text(face = "bold", colour = "Black", size = 18), 
+                axis.title.y = element_text(face = "bold", colour = "black", size = 18), 
+                axis.text = element_text(face = "bold", vjust = 0.5, size = 18),
+                axis.text.x  = element_text(angle=0, vjust=0.5),
+                strip.text.x = element_text(size=18, angle=0, face = "bold"), 
+                strip.text.y = element_text(size=18, face="bold"), 
+                strip.background = element_rect(colour="red", fill="#CCCCFF"))
+
+mytheme2 = theme(legend.title = element_text(colour="black", size=18, face="bold"), 
+                 legend.text = element_text(colour="black", size = 16),
+                 panel.border=element_rect(colour="black",size=0.5, fill = NA),
+                 axis.line = element_line(colour = "black", size = 0.5),
+                 panel.grid.major.y = element_line(colour = "white", size = 0.2),
+                 panel.grid.major.x = element_line(colour = "white", size = 0.2),
+                 panel.background = element_rect(fill = "white", size = 0.5),
+                 panel.spacing = unit(0.2, "lines"),
+                 axis.title.x = element_text(face = "bold", colour = "Black", size = 18), 
+                 axis.title.y = element_text(face = "bold", colour = "black", size = 18), 
+                 axis.text = element_text(face = "bold", vjust = 0.5, size = 18),
+                 axis.text.x  = element_text(angle=0, vjust=0.5),
+                 strip.text.x = element_text(size=14, angle=0, face = "bold"), 
+                 strip.text.y = element_text(size=14, face="bold"), 
+                 strip.background = element_rect(colour="red", fill="#CCCCFF"),
+                 legend.position = "right", legend.box = "vertical")
+
+
+#################################################################################################################################################################
+
+
+
+
+#RColourBrewer colour palettes
+
+brewer.pal(n = 8, name = "Set1")
+palette(brewer.pal(n = 8, name = "Set1"))
+
+brewer.pal(n = 8, name = "Set2")
+palette(brewer.pal(n = 8, name = "Set2"))
+
+brewer.pal(n = 8, name = "BrBG")
+palette(brewer.pal(n = 8, name = "BrBG"))
+
+brewer.pal(n = 8, name = "Paired")
+palette(brewer.pal(n = 8, name = "Paired"))
+
+
+#free_y = y axis for each facet
+
+
+
+#############################################################################################################################################################
+
+
+
+
+#Aggregate individual Exp Means
+
+#Exp 4
+
+means4 <- NULL
+means4 <- aggregate(ex4b, by=list(ex4b$Treatment,ex4b$Cultivar), FUN=mean)
+means4$Treatment <- means4$Group.1
+means4$Cultivar <- means4$Group.2
+
+#Exp 5
+
+means5 <- NULL
+means5 <- aggregate(ex5b, by=list(ex5b$Treatment,ex5b$Cultivar), FUN=mean)
+means5$Treatment <- means5$Group.1
+means5$Cultivar <- means5$Group.2
+
+#Exp 6
+
+means6 <- NULL
+means6 <- aggregate(ex6b, by=list(ex6b$Treatment,ex6b$Cultivar), FUN=mean)
+means6$Treatment <- means6$Group.1
+means6$Cultivar <- means6$Group.2
+
+#Exp 7
+
+means7 <- NULL
+means7 <- aggregate(ex7b, by=list(ex7b$Treatment,ex7b$Cultivar), FUN=mean)
+means7$Treatment <- means7$Group.1
+means7$Cultivar <- means7$Group.2
+
+
+
+
+#############################################################################################################################################################################
+
+
+#lm model for determining proportion of variation explained
+
+
+m1 <- lm(SDMsc ~ Treatment, data=Allexpsb)
+summary(m1)
+plot(m1)
+
+m2 <- lm(SDMsc ~ Cultivar, data=Allexpsb)
+summary(m2)
+
+m3 <- lm(SDMsc ~ Treatment+Cultivar, data=Allexpsb)
+summary(m3)
+
+m4 <- lm(SDMsc ~ Treatment*Cultivar, data=Allexpsb)
+summary(m4)
+plot(m4)
+
+
+
+#Predict Means to determine LSD's for cultivar-treatments for SDM
+
+p <- predictmeans(m4,"Treatment:Cultivar", TRUE)
+
+
+
+#Type into command box - p$`Pairwise LSDs`= give pairwise comparaison = how different do LSD of boxplots need to be to oneanother
+#Type p into commmand console to get LSD's
+
+
+
+
+
+#####################################################################SDM################################################################################################################
+
+
+
+
+#SDM_STANDARDISED (TRIBUTE-TA1)
+
+#v1
+
+#png("SDMsc(LSD).png", width=1650, height=850, units="px", pointsize=28) 
+
+s1 <- ggplot(Allexpsb, aes(x=TrtbyCult, y=SDMsc, colour = Leaf.Size, as.factor = Exp)) 
+s1 <- s1 + geom_jitter(aes(shape=Leaf.Size, color = Leaf.Size), size = 1.5, width=0.2, height=0) 
+s1 <- s1 + stat_boxplot(geom ='errorbar', colour = "black", size = 0.4) 
+s1 <- s1 + geom_boxplot(colour = "black", fill="#ffffff77", size = 0.4, outlier.colour="#00000000")
+s1 <- s1 + scale_color_manual("Leaf Size", values = c("#009E73","#56B4E9","#D55E00"), labels=c("Large Leaf", "Medium Leaf","Small Leaf"))
+s1 <- s1 + scale_shape_manual("Leaf Size", values =c(1,2,3), labels=c("Large Leaf", "Medium Leaf","Small Leaf"))
+s1 <- s1 + scale_y_continuous(breaks = seq(0, 400, by =1), labels = percent)  
+s1 <- s1 + stat_summary(fun.y=mean, colour="Black", geom="point", shape=18, size=3) 
+s1 <- s1 + guides(colour=guide_legend(title="Leaf Size")) 
+s1 <- s1 + ylab("SDM relative to Tribute-TA1 mean (%)") + xlab("Treatment - White Clover Cultivar (Year of Introduction)") 
+s1 <- s1 + geom_hline(yintercept=1, colour = "black", size = 0.5)
+s1 <- s1 + annotate("text", x= 2, y=4, size = 5, label ="paste(bold(LSD)==18, '%')", parse=T)
+s1 <- s1 + geom_errorbar(aes(x=1, ymin=4-0.18/2, ymax=4+0.18/2), width=0.3, colour="#000000")
+s1 <- s1 + mytheme
+s1 <- s1 + theme(legend.position = "bottom", legend.box = "horizontal")
+s1
+
+dev.off()
+
+
+#v2
+
+#png("SDMsc(LSD2).png", width=1650, height=850, units="px", pointsize=28) 
+
+s2 <- ggplot(Allexpsb, aes(x=TrtbyCult, y=SDMsc, colour = Leaf.Size, as.factor = Exp)) 
+s2 <- s2 + geom_jitter(aes(shape=Leaf.Size, color = Leaf.Size), size = 1.5, width=0.2, height=0) 
+s2 <- s2 + stat_boxplot(geom ='errorbar', colour = "black", size = 0.4) 
+s2 <- s2 + geom_boxplot(colour = "black", fill="#ffffffaa", size = 0.4, outlier.colour="#00000000")
+s2 <- s2 + scale_color_manual("Leaf Size", values = c("#009E73","#56B4E9","#D55E00"), labels=c("Large Leaf", "Medium Leaf","Small Leaf"))
+s2 <- s2 + scale_shape_manual("Leaf Size", values =c(1,2,3), labels=c("Large Leaf", "Medium Leaf","Small Leaf"))
+s2 <- s2 + scale_y_continuous(breaks = seq(0, 400, by =1), labels = percent)  
+s2 <- s2 + stat_summary(fun.y=mean, colour="Black", geom="point", shape=18, size=3) 
+s2 <- s2 + guides(colour=guide_legend(title="Leaf Size")) 
+s2 <- s2 + ylab("SDM relative to Tribute-TA1 mean (%)") + xlab("Treatment - White Clover Cultivar (Year of Introduction)") 
+s2 <- s2 + geom_hline(yintercept=1, colour = "black", size = 0.5)
+s2 <- s2 + annotate("pointrange", x = 1, y = 4, ymin = 4.18, ymax = 4-.18, colour = "black", size = 0.6)
+s2 <- s2 + annotate("text", x= 2.5, y=4, size = 5, label ="paste(bold(LSD)==18, '%')", parse=T)
+s2 <- s2 + mytheme
+s2 <- s2 + theme(legend.position = "bottom", legend.box = "horizontal")
+s2
+
+dev.off()
+
+
+
+#SDM - Original Thesis format
+
+
+S1 <- ggplot(Allexpsb, aes(x=TrtbyCult, y=SDMsc, colour = Exp)) 
+S1 <- S1 + geom_boxplot()
+S1 <- S1 + scale_y_continuous(labels=percent)
+S1 <- S1 + stat_summary(fun.y=mean, colour="Black", geom="point", shape=18, size=3) 
+S1 <- S1 + guides(colour=guide_legend(title="Cultivar")) 
+S1 <- S1 + guides(colour=guide_legend(title="Experiment")) 
+S1 <- S1 + ylab("Shoot Dry Matter relative to Tribute-TA1 mean (mg)") + xlab("White Clover Cultivar (Year of Introduction)") 
+S1 <- S1 + geom_hline(yintercept=1)
+S1 <- S1 + mytheme
+S1
+
+
+#SDMsc ()
+
+#jpeg("SDMsc(TEST_PLOT).jpg", width=1650, height=850, units="px", pointsize=28, quality=500) 
+
+
+S2 <- ggplot(Allexpsb, aes(x=TrtbyCult, y=SDMsc, colour = Leaf.Size, as.factor = Exp)) 
+S2 <- S2 + geom_jitter(aes(shape=Leaf.Size, color = Leaf.Size), size = 1.5, width=0.2, height=0) 
+S2 <- S2 + stat_boxplot(geom ='errorbar', colour = "black", size = 0.4) 
+S2 <- S2 + geom_boxplot(colour = "black", fill="#ffffffaa", size = 0.4, outlier.colour="#00000000")
+S2 <- S2 + scale_color_manual("Leaf Size", values = c("#009E73","#56B4E9","#D55E00"), labels=c("Large Leaf", "Medium Leaf","Small Leaf"))
+S2 <- S2 + scale_shape_manual("Leaf Size", values =c(1,2,3), labels=c("Large Leaf", "Medium Leaf","Small Leaf"))
+S2 <- S2 + scale_y_continuous(breaks = seq(0, 400, by =1), labels = percent)  
+S2 <- S2 + stat_summary(fun.y=mean, colour="Black", geom="point", shape=18, size=3) 
+S2 <- S2 + guides(colour=guide_legend(title="Leaf Size")) 
+S2 <- S2 + ylab("SDM relative to Tribute-TA1 mean (%)") + xlab("Treatment - White Clover Cultivar (Year of Introduction)") 
+S2 <- S2 + geom_hline(yintercept=1, colour = "black", size = 0.5)
+S2 <- S2 + annotate("pointrange", x = 1, y = 4, ymin = 4.18, ymax = 4-.18, colour = "black", size = 0.6)
+S2 <- S2 + annotate("text", x= 2.5, y=4, size = 5, label ="bold(LSD)==0.17977", parse=T)
+S2 <- S2 + mytheme
+S2 <- S2 + theme(legend.position = "bottom", legend.box = "horizontal")
+S2
+
+dev.off()
+
+
+
+
+#SDMsc(Original)
+
+S3 <- ggplot(Allexpsb, aes(x=TrtbyCult, y=SDMsc, colour = Leaf.Size)) 
+S3 <- S3 + geom_jitter(aes(shape=Leaf.Size, color = Leaf.Size), size = 1.5, width=0.2, height=0) 
+S3 <- S3 + stat_boxplot(geom ='errorbar', colour = "black", size = 0.4) 
+S3 <- S3 + geom_boxplot(colour = "black", fill="#ffffffaa", size = 0.4, outlier.colour="#00000000")  
+S3 <- S3 + scale_color_manual("Leaf Size", values = c("#009E73","#56B4E9","#D55E00"), labels=c("Small Leaf", "Medium Leaf", "Large Leaf"))
+S3 <- S3 + scale_shape_manual("Leaf Size", values =c(1,2,3), labels=c("Small Leaf", "Medium Leaf", "Large Leaf"))
+S3 <- S3 + scale_y_continuous(breaks = seq(0, 400, by =1), labels = percent)  
+S3 <- S3 + stat_summary(fun.y=mean, colour="Black", geom="point", shape=18, size=3) 
+S3 <- S3 + guides(colour=guide_legend(title="Leaf Size")) 
+S3 <- S3 + ylab("Shoot Dry Matter relative to Tribute-TA1 mean (%)") + xlab("Treatment - White Clover Cultivar (Year of Introduction)") 
+S3 <- S3 + geom_hline(yintercept=1, colour = "black", size = 0.5)
+S3 <- S3 + mytheme
+S3 <- S3 + theme(legend.position = "bottom", legend.box = "horizontal")
+S3
+
+
+
+
+#SDM Scaled with Facets
+
+S4 <- ggplot(Allexps, aes(x=Cultivar, y=SDMsc, colour = Leaf.Size)) 
+S4 <- S4 + geom_jitter(aes(shape=Leaf.Size, color = Leaf.Size), size = 1.5, width=0.2, height=0) 
+S4 <- S4 + stat_boxplot(geom ='errorbar', colour = "black", size = 0.4) 
+S4 <- S4 + geom_boxplot(colour = "black", fill="#ffffffaa", size = 0.4, outlier.colour="#00000000")
+S4 <- S4 + facet_grid(. ~ Treatment, margins=FALSE) 
+S4 <- S4 + scale_color_manual("Leaf Size", values = c("#009E73","#56B4E9","#D55E00"), labels=c("Small Leaf", "Medium Leaf", "Large Leaf"))
+S4 <- S4 + scale_shape_manual("Leaf Size", values =c(1,2,3), labels=c("Small Leaf", "Medium Leaf", "Large Leaf"))
+S4 <- S4 + scale_y_continuous(breaks = seq(0, 400, by =1), labels = percent)  
+S4 <- S4 + stat_summary(fun.y=mean, colour="Black", geom="point", shape=18, size=3) 
+S4 <- S4 + guides(colour=guide_legend(title="Leaf Size")) 
+S4 <- S4 + ylab("Shoot Dry Matter relative to Tribute-TA1 mean (%)") + xlab("Treatment - White Clover Cultivar (Year of Introduction)") 
+S4 <- S4 + geom_hline(yintercept=1, colour = "black", size = 0.5)
+S4 <- S4 + mytheme
+S4
+
+
+
+
+###################################################RAW_SDM###################################################################################################
+
+
+#SDM_Raw_v1
+
+
+#jpeg("SDM_V1(Raw).jpg", width=1450, height=900, units="px", pointsize=18, quality=800) 
+
+sdm <- ggplot(Allexpsb, aes(x=TrtbyCult, y=SDM, colour = Leaf.Size)) 
+sdm <- sdm + geom_jitter(aes(shape=Leaf.Size, color = Leaf.Size), size = 1.5, width=0.2, height=0) 
+sdm <- sdm + stat_boxplot(geom ='errorbar', colour = "black", size = 0.4) 
+sdm <- sdm + geom_boxplot(colour = "black", fill="#ffffffaa", size = 0.4, outlier.colour="#00000000")   
+sdm <- sdm + scale_color_manual("Leaf Size", values = c("#009E73","#56B4E9","#D55E00"), labels=c("Large Leaf", "Medium Leaf","Small Leaf"))
+sdm <- sdm + scale_shape_manual("Leaf Size", values =c(1,2,3), labels=c("Large Leaf", "Medium Leaf","Small Leaf"))
+sdm <- sdm + scale_y_continuous(breaks = seq(0, 60, by =10), limits=c(0,60))  
+sdm <- sdm + stat_summary(fun.y=mean, colour="Black", geom="point", shape=18, size=3) 
+sdm <- sdm + guides(colour=guide_legend(title="Leaf Size")) 
+sdm <- sdm + ylab("SDM Production (mg)") + xlab("Treatment - White Clover Cultivar (Year of Introduction)") 
+sdm <- sdm + mytheme
+sdm <- sdm + theme(legend.position = "bottom", legend.box = "horizontal")
+sdm
+                   
+dev.off()
+
+
+
+
+#SDM_Exp (as.factor)
+
+#jpeg("SDM_V1(Raw_as.factor).jpg", width=1450, height=900, units="px", pointsize=18, quality=800) 
+
+sdm <- ggplot(Allexpsb, aes(x=TrtbyCult, y=SDM, colour = Leaf.Size, as.factor = Exp)) 
+sdm <- sdm + geom_jitter(aes(shape=Leaf.Size, color = Leaf.Size), size = 1.5, width=0.2, height=0) 
+sdm <- sdm + stat_boxplot(geom ='errorbar', colour = "black", size = 0.4) 
+sdm <- sdm + geom_boxplotgeom_boxplot(colour = "black", fill="#ffffffaa", size = 0.4, outlier.colour="#00000000")  
+sdm <- sdm + scale_color_manual("Leaf Size", values = c("#009E73","#56B4E9","#D55E00"), labels=c("Large Leaf", "Medium Leaf","Small Leaf"))
+sdm <- sdm + scale_shape_manual("Leaf Size", values =c(1,2,3), labels=c("Large Leaf", "Medium Leaf","Small Leaf"))
+sdm <- sdm + scale_y_continuous(breaks = seq(0, 55, by =5), limits=c(0,55))  
+sdm <- sdm + stat_summary(fun.y=mean, colour="Black", geom="point", shape=18, size=3) 
+sdm <- sdm + guides(colour=guide_legend(title="Leaf Size")) 
+sdm <- sdm + ylab("SDM Production (mg)") + xlab("Treatment - White Clover Cultivar (Year of Introduction)") 
+sdm <- sdm + mytheme
+sdm <- sdm + theme(legend.position = "bottom", legend.box = "horizontal")
+sdm
+
+dev.off()
+
+
+#SDM_Raw_v2
+
+
+#jpeg("SDM_V2(Raw).jpg", width=1450, height=900, units="px", pointsize=28, quality=500) 
+
+sdm1 <- ggplot(Allexps, aes(x=Cultivar, y=SDM, colour = Leaf.Size)) 
+sdm1 <- sdm1 + geom_jitter(aes(shape=Leaf.Size, color = Leaf.Size), size = 1.5, width=0.2, height=0) 
+sdm1 <- sdm1 + stat_boxplot(geom ='errorbar', colour = "black", size = 0.4) 
+sdm1 <- sdm1 + geom_boxplot(colour = "black", fill="#ffffffaa", size = 0.4, outlier.colour="#00000000")    
+sdm1 <- sdm1 + facet_grid(. ~ Treatment, margins=FALSE) 
+sdm1 <- sdm1 + scale_color_manual("Leaf Size", values = c("#009E73","#56B4E9","#D55E00"), labels=c("Small Leaf", "Medium Leaf", "Large Leaf"))
+sdm1 <- sdm1 + scale_shape_manual("Leaf Size", values =c(1,2,3), labels=c("Small Leaf", "Medium Leaf", "Large Leaf"))
+sdm1 <- sdm1 + scale_y_continuous(breaks = seq(0, 65, by =5), limits=c(0,65))  
+sdm1 <- sdm1 + stat_summary(fun.y=mean, colour="Black", geom="point", shape=18, size=3) 
+sdm1 <- sdm1 + guides(colour=guide_legend(title="Leaf Size")) 
+sdm1 <- sdm1 + ylab("SDM Production (mg)") + xlab("Treatment - White Clover Cultivar (Year of Introduction)") 
+sdm1 <- sdm1 + mytheme
+sdm1 <- sdm1 + theme(legend.position = "bottom", legend.box = "horizontal")
+sdm1
+
+dev.off()
+
+
+######################################################RDM##############################################################################################
+
+
+
+#Linear models for determining proportion of variation that can be explained with RDM
+
+r1 <- lm(RDMsc ~ Treatment, data=Allexpsb)
+summary(r1)
+plot(r1)
+
+r2 <- lm(RDMsc ~ Cultivar, data=Allexpsb)
+summary(r2)
+
+r3 <- lm(RDMsc ~ Treatment+Cultivar, data=Allexpsb)
+summary(r3)
+
+r4 <- lm(RDMsc ~ Treatment*Cultivar, data=Allexpsb)
+summary(r4)
+
+
+#Predict Means to determine LSD's for cultivar-treatments for RDM
+
+p <- predictmeans(r4,"Treatment:Cultivar", TRUE)
+
+
+###############################################RDM_SCALED###############################################################################################
+
+
+#v1
+
+#png("RDMsc(LSD).png", width=1650, height=850, units="px", pointsize=28) 
+
+r1 <- ggplot(Allexpsb, aes(x=TrtbyCult, y=RDMsc, colour = Leaf.Size, as.factor = Exp)) 
+r1 <- r1 + geom_jitter(aes(shape=Leaf.Size, color = Leaf.Size), size = 1.5, width=0.2, height=0) 
+r1 <- r1 + stat_boxplot(geom ='errorbar', colour = "black", size = 0.4) 
+r1 <- r1 + geom_boxplot(colour = "black", fill="#ffffffaa", size = 0.4, outlier.colour="#00000000")  
+r1 <- r1 + geom_hline(yintercept=1, colour = "black", size = 0.5)
+r1 <- r1 + scale_color_manual("Leaf Size", values = c("#009E73","#56B4E9","#D55E00"), labels=c("Large Leaf", "Medium Leaf","Small Leaf"))
+r1 <- r1 + scale_shape_manual("Leaf Size", values =c(1,2,3), labels=c("Large Leaf", "Medium Leaf","Small Leaf"))
+r1 <- r1 + scale_y_continuous(breaks = seq(0, 400, by =1), labels = percent)  
+r1 <- r1 + stat_summary(fun.y=mean, colour="Black", geom="point", shape=18, size=3) 
+r1 <- r1 + guides(colour=guide_legend(title="Leaf Size")) 
+r1 <- r1 + ylab("RDM relative to Tribute-TA1 mean (%)") + xlab("Treatment - White Clover Cultivar (Year of Introduction)") 
+r1 <- r1 + annotate("text", x= 2, y=4, size = 5, label ="paste(bold(LSD)==20, '%')", parse=T)
+r1 <- r1 + geom_errorbar(aes(x=1, ymin=4-0.20/2, ymax=4+0.20/2), width=0.3, colour="#000000")
+r1 <- r1 + mytheme
+r1 <- r1 + theme(legend.position = "bottom", legend.box = "horizontal")
+r1
+
+dev.off()
+
+
+#v2
+
+r2 <- ggplot(Allexpsb, aes(x=TrtbyCult, y=RDMsc, colour = Leaf.Size, as.factor = Exp)) 
+r2 <- r2 + geom_jitter(aes(shape=Leaf.Size, color = Leaf.Size), size = 1.5, width=0.2, height=0) 
+r2 <- r2 + stat_boxplot(geom ='errorbar', colour = "black", size = 0.4) 
+r2 <- r2 + geom_boxplot(colour = "black", fill="#ffffffaa", size = 0.4, outlier.colour="#00000000")  
+r2 <- r2 + geom_hline(yintercept=1, colour = "black", size = 0.5)
+r2 <- r2 + scale_color_manual("Leaf Size", values = c("#009E73","#56B4E9","#D55E00"), labels=c("Large Leaf", "Medium Leaf","Small Leaf"))
+r2 <- r2 + scale_shape_manual("Leaf Size", values =c(1,2,3), labels=c("Large Leaf", "Medium Leaf","Small Leaf"))
+r2 <- r2 + scale_y_continuous(breaks = seq(0, 400, by =1), labels = percent)  
+r2 <- r2 + stat_summary(fun.y=mean, colour="Black", geom="point", shape=18, size=3) 
+r2 <- r2 + guides(colour=guide_legend(title="Leaf Size")) 
+r2 <- r2 + ylab("RDM relative to Tribute-TA1 mean (%)") + xlab("Treatment - White Clover Cultivar (Year of Introduction)") 
+r2 <- r2 + annotate("text", x= 2, y=4, size = 5, label ="paste(bold(LSD)==20, '%')", parse=T)
+r2 <- r2 + annotate("pointrange", x = 1, y = 4, ymin = 4.20, ymax = 4-.20, colour = "black", size = 0.6)
+r2 <- r2 + mytheme
+r2 <- r2 + theme(legend.position = "bottom", legend.box = "horizontal")
+r2
+
+
+
+#RDM_facets
+
+#png("RDMsc(LSD+facets).png", width=1650, height=850, units="px", pointsize=28) 
+
+r3 <- ggplot(Allexps, aes(x=Cultivar, y=SDMsc, colour = Leaf.Size)) 
+r3 <- r3 + geom_jitter(aes(shape=Leaf.Size, color = Leaf.Size), size = 1.5, width=0.2, height=0) 
+r3 <- r3 + stat_boxplot(geom ='errorbar', colour = "black", size = 0.4) 
+r3 <- r3 + geom_boxplot(colour = "black", fill="#ffffffaa", size = 0.4, outlier.colour="#00000000") 
+r3 <- r3 + facet_grid(. ~ Treatment, margins=FALSE) 
+r3 <- r3 + scale_color_manual("Leaf Size", values = c("#009E73","#56B4E9","#D55E00"), labels=c("Small Leaf", "Medium Leaf", "Large Leaf"))
+r3 <- r3 + scale_shape_manual("Leaf Size", values =c(1,2,3), labels=c("Small Leaf", "Medium Leaf", "Large Leaf"))
+r3 <- r3 + scale_y_continuous(breaks = seq(0, 400, by =1), labels = percent)  
+r3 <- r3 + stat_summary(fun.y=mean, colour="Black", geom="point", shape=18, size=3) 
+r3 <- r3 + guides(colour=guide_legend(title="Leaf Size")) 
+r3 <- r3 + ylab("Root Dry Matter relative to Tribute-TA1 mean (%)") + xlab("White Clover Cultivar (Year of Introduction)") 
+r3 <- r3 + geom_hline(yintercept=1, colour = "black", size = 0.5)
+r3 <- r3 + annotate("text", x= 3.5, y=7, size = 5, label ="paste(bold(LSD)==20, '%')", parse=T)
+r3 <- r3 + geom_errorbar(aes(x=1, ymin=7-0.20/2, ymax=7+0.20/2), width=0.4, colour="#000000")
+r3 <- r3 + mytheme
+r3
+
+dev.off()
+
+
+################################################################RDM_RAW#######################################################################################################
+
+
+
+#RDM_V1_Exp (as.factor)
+
+#jpeg("RDM_V1(Raw_as.factor).jpg", width=1450, height=900, units="px", pointsize=18, quality=800) 
+
+rdm <- ggplot(Allexpsb, aes(x=TrtbyCult, y=RDM, colour = Leaf.Size, as.factor = Exp)) 
+rdm <- rdm + geom_jitter(aes(shape=Leaf.Size, color = Leaf.Size), size = 1.5, width=0.2, height=0) 
+rdm <- rdm + stat_boxplot(geom ='errorbar', colour = "black", size = 0.4) 
+rdm <- rdm + geom_boxplot(colour = "black", fill="#ffffffaa", size = 0.4, outlier.colour="#00000000")    
+rdm <- rdm + scale_color_manual("Leaf Size", values = c("#009E73","#56B4E9","#D55E00"), labels=c("Large Leaf", "Medium Leaf","Small Leaf"))
+rdm <- rdm + scale_shape_manual("Leaf Size", values =c(1,2,3), labels=c("Large Leaf", "Medium Leaf","Small Leaf"))
+rdm <- rdm + scale_y_continuous(breaks = seq(0, 32, by =8), limits=c(0,32))  
+rdm <- rdm + stat_summary(fun.y=mean, colour="Black", geom="point", shape=18, size=3) 
+rdm <- rdm + guides(colour=guide_legend(title="Leaf Size")) 
+rdm <- rdm + ylab("RDM Production (mg)") + xlab("Treatment - White Clover Cultivar (Year of Introduction)") 
+rdm <- rdm + mytheme
+rdm <- rdm + theme(legend.position = "bottom", legend.box = "horizontal")
+rdm
+
+dev.off()
+
+
+
+#RDM_V2
+
+#jpeg("RDM_V2(Raw).jpg", width=1250, height=900, units="px", pointsize=18, quality=600) 
+
+rdm1 <- ggplot(Allexps, aes(x=Cultivar, y=RDM, colour = Leaf.Size)) 
+rdm1 <- rdm1 + geom_jitter(aes(shape=Leaf.Size, color = Leaf.Size), size = 1.5, width=0.2, height=0) 
+rdm1 <- rdm1 + stat_boxplot(geom ='errorbar', colour = "black", size = 0.4) 
+rdm1 <- rdm1 + geom_boxplot(colour = "black", fill="#ffffffaa", size = 0.4, outlier.colour="#00000000")  
+rdm1 <- rdm1 + facet_grid(. ~ Treatment, margins=FALSE) 
+rdm1 <- rdm1 + scale_color_manual("Leaf Size", values = c("#009E73","#56B4E9","#D55E00"), labels=c("Large Leaf", "Medium Leaf","Small Leaf"))
+rdm1 <- rdm1 + scale_shape_manual("Leaf Size", values =c(1,2,3), labels=c("Large Leaf", "Medium Leaf","Small Leaf"))
+rdm1 <- rdm1 + scale_y_continuous(breaks = seq(0, 32, by =8), limits=c(0,32))  
+rdm1 <- rdm1 + stat_summary(fun.y=mean, colour="Black", geom="point", shape=18, size=3) 
+rdm1 <- rdm1 + guides(colour=guide_legend(title="Leaf Size")) 
+rdm1 <- rdm1 + ylab("RDM Production (mg)") + xlab("Treatment - White Clover Cultivar (Year of Introduction)") 
+rdm1 <- rdm1 + mytheme
+rdm1 <- rdm1 + theme(legend.position = "bottom", legend.box = "horizontal")
+rdm1
+
+dev.off()
+
+
+
+
+#########################################################PinkNod##############################################################################################
+
+
+#Linear models
+
+pn1 <- lm(PinkNod ~ Treatment, data=Allexpsb)
+summary(pn1)
+
+pn2 <- lm(PinkNod ~ Cultivar, data=Allexpsb)
+summary(pn2)
+
+pn3 <- lm(PinkNod ~ Treatment+Cultivar, data=Allexpsb)
+summary(pn3)
+
+pn4 <- lm(PinkNod ~ Treatment*Cultivar, data=Allexpsb)
+summary(pn4)
+
+plot(pn4)
+
+
+
+#Predict Meas to determine LSD's for cultivar-treatments for RDM
+
+pn4 <- predictmeans(pn4,"Treatment:Cultivar", TRUE)
+
+
+#Max_LSD = 1.33137
+
+
+#png("PinkNod(LSD).png", width=1650, height=850, units="px", pointsize=28) 
+
+pn1 <- ggplot(Allexpsb, aes(x=TrtbyCult, y=PinkNod, colour = Leaf.Size)) 
+pn1 <- pn1 + geom_jitter(aes(shape=Leaf.Size, color = Leaf.Size), size = 1.5, width=0.2, height=0) 
+pn1 <- pn1 + stat_boxplot(geom ='errorbar', colour = "black", size = 0.4) 
+pn1 <- pn1 + geom_boxplot(colour = "black", fill="#ffffffaa", size = 0.4, outlier.colour="#00000000")  
+pn1 <- pn1 + scale_color_manual("Leaf Size", values = c("#009E73","#56B4E9","#D55E00"), labels=c("Small Leaf", "Medium Leaf", "Large Leaf"))
+pn1 <- pn1 + scale_shape_manual("Leaf Size", values =c(1,2,3), labels=c("Small Leaf", "Medium Leaf", "Large Leaf"))
+pn1 <- pn1 + scale_y_continuous(breaks = seq(0, 30, by =5), limits=c(0,30))  
+pn1 <- pn1 + stat_summary(fun.y=mean, colour="Black", geom="point", shape=18, size=3) 
+pn1 <- pn1 + guides(colour=guide_legend(title="Leaf Size")) 
+pn1 <- pn1 + ylab("Number of Pink Nodules") + xlab("Treatment - White Clover Cultivar (Year of Introduction)") 
+pn1 <- pn1 + annotate("text", x= 2, y=26, size = 5, label ="paste(bold(LSD)==1.33)", parse=T)
+pn1 <- pn1 + geom_errorbar(aes(x=1, ymin=26-1.33/2, ymax=26+1.33/2), width=0.3, colour="#000000")
+pn1 <- pn1 + mytheme
+pn1 <- pn1 + theme(legend.position = "bottom", legend.box = "horizontal")
+pn1
+
+dev.off()
+
+
+
+
+##################################################WhiteNod#####################################################################################################
+
+
+#Linear models
+
+wn1 <- lm(WhiteNod ~ Treatment, data=Allexpsb)
+summary(wn1)
+
+wn2 <- lm(WhiteNod ~ Cultivar, data=Allexpsb)
+summary(wn2)
+
+wn3 <- lm(WhiteNod ~ Treatment+Cultivar, data=Allexpsb)
+summary(wn3)
+
+wn4 <- lm(WhiteNod ~ Treatment*Cultivar, data=Allexpsb)
+summary(wn4)
+
+plot(wn4)
+
+
+
+#Predict Meas to determine LSD's for cultivar-treatments for RDM
+
+wn4 <- predictmeans(wn4,"Treatment:Cultivar", TRUE)
+
+#Max.LSD = 0.65714
+
+
+
+#png("WhiteNod(LSD).png", width=1650, height=850, units="px", pointsize=28) 
+
+wn1 <- ggplot(Allexpsb, aes(x=TrtbyCult, y=WhiteNod, colour = Leaf.Size)) 
+wn1 <- wn1 + geom_jitter(aes(shape=Leaf.Size, color = Leaf.Size), size = 1.5, width=0.2, height=0) 
+wn1 <- wn1 + stat_boxplot(geom ='errorbar', colour = "black", size = 0.4) 
+wn1 <- wn1 + geom_boxplot(colour = "black", fill="#ffffffaa", size = 0.4, outlier.colour="#00000000")  
+wn1 <- wn1 + scale_color_manual("Leaf Size", values = c("#009E73","#56B4E9","#D55E00"), labels=c("Small Leaf", "Medium Leaf", "Large Leaf"))
+wn1 <- wn1 + scale_shape_manual("Leaf Size", values =c(1,2,3), labels=c("Small Leaf", "Medium Leaf", "Large Leaf"))
+wn1 <- wn1 + scale_y_continuous(breaks = seq(0, 30, by =5), limits=c(0,30))  
+wn1 <- wn1 + stat_summary(fun.y=mean, colour="Black", geom="point", shape=18, size=3) 
+wn1 <- wn1 + guides(colour=guide_legend(title="Leaf Size")) 
+wn1 <- wn1 + ylab("Number of White Nodules") + xlab("Treatment - White Clover Cultivar (Year of Introduction)") 
+wn1 <- wn1 + annotate("text", x= 2, y=10, size = 5, label ="paste(bold(LSD)==0.65)", parse=T)
+wn1 <- wn1 + geom_errorbar(aes(x=1, ymin=10-0.65/2, ymax=10+0.65/2), width=0.3, colour="#000000")
+wn1 <- wn1 + mytheme
+wn1 <- wn1 + theme(legend.position = "bottom", legend.box = "horizontal")
+wn1
+
+dev.off()
+
+
+
+
+##############################################################RSR###########################################################################################################
+
+
+
+rs1 <- lm(RSR ~ Treatment*Cultivar, data=Allexps)
+summary(rs1)
+plot(rs1)
+
+
+
+#Predict Means to determine LSD's for cultivar-treatments for SDM
+
+rs1 <- predictmeans(rs1,"Treatment:Cultivar", TRUE)
+
+#Max_LSD = 0.21029
+
+
+
+
+
+#png("RSR.png", width=1650, height=850, units="px", pointsize=28) 
+
+rsr1 <- ggplot(Allexps, aes(x=Cultivar, y=rsr, colour = Leaf.Size, as.factor = Exp)) 
+rsr1 <- rsr1 + geom_jitter(aes(shape=Leaf.Size, color = Leaf.Size), size = 1.5, width=0.2, height=0) 
+rsr1 <- rsr1 + stat_boxplot(geom ='errorbar', colour = "black", size = 0.4) 
+rsr1 <- rsr1 + geom_boxplot(colour = "black", fill="#ffffff77", size = 0.4, outlier.colour="#00000000")
+rsr1 <- rsr1 + facet_grid(. ~ Treatment, margins=FALSE) 
+rsr1 <- rsr1 + scale_color_manual("Leaf Size", values = c("#009E73","#56B4E9","#D55E00"), labels=c("Large Leaf", "Medium Leaf","Small Leaf"))
+rsr1 <- rsr1 + scale_shape_manual("Leaf Size", values =c(1,2,3), labels=c("Large Leaf", "Medium Leaf","Small Leaf"))
+rsr1 <- rsr1 + scale_y_continuous(breaks = seq(0, 3, by =0.5), limits=c(0,3))   
+rsr1 <- rsr1 + stat_summary(fun.y=mean, colour="Black", geom="point", shape=18, size=3) 
+rsr1 <- rsr1 + guides(colour=guide_legend(title="Leaf Size")) 
+rsr1 <- rsr1 + ylab("Root to Shoot Ratio (mg/mg)") + xlab("White Clover Cultivar (Year of Introduction)") 
+rsr1 <- rsr1 + annotate("text", x= 3, y=2.7, size = 5, label ="paste(bold(LSD)==0.21)", parse=T)
+rsr1 <- rsr1 + geom_errorbar(aes(x=1, ymin=2.7-0.21/2, ymax=2.7+0.21/2), width=0.3, colour="#000000")
+rsr1 <- rsr1 + mytheme
+rsr1 <- rsr1 + theme(legend.position = "bottom", legend.box = "horizontal")
+rsr1
+
+dev.off()
+
+
+
+
+#########################################Shoot_Symbiotic_Potential####################################################################################################
+
+
+
+
+ssp1 <- lm(SDM_SP ~ Treatment*Cultivar, data=Allexps)
+summary(ssp1)
+plot(ssp1)
+
+
+#Predict Means to determine LSD's for cultivar-treatments for SDM
+
+
+ssp1 <- predictmeans(ssp1,"Treatment:Cultivar", TRUE)
+
+#Max_LSD = 0.37063
+
+
+
+
+
+#png("SSP(LSD).png", width=1650, height=850, units="px", pointsize=28) 
+
+
+ssp1 <- ggplot(Allexps, aes(x=Cultivar, y=SDM_SP, colour = Leaf.Size, as.factor = Exp)) 
+ssp1 <- ssp1 + geom_jitter(aes(shape=Leaf.Size, color = Leaf.Size), size = 1.5, width=0.2, height=0) 
+ssp1 <- ssp1 + stat_boxplot(geom ='errorbar', colour = "black", size = 0.4) 
+ssp1 <- ssp1 + geom_boxplot(colour = "black", fill="#ffffff77", size = 0.4, outlier.colour="#00000000")
+ssp1 <- ssp1 + facet_grid(. ~ Treatment, margins=FALSE) 
+ssp1 <- ssp1 + scale_color_manual("Leaf Size", values = c("#009E73","#56B4E9","#D55E00"), labels=c("Large Leaf", "Medium Leaf","Small Leaf"))
+ssp1 <- ssp1 + scale_shape_manual("Leaf Size", values =c(1,2,3), labels=c("Large Leaf", "Medium Leaf","Small Leaf"))
+ssp1 <- ssp1 + scale_y_continuous(breaks = seq(0, 400, by =1), labels = percent)   
+ssp1 <- ssp1 + stat_summary(fun.y=mean, colour="Black", geom="point", shape=18, size=3) 
+ssp1 <- ssp1 + guides(colour=guide_legend(title="Leaf Size")) 
+ssp1 <- ssp1 + ylab("SDM Symbiotic Potential (%)") + xlab("White Clover Cultivar (Year of Introduction)") 
+ssp1 <- ssp1 + annotate("text", x= 3, y=4, size = 5, label ="paste(bold(LSD)==37, '%')", parse=T)
+ssp1 <- ssp1 + geom_errorbar(aes(x=1, ymin=4-0.37/2, ymax=4+0.37/2), width=0.3, colour="#000000")
+ssp1 <- ssp1 + geom_hline(yintercept=1, colour = "black", size = 0.5)
+ssp1 <- ssp1 + mytheme
+ssp1 <- ssp1 + theme(legend.position = "bottom", legend.box = "horizontal")
+ssp1
+
+dev.off()
+
+
+
+
+#########################################################Root_Symbiotic_Potential######################################################################################
+
+
+
+
+
+rsp1 <- lm(RDM_SP ~ Treatment*Cultivar, data=Allexps)
+summary(rsp1)
+
+plot(rsp1)
+
+
+#Predict Means to determine LSD's for cultivar-treatments for SDM
+
+
+rsp1 <- predictmeans(rsp1,"Treatment:Cultivar", TRUE)
+
+#Max_LSD = 0.71270
+
+
+
+#png("RSP(LSD).png", width=1650, height=850, units="px", pointsize=28) 
+
+
+rsp1 <- ggplot(Allexps, aes(x=Cultivar, y=RDM_SP, colour = Leaf.Size, as.factor = Exp)) 
+rsp1 <- rsp1 + geom_jitter(aes(shape=Leaf.Size, color = Leaf.Size), size = 1.5, width=0.2, height=0) 
+rsp1 <- rsp1 + stat_boxplot(geom ='errorbar', colour = "black", size = 0.4) 
+rsp1 <- rsp1 + geom_boxplot(colour = "black", fill="#ffffff77", size = 0.4, outlier.colour="#00000000")
+rsp1 <- rsp1 + facet_grid(. ~ Treatment, margins=FALSE) 
+rsp1 <- rsp1 + scale_color_manual("Leaf Size", values = c("#009E73","#56B4E9","#D55E00"), labels=c("Large Leaf", "Medium Leaf","Small Leaf"))
+rsp1 <- rsp1 + scale_shape_manual("Leaf Size", values =c(1,2,3), labels=c("Large Leaf", "Medium Leaf","Small Leaf"))
+rsp1 <- rsp1 + scale_y_continuous(breaks = seq(0, 400, by =1), labels = percent)   
+rsp1 <- rsp1 + stat_summary(fun.y=mean, colour="Black", geom="point", shape=18, size=3) 
+rsp1 <- rsp1 + guides(colour=guide_legend(title="Leaf Size")) 
+rsp1 <- rsp1 + ylab("RDM Symbiotic Potential (%)") + xlab("White Clover Cultivar (Year of Introduction)") 
+rsp1 <- rsp1 + annotate("text", x= 3, y=8, size = 5, label ="paste(bold(LSD)==71, '%')", parse=T)
+rsp1 <- rsp1 + geom_errorbar(aes(x=1, ymin=8-0.71/2, ymax=8+0.71/2), width=0.3, colour="#000000")
+rsp1 <- rsp1 + mytheme
+rsp1 <- rsp1 + theme(legend.position = "bottom", legend.box = "horizontal")
+rsp1
+
+dev.off()
+
+
+
+
+
+
+#################################################Individual#Exp.#Combined#Plots#######################################################################################
+
+
+#Ex4
+
+s4 <- lm(SDM ~ Treatment*Cultivar, data=ex4b)
+summary(s4)
+plot(s4)
+
+p1 <- predictmeans(s4, "Treatment:Cultivar", TRUE)
+
+#Max_LSD = 1.96751
+
+#Ex5
+
+s5 <- lm(SDM ~ Treatment*Cultivar, data=ex5b)
+summary(s5)
+
+p2 <- predictmeans(s5, "Treatment:Cultivar", TRUE)
+
+#Max_LSD = 0.95
+
+
+#Ex6
+
+s6 <- lm(SDM ~ Treatment*Cultivar, data=ex6b)
+summary(s6)
+
+p3 <- predictmeans(s6, "Treatment:Cultivar", TRUE)
+
+#Max.LSD = 1.18
+
+#Ex7
+
+s7 <- lm(SDM ~ Treatment*Cultivar, data=ex7b)
+summary(s7)
+
+p4 <- predictmeans(s7, "Treatment:Cultivar", TRUE)
+
+#Max LSD = 1.09
+
+
+s4 <- ggplot(ex4b, aes(x=Cultivar, y=SDM, colour = Leaf.Size)) 
+s4 <- s4 + geom_jitter(aes(shape=Leaf.Size, color = Leaf.Size), size = 1.5, width=0.2, height=0) 
+s4 <- s4 + stat_boxplot(geom ='errorbar', colour = "black", size = 0.4) 
+s4 <- s4 + geom_boxplot(colour = "black", fill="#ffffff77", size = 0.4, outlier.colour="#00000000")  
+s4 <- s4 + facet_grid(. ~ Treatment, margins=FALSE) 
+s4 <- s4 + annotate("text", x= 4, y=50, size = 5, label ="bold(LSD)==1.96", parse=T)
+s4 <- s4 + geom_errorbar(aes(x=4, ymin=42-1.96/2, ymax=42+1.96/2), width=0.25, colour="#000000")
+s4 <- s4 + ggtitle("a)")
+s4 <- s4 + coord_flip()
+s4 <- s4 + scale_color_manual("Leaf Size", values = c("#56B4E9","#D55E00"), labels=c("Medium Leaf","Small Leaf"))
+s4 <- s4 + scale_shape_manual("Leaf Size", values =c(2,3), labels=c("Medium Leaf","Small Leaf"))
+s4 <- s4 + scale_y_continuous(breaks = seq(0, 55, by =5), limits=c(0,55))  
+s4 <- s4 + stat_summary(fun.y=mean, colour="Black", geom="point", shape=18, size=3) 
+s4 <- s4 + xlab("Cultivar (Year of introduction)") + ylab("")
+s4 <- s4 + mytheme1
+s4 <- s4 + theme(legend.position="none")
+s4
+
+s5 <- ggplot(ex5b, aes(x=Cultivar, y=SDM, colour = Leaf.Size)) 
+s5 <- s5 + geom_jitter(aes(shape=Leaf.Size, color = Leaf.Size), size = 1.5, width=0.2, height=0) 
+s5 <- s5 + stat_boxplot(geom ='errorbar', colour = "black", size = 0.4) 
+s5 <- s5 + geom_boxplot(colour = "black", fill="#ffffff77", size = 0.4, outlier.colour="#00000000")  
+s5 <- s5 + annotate("text", x=4, y=27, size = 5, label ="bold(LSD)==0.95", parse=T)
+s5 <- s5 + geom_errorbar(aes(x=4, ymin=22-0.95/2, ymax=22+0.95/2), width=0.25, colour="#000000")
+s5 <- s5 + facet_grid(. ~ Treatment, margins=FALSE) 
+s5 <- s5 + ggtitle("b)")
+s5 <- s5 + coord_flip()
+s5 <- s5 + scale_color_manual("Leaf Size", values = c("#56B4E9","#D55E00"), labels=c("Medium Leaf","Small Leaf"))
+s5 <- s5 + scale_shape_manual("Leaf Size", values =c(2,3), labels=c("Medium Leaf","Small Leaf"))
+s5 <- s5 + scale_y_continuous(breaks = seq(0, 30, by =5), limits=c(0,30))  
+s5 <- s5 + stat_summary(fun.y=mean, colour="Black", geom="point", shape=18, size=3) 
+s5 <- s5 + xlab("") + ylab("")
+s5 <- s5 + mytheme1
+s5 <- s5 + theme(legend.position="none")
+s5
+
+s6 <- ggplot(ex6b, aes(x=Cultivar, y=SDM, colour = Leaf.Size)) 
+s6 <- s6 + geom_jitter(aes(shape=Leaf.Size, color = Leaf.Size), size = 1.5, width=0.2, height=0) 
+s6 <- s6 + stat_boxplot(geom ='errorbar', colour = "black", size = 0.4) 
+s6 <- s6 + geom_boxplot(colour = "black", fill="#ffffff77", size = 0.4, outlier.colour="#00000000")   
+s6 <- s6 + annotate("text", x=3, y=35, size = 5, label ="bold(LSD)==1.18", parse=T)
+s6 <- s6 + geom_errorbar(aes(x=3, ymin=28-1.18/2, ymax=28+1.18/2), width=0.25, colour="#000000")
+s6 <- s6 + facet_grid(. ~ Treatment, margins=FALSE) 
+s6 <- s6 + ggtitle("c)")
+s6 <- s6 + coord_flip()
+s6 <- s6 + scale_color_manual("Leaf Size", values = c("#009E73","#56B4E9","#D55E00"), labels=c("Large Leaf", "Medium Leaf","Small Leaf"))
+s6 <- s6 + scale_shape_manual("Leaf Size", values =c(1,2,3), labels=c("Large Leaf", "Medium Leaf","Small Leaf"))
+s6 <- s6 + scale_y_continuous(breaks = seq(0, 40, by =5), limits=c(0,40))  
+s6 <- s6 + stat_summary(fun.y=mean, colour="Black", geom="point", shape=18, size=3) 
+s6 <- s6 + xlab("Cultivar (Year of introduction)") + ylab("Shoot Dry Matter (mg)")
+s6 <- s6 + mytheme1
+s6 <- s6 + theme(legend.position = "bottom", legend.box = "horizontal")
+s6
+
+s7 <- ggplot(ex7b, aes(x=Cultivar, y=SDM, colour = Leaf.Size)) 
+s7 <- s7 + geom_jitter(aes(shape=Leaf.Size, color = Leaf.Size), size = 1.5, width=0.2, height=0) 
+s7 <- s7 + stat_boxplot(geom ='errorbar', colour = "black", size = 0.4) 
+s7 <- s7 + geom_boxplot(colour = "black", fill="#ffffff77", size = 0.4, outlier.colour="#00000000")   
+s7 <- s7 + annotate("text", x=2, y=22, size = 5, label ="bold(LSD)==1.09", parse=T)
+s7 <- s7 + geom_errorbar(aes(x=2, ymin=17-1.09/2, ymax=17+1.09/2), width=0.5, colour="#000000")
+s7 <- s7 + facet_grid(. ~ Treatment, margins=FALSE) 
+s7 <- s7 + ggtitle("d)")
+s7 <- s7 + coord_flip()
+s7 <- s7 + scale_color_manual("Leaf Size", values = c("#009E73","#56B4E9","#D55E00"), labels=c("Large Leaf", "Medium Leaf","Small Leaf"))
+s7 <- s7 + scale_shape_manual("Leaf Size", values =c(1,2,3), labels=c("Large Leaf", "Medium Leaf","Small Leaf"))
+s7 <- s7 + scale_y_continuous(breaks = seq(0, 25, by =5), limits=c(0,25))  
+s7 <- s7 + stat_summary(fun.y=mean, colour="Black", geom="point", shape=18, size=3) 
+s7 <- s7 + xlab("") + ylab("Shoot Dry Matter (mg)")
+s7 <- s7 + mytheme1
+s7 <- s7 + theme(legend.position = "bottom", legend.box = "horizontal")
+s7
+
+#png("SDM_Exps(LSD).png", width=1800, height=900, units="px", pointsize=20)
+
+grid.arrange(s4,s5,s6,s7, nrow = 2)
+
+dev.off()
+
+
+
+
+
+############################################RDM###########################################################################################################################
+
+
+
+
+#Ex4
+
+rm4 <- lm(RDM ~ Treatment*Cultivar, data=ex4b)
+summary(rm4)
+plot(rm4)
+
+rm4 <- predictmeans(rm4, "Treatment:Cultivar", TRUE)
+
+#Max_LSD = 1.08152
+
+
+#Ex5
+
+rm5 <- lm(RDM ~ Treatment*Cultivar, data=ex5b)
+summary(rm5)
+
+rm5 <- predictmeans(rm5, "Treatment:Cultivar", TRUE)
+
+#Max_LSD = 0.95
+
+
+#Ex6
+
+rm6 <- lm(RDM ~ Treatment*Cultivar, data=ex6b)
+summary(rm6)
+
+rm6 <- predictmeans(rm6, "Treatment:Cultivar", TRUE)
+
+#Max.LSD = 0.45773
+
+
+#Ex7
+
+rm7 <- lm(RDM ~ Treatment*Cultivar, data=ex7b)
+summary(rm7)
+
+rm7 <- predictmeans(rm7, "Treatment:Cultivar", TRUE)
+
+#Max LSD = 0.51239
+
+
+r4 <- ggplot(ex4b, aes(x=Cultivar, y=RDM, colour = Leaf.Size)) 
+r4 <- r4 + geom_jitter(aes(shape=Leaf.Size, color = Leaf.Size), size = 1.5, width=0.2, height=0) 
+r4 <- r4 + stat_boxplot(geom ='errorbar', colour = "black", size = 0.4) 
+r4 <- r4 + geom_boxplot(colour = "black", fill="#ffffff77", size = 0.4, outlier.colour="#00000000")   
+r4 <- r4 + facet_grid(. ~ Treatment, margins=FALSE) 
+r4 <- r4 + ggtitle("a)")
+r4 <- r4 + coord_flip()
+r4 <- r4 + scale_color_manual("Leaf Size", values = c("#56B4E9","#D55E00"), labels=c("Medium Leaf","Small Leaf"))
+r4 <- r4 + scale_shape_manual("Leaf Size", values =c(2,3), labels=c("Medium Leaf","Small Leaf"))
+r4 <- r4 + scale_y_continuous(breaks = seq(0, 32, by =4), limits=c(0,32))  
+r4 <- r4 + stat_summary(fun.y=mean, colour="Black", geom="point", shape=18, size=3) 
+r4 <- r4 + xlab("Cultivar (Year of introduction)") + ylab("")
+r4 <- r4 + annotate("text", x= 2, y=26, size = 5, label ="bold(LSD)==1.08", parse=T)
+r4 <- r4 + geom_errorbar(aes(x=2, ymin=20-1.08/2, ymax=20+1.08/2), width=0.25, colour="#000000")
+r4 <- r4 + mytheme1
+r4 <- r4 + theme(legend.position="none")
+r4
+
+r5 <- ggplot(ex5b, aes(x=Cultivar, y=RDM, colour = Leaf.Size)) 
+r5 <- r5 + geom_jitter(aes(shape=Leaf.Size, color = Leaf.Size), size = 1.5, width=0.2, height=0) 
+r5 <- r5 + stat_boxplot(geom ='errorbar', colour = "black", size = 0.4) 
+r5 <- r5 + geom_boxplot(colour = "black", fill="#ffffff77", size = 0.4, outlier.colour="#00000000")   
+r5 <- r5 + facet_grid(. ~ Treatment, margins=FALSE) 
+r5 <- r5 + ggtitle("b)")
+r5 <- r5 + coord_flip()
+r5 <- r5 + scale_color_manual("Leaf Size", values = c("#009E73","#56B4E9","#D55E00"), labels=c("Large Leaf", "Medium Leaf","Small Leaf"))
+r5 <- r5 + scale_shape_manual("Leaf Size", values =c(1,2,3), labels=c("Large Leaf", "Medium Leaf","Small Leaf"))
+r5 <- r5 + scale_y_continuous(breaks = seq(0, 16, by =4), limits=c(0,16))  
+r5 <- r5 + stat_summary(fun.y=mean, colour="Black", geom="point", shape=18, size=3) 
+r5 <- r5 + xlab("") + ylab("")
+r5 <- r5 + annotate("text", x= 2, y=14.5, size = 5, label ="bold(LSD)==0.95", parse=T)
+r5 <- r5 + geom_errorbar(aes(x=2, ymin=12-0.95/2, ymax=12+0.95/2), width=0.25, colour="#000000")
+r5 <- r5 + mytheme1
+r5 <- r5 + theme(legend.position="none")
+r5
+
+r6 <- ggplot(ex6b, aes(x=Cultivar, y=RDM, colour = Leaf.Size)) 
+r6 <- r6 + geom_jitter(aes(shape=Leaf.Size, color = Leaf.Size), size = 1.5, width=0.2, height=0) 
+r6 <- r6 + stat_boxplot(geom ='errorbar', colour = "black", size = 0.4) 
+r6 <- r6 + geom_boxplot(colour = "black", fill="#ffffff77", size = 0.4, outlier.colour="#00000000") 
+r6 <- r6 + facet_grid(. ~ Treatment, margins=FALSE) 
+r6 <- r6 + ggtitle("c)")
+r6 <- r6 + coord_flip()
+r6 <- r6 + scale_color_manual("Leaf Size", values = c("#009E73","#56B4E9","#D55E00"), labels=c("Large Leaf", "Medium Leaf","Small Leaf"))
+r6 <- r6 + scale_shape_manual("Leaf Size", values =c(1,2,3), labels=c("Large Leaf", "Medium Leaf","Small Leaf"))
+r6 <- r6 + scale_y_continuous(breaks = seq(0, 16, by =4), limits=c(0,16))  
+r6 <- r6 + stat_summary(fun.y=mean, colour="Black", geom="point", shape=18, size=3) 
+r6 <- r6 + ylab("Root Dry Matter (mg)") + xlab("Cultivar (Year of introduction)") 
+r6 <- r6 + annotate("text", x= 2, y=14.5, size = 5, label ="bold(LSD)==0.45", parse=T)
+r6 <- r6 + geom_errorbar(aes(x=2, ymin=12-0.45/2, ymax=12+0.45/2), width=0.25, colour="#000000")
+r6 <- r6 + mytheme1
+r6 <- r6 + theme(legend.position = "bottom", legend.box = "horizontal")
+r6
+
+r7 <- ggplot(ex7b, aes(x=Cultivar, y=RDM, colour = Leaf.Size)) 
+r7 <- r7 + geom_jitter(aes(shape=Leaf.Size, color = Leaf.Size), size = 1.5, width=0.2, height=0) 
+r7 <- r7 + stat_boxplot(geom ='errorbar', colour = "black", size = 0.4) 
+r7 <- r7 + geom_boxplot(colour = "black", fill="#ffffff77", size = 0.4, outlier.colour="#00000000") 
+r7 <- r7 + facet_grid(. ~ Treatment, margins=FALSE) 
+r7 <- r7 + ggtitle("d)")
+r7 <- r7 + coord_flip()
+r7 <- r7 + scale_color_manual("Leaf Size", values = c("#009E73","#56B4E9","#D55E00"), labels=c("Large Leaf", "Medium Leaf","Small Leaf"))
+r7 <- r7 + scale_shape_manual("Leaf Size", values =c(1,2,3), labels=c("Large Leaf", "Medium Leaf","Small Leaf"))
+r7 <- r7 + scale_y_continuous(breaks = seq(0, 16, by =4), limits=c(0,16))  
+r7 <- r7 + stat_summary(fun.y=mean, colour="Black", geom="point", shape=18, size=3) 
+r7 <- r7 + ylab("Root Dry Matter (mg)") + xlab("")
+r7 <- r7 + annotate("text", x= 3, y=14.5, size = 5, label ="bold(LSD)==0.51", parse=T)
+r7 <- r7 + geom_errorbar(aes(x=3, ymin=11.5-0.51/2, ymax=11.5+0.51/2), width=0.25, colour="#000000")
+r7 <- r7 + mytheme1
+r7 <- r7 + theme(legend.position = "bottom", legend.box = "horizontal")
+r7
+
+#png("RDM_Exps(LSD).png", width=1800, height=900, units="px", pointsize=20)
+
+grid.arrange(r4,r5,r6,r7)
+
+dev.off()
+
+
+
+
+###################################################PinkNod#####################################################################################################################
+
+
+
+#Ex4
+
+pn4 <- lm(PinkNod ~ Treatment*Cultivar, data=ex4b)
+summary(pn4)
+
+pn4 <- predictmeans(pn4, "Treatment:Cultivar", TRUE)
+
+#Max_LSD = 0.99865 
+
+
+#Ex5
+
+pn5 <- lm(PinkNod ~ Treatment*Cultivar, data=ex5b)
+summary(pn5)
+
+pn5 <- predictmeans(pn5, "Treatment:Cultivar", TRUE)
+
+#Max_LSD = 0.81291
+
+
+#Ex6
+
+pn6 <- lm(PinkNod ~ Treatment*Cultivar, data=ex6b)
+summary(pn6)
+
+pn6 <- predictmeans(pn6, "Treatment:Cultivar", TRUE)
+
+#Max.LSD = 1.19011
+
+
+#Ex7
+
+pn7 <- lm(PinkNod ~ Treatment*Cultivar, data=ex7b)
+summary(pn7)
+
+pn7 <- predictmeans(pn7, "Treatment:Cultivar", TRUE)
+
+#Max LSD = 1.24348
+
+
+
+pn4 <- ggplot(ex4b, aes(x=Cultivar, y=PinkNod, colour = Leaf.Size)) 
+pn4 <- pn4 + geom_jitter(aes(shape=Leaf.Size, color = Leaf.Size), size = 1.5, width=0.2, height=0) 
+pn4 <- pn4 + stat_boxplot(geom ='errorbar', colour = "black", size = 0.4) 
+pn4 <- pn4 + geom_boxplot(colour = "black", fill="#ffffff77", size = 0.4, outlier.colour="#00000000") 
+pn4 <- pn4 + facet_grid(. ~ Treatment, margins=FALSE) 
+pn4 <- pn4 + ggtitle("a)")
+pn4 <- pn4 + coord_flip()
+pn4 <- pn4 + scale_color_manual("Leaf Size", values = c("#56B4E9","#D55E00"), labels=c("Medium Leaf","Small Leaf"))
+pn4 <- pn4 + scale_shape_manual("Leaf Size", values =c(2,3), labels=c("Medium Leaf","Small Leaf"))
+pn4 <- pn4 + scale_y_continuous(breaks = seq(0, 30, by =4), limits=c(0,30))  
+pn4 <- pn4 + stat_summary(fun.y=mean, colour="Black", geom="point", shape=18, size=3) 
+pn4 <- pn4 + xlab("Cultivar (Year of introduction)") + ylab("")
+pn4 <- pn4 + annotate("text", x= 2, y=26.5, size = 5, label ="bold(LSD)==0.99", parse=T)
+pn4 <- pn4 + geom_errorbar(aes(x=2, ymin=22-0.99/2, ymax=22+0.99/2), width=0.25, colour="#000000")
+pn4 <- pn4 + mytheme1
+pn4 <- pn4 + theme(legend.position="none")
+pn4
+
+
+pn5 <- ggplot(ex5b, aes(x=Cultivar, y=PinkNod, colour = Leaf.Size)) 
+pn5 <- pn5 + geom_jitter(aes(shape=Leaf.Size, color = Leaf.Size), size = 1.5, width=0.2, height=0) 
+pn5 <- pn5 + stat_boxplot(geom ='errorbar', colour = "black", size = 0.4) 
+pn5 <- pn5 + geom_boxplot(colour = "black", fill="#ffffff77", size = 0.4, outlier.colour="#00000000")  
+pn5 <- pn5 + facet_grid(. ~ Treatment, margins=FALSE) 
+pn5 <- pn5 + ggtitle("b)")
+pn5 <- pn5 + coord_flip()
+pn5 <- pn5 + scale_color_manual("Leaf Size", values = c("#009E73","#56B4E9","#D55E00"), labels=c("Large Leaf", "Medium Leaf","Small Leaf"))
+pn5 <- pn5 + scale_shape_manual("Leaf Size", values =c(1,2,3), labels=c("Large Leaf", "Medium Leaf","Small Leaf"))
+pn5 <- pn5 + scale_y_continuous(breaks = seq(0, 30, by =4), limits=c(0,30))  
+pn5 <- pn5 + stat_summary(fun.y=mean, colour="Black", geom="point", shape=18, size=3) 
+pn5 <- pn5 + xlab("") + ylab("")
+pn5 <- pn5 + annotate("text", x= 2, y=26.5, size = 5, label ="bold(LSD)==0.81", parse=T)
+pn5 <- pn5 + geom_errorbar(aes(x=2, ymin=22-0.81/2, ymax=22+0.81/2), width=0.25, colour="#000000")
+pn5 <- pn5 + mytheme1
+pn5 <- pn5 + theme(legend.position="none")
+pn5
+
+
+pn6 <- ggplot(ex6b, aes(x=Cultivar, y=PinkNod, colour = Leaf.Size)) 
+pn6 <- pn6 + geom_jitter(aes(shape=Leaf.Size, color = Leaf.Size), size = 1.5, width=0.2, height=0) 
+pn6 <- pn6 + stat_boxplot(geom ='errorbar', colour = "black", size = 0.4) 
+pn6 <- pn6 + geom_boxplot(colour = "black", fill="#ffffff77", size = 0.4, outlier.colour="#00000000")  
+pn6 <- pn6 + facet_grid(. ~ Treatment, margins=FALSE) 
+pn6 <- pn6 + ggtitle("c)")
+pn6 <- pn6 + coord_flip()
+pn6 <- pn6 + scale_color_manual("Leaf Size", values = c("#009E73","#56B4E9","#D55E00"), labels=c("Large Leaf", "Medium Leaf","Small Leaf"))
+pn6 <- pn6 + scale_shape_manual("Leaf Size", values =c(1,2,3), labels=c("Large Leaf", "Medium Leaf","Small Leaf"))
+pn6 <- pn6 + scale_y_continuous(breaks = seq(0, 30, by =4), limits=c(0,30))  
+pn6 <- pn6 + stat_summary(fun.y=mean, colour="Black", geom="point", shape=18, size=3) 
+pn6 <- pn6 + ylab("Number of Pink Nodules") + xlab("Cultivar (Year of introduction)") 
+pn6 <- pn6 + annotate("text", x= 1, y=26.5, size = 5, label ="bold(LSD)==1.19", parse=T)
+pn6 <- pn6 + geom_errorbar(aes(x=1, ymin=22-1.19/2, ymax=22+1.19/2), width=0.25, colour="#000000")
+pn6 <- pn6 + mytheme1
+pn6 <- pn6 + theme(legend.position = "bottom", legend.box = "horizontal")
+pn6
+
+
+pn7 <- ggplot(ex7b, aes(x=Cultivar, y=PinkNod, colour = Leaf.Size)) 
+pn7 <- pn7 + geom_jitter(aes(shape=Leaf.Size, color = Leaf.Size), size = 1.5, width=0.2, height=0) 
+pn7 <- pn7 + stat_boxplot(geom ='errorbar', colour = "black", size = 0.4) 
+pn7 <- pn7 + geom_boxplot(colour = "black", fill="#ffffff77", size = 0.4, outlier.colour="#00000000")  
+pn7 <- pn7 + facet_grid(. ~ Treatment, margins=FALSE) 
+pn7 <- pn7 + ggtitle("d)")
+pn7 <- pn7 + coord_flip()
+pn7 <- pn7 + scale_color_manual("Leaf Size", values = c("#009E73","#56B4E9","#D55E00"), labels=c("Large Leaf", "Medium Leaf","Small Leaf"))
+pn7 <- pn7 + scale_shape_manual("Leaf Size", values =c(1,2,3), labels=c("Large Leaf", "Medium Leaf","Small Leaf"))
+pn7 <- pn7 + scale_y_continuous(breaks = seq(0, 30, by = 4), limits=c(0,30))  
+pn7 <- pn7 + stat_summary(fun.y=mean, colour="Black", geom="point", shape=18, size=3) 
+pn7 <- pn7 + ylab("Number of Pink Nodules") + xlab("")
+pn7 <- pn7 + annotate("text", x= 1, y=26.5, size = 5, label ="bold(LSD)==1.24", parse=T)
+pn7 <- pn7 + geom_errorbar(aes(x=1, ymin=22-1.24/2, ymax=22+1.24/2), width=0.25, colour="#000000")
+pn7 <- pn7 + mytheme1
+pn7 <- pn7 + theme(legend.position = "bottom", legend.box = "horizontal")
+pn7
+
+#png("PinkNod_Exps(LSD).png", width=1800, height=900, units="px", pointsize=20) 
+
+grid.arrange(pn4,pn5,pn6,pn7)
+
+dev.off()
+
+
+
+
+###########################################################WhiteNod####################################################################################################
+
+
+
+
+#Ex4
+
+wn4 <- lm(WhiteNod ~ Treatment*Cultivar, data=ex4b)
+summary(wn4)
+
+wn4 <- predictmeans(wn4, "Treatment:Cultivar", TRUE)
+
+#Max_LSD = 0.31967 
+
+
+#Ex5
+
+wn5 <- lm(WhiteNod ~ Treatment*Cultivar, data=ex5b)
+summary(wn5)
+
+wn5 <- predictmeans(wn5, "Treatment:Cultivar", TRUE)
+
+#Max_LSD = 0.15427
+
+
+#Ex6
+
+wn6 <- lm(WhiteNod ~ Treatment*Cultivar, data=ex6b)
+summary(wn6)
+
+wn6 <- predictmeans(wn6, "Treatment:Cultivar", TRUE)
+
+#Max.LSD = 0.93636
+
+
+#Ex7
+
+wn7 <- lm(WhiteNod ~ Treatment*Cultivar, data=ex7b)
+summary(wn7)
+
+wn7 <- predictmeans(wn7, "Treatment:Cultivar", TRUE)
+
+#Max LSD = 0.15852
+
+
+wn4 <- ggplot(ex4b, aes(x=Cultivar, y=WhiteNod, colour = Leaf.Size)) 
+wn4 <- wn4 + geom_jitter(aes(shape=Leaf.Size, color = Leaf.Size), size = 1.5, width=0.2, height=0) 
+wn4 <- wn4 + stat_boxplot(geom ='errorbar', colour = "black", size = 0.4) 
+wn4 <- wn4 + geom_boxplot(colour = "black", fill="#ffffff77", size = 0.4, outlier.colour="#00000000") 
+wn4 <- wn4 + facet_grid(. ~ Treatment, margins=FALSE) 
+wn4 <- wn4 + ggtitle("a)")
+wn4 <- wn4 + coord_flip()
+wn4 <- wn4 + scale_color_manual("Leaf Size", values = c("#56B4E9","#D55E00"), labels=c("Medium Leaf","Small Leaf"))
+wn4 <- wn4 + scale_shape_manual("Leaf Size", values =c(2,3), labels=c("Medium Leaf","Small Leaf"))
+wn4 <- wn4 + scale_y_continuous(breaks = seq(0, 16, by =4), limits=c(0,16))  
+wn4 <- wn4 + stat_summary(fun.y=mean, colour="Black", geom="point", shape=18, size=3) 
+wn4 <- wn4 + xlab("Cultivar (Year of introduction)") + ylab("")
+wn4 <- wn4 + annotate("text", x= 1, y=8, size = 5, label ="bold(LSD)==0.31", parse=T)
+wn4 <- wn4 + geom_errorbar(aes(x=1, ymin=5-0.31/2, ymax=5+0.31/2), width=0.25, colour="#000000")
+wn4 <- wn4 + mytheme1
+wn4 <- wn4 + theme(legend.position="none")
+wn4
+
+
+wn5 <- ggplot(ex5b, aes(x=Cultivar, y=WhiteNod, colour = Leaf.Size)) 
+wn5 <- wn5 + geom_jitter(aes(shape=Leaf.Size, color = Leaf.Size), size = 1.5, width=0.2, height=0) 
+wn5 <- wn5 + stat_boxplot(geom ='errorbar', colour = "black", size = 0.4) 
+wn5 <- wn5 + geom_boxplot(colour = "black", fill="#ffffff77", size = 0.4, outlier.colour="#00000000")  
+wn5 <- wn5 + facet_grid(. ~ Treatment, margins=FALSE) 
+wn5 <- wn5 + ggtitle("b)")
+wn5 <- wn5 + coord_flip()
+wn5 <- wn5 + scale_color_manual("Leaf Size", values = c("#009E73","#56B4E9","#D55E00"), labels=c("Large Leaf", "Medium Leaf","Small Leaf"))
+wn5 <- wn5 + scale_shape_manual("Leaf Size", values =c(1,2,3), labels=c("Large Leaf", "Medium Leaf","Small Leaf"))
+wn5 <- wn5 + scale_y_continuous(breaks = seq(0, 8, by =1), limits=c(0,8))  
+wn5 <- wn5 + stat_summary(fun.y=mean, colour="Black", geom="point", shape=18, size=3) 
+wn5 <- wn5 + xlab("") + ylab("")
+wn5 <- wn5 + annotate("text", x= 1, y=7, size = 5, label ="bold(LSD)==0.15", parse=T)
+wn5 <- wn5 + geom_errorbar(aes(x=1, ymin=5.5-0.15/2, ymax=5.5+0.15/2), width=0.25, colour="#000000")
+wn5 <- wn5 + mytheme1
+wn5 <- wn5 + theme(legend.position="none")
+wn5
+
+
+wn6 <- ggplot(ex6b, aes(x=Cultivar, y=WhiteNod, colour = Leaf.Size)) 
+wn6 <- wn6 + geom_jitter(aes(shape=Leaf.Size, color = Leaf.Size), size = 1.5, width=0.2, height=0) 
+wn6 <- wn6 + stat_boxplot(geom ='errorbar', colour = "black", size = 0.4) 
+wn6 <- wn6 + geom_boxplot(colour = "black", fill="#ffffff77", size = 0.4, outlier.colour="#00000000")  
+wn6 <- wn6 + facet_grid(. ~ Treatment, margins=FALSE) 
+wn6 <- wn6 + ggtitle("c)")
+wn6 <- wn6 + coord_flip()
+wn6 <- wn6 + scale_color_manual("Leaf Size", values = c("#009E73","#56B4E9","#D55E00"), labels=c("Large Leaf", "Medium Leaf","Small Leaf"))
+wn6 <- wn6 + scale_shape_manual("Leaf Size", values =c(1,2,3), labels=c("Large Leaf", "Medium Leaf","Small Leaf"))
+wn6 <- wn6 + scale_y_continuous(breaks = seq(0, 30, by =4), limits=c(0,30))  
+wn6 <- wn6 + stat_summary(fun.y=mean, colour="Black", geom="point", shape=18, size=3) 
+wn6 <- wn6 + ylab("Number of White Nodules") + xlab("Cultivar (Year of introduction)") 
+wn6 <- wn6 + annotate("text", x= 1, y=26.5, size = 5, label ="bold(LSD)==0.93", parse=T)
+wn6 <- wn6 + geom_errorbar(aes(x=1, ymin=22-1.19/2, ymax=22+1.19/2), width=0.25, colour="#000000")
+wn6 <- wn6 + mytheme1
+wn6 <- wn6 + theme(legend.position = "bottom", legend.box = "horizontal")
+wn6
+
+
+wn7 <- ggplot(ex7b, aes(x=Cultivar, y=WhiteNod, colour = Leaf.Size)) 
+wn7 <- wn7 + geom_jitter(aes(shape=Leaf.Size, color = Leaf.Size), size = 1.5, width=0.2, height=0) 
+wn7 <- wn7 + stat_boxplot(geom ='errorbar', colour = "black", size = 0.4) 
+wn7 <- wn7 + geom_boxplot(colour = "black", fill="#ffffff77", size = 0.4, outlier.colour="#00000000")  
+wn7 <- wn7 + facet_grid(. ~ Treatment, margins=FALSE) 
+wn7 <- wn7 + ggtitle("d)")
+wn7 <- wn7 + coord_flip()
+wn7 <- wn7 + scale_color_manual("Leaf Size", values = c("#009E73","#56B4E9","#D55E00"), labels=c("Large Leaf", "Medium Leaf","Small Leaf"))
+wn7 <- wn7 + scale_shape_manual("Leaf Size", values =c(1,2,3), labels=c("Large Leaf", "Medium Leaf","Small Leaf"))
+wn7 <- wn7 + scale_y_continuous(breaks = seq(0, 12, by = 2), limits=c(0,12))  
+wn7 <- wn7 + stat_summary(fun.y=mean, colour="Black", geom="point", shape=18, size=3) 
+wn7 <- wn7 + ylab("Number of White Nodules") + xlab("")
+wn7 <- wn7 + annotate("text", x= 1, y=11, size = 5, label ="bold(LSD)==0.15", parse=T)
+wn7 <- wn7 + geom_errorbar(aes(x=1, ymin=9-0.15/2, ymax=9+0.15/2), width=0.25, colour="#000000")
+wn7 <- wn7 + mytheme1
+wn7 <- wn7 + theme(legend.position = "bottom", legend.box = "horizontal")
+wn7
+
+#png("WhiteNod_Exps(LSD).png", width=1800, height=900, units="px", pointsize=20) 
+
+grid.arrange(wn4,wn5,wn6,wn7)
+
+dev.off()
+
+
+
+
+################################################Int_SDM########################################################################################################
+
+
+
+is1 <- ggplot(means4, aes(x=Treatment, y=SDM, group=Cultivar, shape=Cultivar, colour=Cultivar)) 
+is1 <- is1 + geom_line(aes(), size=1)
+is1 <- is1 + geom_point(size=4, fill="white") 
+is1 <- is1 + scale_shape_manual(values=c(0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17))
+is1 <- is1 + scale_color_brewer(palette = "Set1")
+is1 <- is1 + scale_y_continuous(breaks = seq(0, 20, by =4), limits=c(0,20)) 
+is1 <- is1 + ylab("Mean Shoot Dry Matter (mg)") + xlab("") 
+is1 <- is1 + annotate("text", x= 0.9, y=15, size = 5, label ="bold(LSD)==1.96", parse=T)
+is1 <- is1 + geom_errorbar(aes(x=0.6, ymin=15-1.96/2, ymax=15+1.96/2), width=0.25, colour="#000000")
+is1 <- is1 + mytheme1
+is1 <- is1 + ggtitle("a)")
+is1
+
+is2 <- ggplot(means5, aes(x=Treatment, y=SDM, group=Cultivar, shape=Cultivar, colour=Cultivar)) 
+is2 <- is2 + geom_line(aes(), size=1)
+is2 <- is2 + geom_point(size=4, fill="white") 
+is2 <- is2 + scale_shape_manual(values=c(0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17))
+is2 <- is2 + scale_color_brewer(palette = "Dark2")
+is2 <- is2 + scale_y_continuous(breaks = seq(0, 10, by =1), limits=c(0,10)) 
+is2 <- is2 + ylab("") + xlab("") 
+is2 <- is2 + annotate("text", x= 0.9, y=7, size = 5, label ="bold(LSD)==0.95", parse=T)
+is2 <- is2 + geom_errorbar(aes(x=0.6, ymin=7-0.95/2, ymax=7+0.95/2), width=0.25, colour="#000000")
+is2 <- is2 + mytheme1
+is2 <- is2 + ggtitle("b)")
+is2
+
+is3 <- ggplot(means6, aes(x=Treatment, y=SDM, group=Cultivar, shape=Cultivar, colour=Cultivar)) 
+is3 <- is3 + geom_line(aes(), size=1)
+is3 <- is3 + geom_point(size=4, fill="white") 
+is3 <- is3 + scale_shape_manual(values=c(0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17))
+is3 <- is3 + scale_y_continuous(breaks = seq(0, 16, by =4), limits=c(0,16)) 
+is3 <- is3 + ylab("Mean Shoot Dry Matter (mg)") + xlab("Treatment") 
+is3 <- is3 + annotate("text", x= 0.9, y=12, size = 5, label ="bold(LSD)==1.18", parse=T)
+is3 <- is3 + geom_errorbar(aes(x=0.6, ymin=12-1.18/2, ymax=12+1.18/2), width=0.25, colour="#000000")
+is3 <- is3 + mytheme1
+is3 <- is3 + ggtitle("c)")
+is3
+
+is4 <- ggplot(means7, aes(x=Treatment, y=SDM, group=Cultivar, shape=Cultivar, colour=Cultivar)) 
+is4 <- is4 + geom_line(aes(), size=1)
+is4 <- is4 + geom_point(size=4, fill="white") 
+is4 <- is4 + scale_shape_manual(values=c(0,1,2,5,15,16,17,18))
+is4 <- is4 + scale_y_continuous(breaks = seq(0, 10, by =2), limits=c(0,10)) 
+is4 <- is4 + ylab("") + xlab("Treatment") 
+is4 <- is4 + annotate("text", x= 0.9, y=8, size = 5, label ="bold(LSD)==1.09", parse=T)
+is4 <- is4 + geom_errorbar(aes(x=0.6, ymin=8-1.09/2, ymax=8+1.09/2), width=0.25, colour="#000000")
+is4 <- is4 + mytheme1
+is4 <- is4 + ggtitle("d)")
+is4
+
+#png("SDM_Exps_Int(LSD).png", width=1800, height=900, units="px", pointsize=20) 
+
+grid.arrange(is1,is2,is3,is4)
+
+dev.off()
+
+
+######################################################Int_RDM##########################################################################################################
+
+
+ir1 <- ggplot(means4, aes(x=Treatment, y=RDM, group=Cultivar, shape=Cultivar, colour=Cultivar)) 
+ir1 <- ir1 + geom_line(aes(), size=1)
+ir1 <- ir1 + geom_point(size=4, fill="white") 
+ir1 <- ir1 + scale_shape_manual(values=c(0,1,2,5))
+ir1 <- ir1 + scale_color_brewer(palette = "Set1")
+ir1 <- ir1 + scale_y_continuous(breaks = seq(0, 10, by =2), limits=c(0,10)) 
+ir1 <- ir1 + ylab("Mean Root Dry Matter (mg)") + xlab("") 
+ir1 <- ir1 + annotate("text", x= 0.9, y=8, size = 5, label ="bold(LSD)==1.08", parse=T)
+ir1 <- ir1 + geom_errorbar(aes(x=0.6, ymin=8-1.08/2, ymax=8+1.08/2), width=0.25, colour="#000000")
+ir1 <- ir1 + mytheme1
+ir1 <- ir1 + ggtitle("a)")
+ir1
+
+ir2 <- ggplot(means5, aes(x=Treatment, y=RDM, group=Cultivar, shape=Cultivar, colour=Cultivar)) 
+ir2 <- ir2 + geom_line(aes(), size=1)
+ir2 <- ir2 + geom_point(size=4, fill="white") 
+ir2 <- ir2 + scale_shape_manual(values=c(0,1,2,5))
+ir2 <- ir2 + scale_color_brewer(palette = "Dark2")
+ir2 <- ir2 + scale_y_continuous(breaks = seq(0, 5, by =1), limits=c(0,5)) 
+ir2 <- ir2 + ylab("") + xlab("") 
+ir2 <- ir2 + annotate("text", x= 0.9, y=4.5, size = 5, label ="bold(LSD)==0.95", parse=T)
+ir2 <- ir2 + geom_errorbar(aes(x=0.6, ymin=4.5-0.95/2, ymax=4.5+0.95/2), width=0.25, colour="#000000")
+ir2 <- ir2 + mytheme1
+ir2 <- ir2 + ggtitle("b)")
+ir2
+
+ir3 <- ggplot(means6, aes(x=Treatment, y=RDM, group=Cultivar, shape=Cultivar, colour=Cultivar)) 
+ir3 <- ir3 + geom_line(aes(), size=1)
+ir3 <- ir3 + geom_point(size=4, fill="white") 
+ir3 <- ir3 + scale_shape_manual(values=c(0,1,2,5))
+ir3 <- ir3 + scale_y_continuous(breaks = seq(0, 6, by =1), limits=c(0,6)) 
+ir3 <- ir3 + ylab("Mean Root Dry Matter (mg)") + xlab("Treatment") 
+ir3 <- ir3 + annotate("text", x= 0.9, y=5.5, size = 5, label ="bold(LSD)==0.45", parse=T)
+ir3 <- ir3 + geom_errorbar(aes(x=0.6, ymin=5.5-0.45/2, ymax=5.5+0.45/2), width=0.25, colour="#000000")
+ir3 <- ir3 + mytheme1
+ir3 <- ir3 + ggtitle("c)")
+ir3
+
+ir4 <- ggplot(means7, aes(x=Treatment, y=RDM, group=Cultivar, shape=Cultivar, colour=Cultivar)) 
+ir4 <- ir4 + geom_line(aes(), size=1)
+ir4 <- ir4 + geom_point(size=4, fill="white") 
+ir4 <- ir4 + scale_shape_manual(values=c(0,1,2,5,15,16,17,18))
+ir4 <- ir4 + scale_y_continuous(breaks = seq(0, 5, by =1), limits=c(0,5)) 
+ir4 <- ir4 + ylab("") + xlab("Treatment") 
+ir4 <- ir4 + annotate("text", x= 0.9, y=3.5, size = 5, label ="bold(LSD)==0.51", parse=T)
+ir4 <- ir4 + geom_errorbar(aes(x=0.6, ymin=3.5-0.51/2, ymax=3.5+0.51/2), width=0.25, colour="#000000")
+ir4 <- ir4 + mytheme1
+ir4 <- ir4 + ggtitle("d)")
+ir4
+
+#png("RDM_Exps_Int(LSD).png", width=1800, height=900, units="px", pointsize=20) 
+
+grid.arrange(ir1,ir2,ir3,ir4)
+
+dev.off()
+
+
+######################################################Int_PinkNod##########################################################################################################
+
+
+ipn1 <- ggplot(means4, aes(x=Treatment, y=PinkNod, group=Cultivar, shape=Cultivar, colour=Cultivar)) 
+ipn1 <- ipn1 + geom_line(aes(), size=1)
+ipn1 <- ipn1 + geom_point(size=4, fill="white") 
+ipn1 <- ipn1 + scale_shape_manual(values=c(0,1,2,5))
+ipn1 <- ipn1 + scale_color_brewer(palette = "Set1")
+ipn1 <- ipn1 + scale_y_continuous(breaks = seq(0, 12, by =4), limits=c(0,12)) 
+ipn1 <- ipn1 + ylab("Number of Pink Nodules") + xlab("") 
+ipn1 <- ipn1 + annotate("text", x= 0.9, y=11.5, size = 5, label ="bold(LSD)==0.99", parse=T)
+ipn1 <- ipn1 + geom_errorbar(aes(x=0.6, ymin=11.5-0.99/2, ymax=11.5+0.99/2), width=0.25, colour="#000000")
+ipn1 <- ipn1 + mytheme1
+ipn1 <- ipn1 + ggtitle("a)")
+ipn1
+
+ipn2 <- ggplot(means5, aes(x=Treatment, y=PinkNod, group=Cultivar, shape=Cultivar, colour=Cultivar)) 
+ipn2 <- ipn2 + geom_line(aes(), size=1)
+ipn2 <- ipn2 + geom_point(size=4, fill="white") 
+ipn2 <- ipn2 + scale_shape_manual(values=c(0,1,2,5))
+ipn2 <- ipn2 + scale_color_brewer(palette = "Dark2")
+ipn2 <- ipn2 + scale_y_continuous(breaks = seq(0, 12, by =4), limits=c(0,12)) 
+ipn2 <- ipn2 + ylab("") + xlab("") 
+ipn2 <- ipn2 + annotate("text", x= 0.9, y=9.5, size = 5, label ="bold(LSD)==0.81", parse=T)
+ipn2 <- ipn2 + geom_errorbar(aes(x=0.6, ymin=9.5-0.81/2, ymax=9.5+0.81/2), width=0.25, colour="#000000")
+ipn2 <- ipn2 + mytheme1
+ipn2 <- ipn2 + ggtitle("b)")
+ipn2
+
+ipn3 <- ggplot(means6, aes(x=Treatment, y=PinkNod, group=Cultivar, shape=Cultivar, colour=Cultivar)) 
+ipn3 <- ipn3 + geom_line(aes(), size=1)
+ipn3 <- ipn3 + geom_point(size=4, fill="white") 
+ipn3 <- ipn3 + scale_shape_manual(values=c(0,1,2,5))
+ipn3 <- ipn3 + scale_y_continuous(breaks = seq(0, 12, by =4), limits=c(0,12)) 
+ipn3 <- ipn3 + ylab("Number of Pink Nodules") + xlab("Treatment") 
+ipn3 <- ipn3 + annotate("text", x= 0.9, y=11, size = 5, label ="bold(LSD)==1.19", parse=T)
+ipn3 <- ipn3 + geom_errorbar(aes(x=0.6, ymin=11-1.19/2, ymax=11+1.19/2), width=0.25, colour="#000000")
+ipn3 <- ipn3 + mytheme1
+ipn3 <- ipn3 + ggtitle("c)")
+ipn3
+
+ipn4 <- ggplot(means7, aes(x=Treatment, y=PinkNod, group=Cultivar, shape=Cultivar, colour=Cultivar)) 
+ipn4 <- ipn4 + geom_line(aes(), size=1)
+ipn4 <- ipn4 + geom_point(size=4, fill="white") 
+ipn4 <- ipn4 + scale_shape_manual(values=c(0,1,2,5,15,16,17,18))
+ipn4 <- ipn4 + scale_y_continuous(breaks = seq(0, 12, by =4), limits=c(0,12)) 
+ipn4 <- ipn4 + ylab("") + xlab("Treatment") 
+ipn4 <- ipn4 + annotate("text", x= 0.9, y=11, size = 5, label ="bold(LSD)==1.24", parse=T)
+ipn4 <- ipn4 + geom_errorbar(aes(x=0.6, ymin=11-1.24/2, ymax=11+1.24/2), width=0.25, colour="#000000")
+ipn4 <- ipn4 + mytheme1
+ipn4 <- ipn4 + ggtitle("d)")
+ipn4
+
+#png("PinkNod_Exps_Int(LSD).png", width=1800, height=900, units="px", pointsize=20) 
+
+grid.arrange(ipn1,ipn2,ipn3,ipn4)
+
+dev.off()
+
+
+######################################################Int_PinkNod##########################################################################################################
+
+
+iwn1 <- ggplot(means4, aes(x=Treatment, y=WhiteNod, group=Cultivar, shape=Cultivar, colour=Cultivar)) 
+iwn1 <- iwn1 + geom_line(aes(), size=1)
+iwn1 <- iwn1 + geom_point(size=4, fill="white") 
+iwn1 <- iwn1 + scale_shape_manual(values=c(0,1,2,5))
+iwn1 <- iwn1 + scale_color_brewer(palette = "Set1")
+iwn1 <- iwn1 + scale_y_continuous(breaks = seq(0, 1.4, by =0.2), limits=c(0,1.4)) 
+iwn1 <- iwn1 + ylab("Number of White Nodules") + xlab("") 
+iwn1 <- iwn1 + annotate("text", x= 0.9, y=1.1, size = 5, label ="bold(LSD)==0.31", parse=T)
+iwn1 <- iwn1 + geom_errorbar(aes(x=0.6, ymin=1.1-0.31/2, ymax=1.1+0.31/2), width=0.25, colour="#000000")
+iwn1 <- iwn1 + mytheme1
+iwn1 <- iwn1 + ggtitle("a)")
+iwn1
+
+iwn2 <- ggplot(means5, aes(x=Treatment, y=WhiteNod, group=Cultivar, shape=Cultivar, colour=Cultivar)) 
+iwn2 <- iwn2 + geom_line(aes(), size=1)
+iwn2 <- iwn2 + geom_point(size=4, fill="white") 
+iwn2 <- iwn2 + scale_shape_manual(values=c(0,1,2,5))
+iwn2 <- iwn2 + scale_color_brewer(palette = "Dark2")
+iwn2 <- iwn2 + scale_y_continuous(breaks = seq(0, 0.5, by =0.1), limits=c(0,0.5)) 
+iwn2 <- iwn2 + ylab("") + xlab("") 
+iwn2 <- iwn2 + annotate("text", x= 0.9, y=0.4, size = 5, label ="bold(LSD)==0.15", parse=T)
+iwn2 <- iwn2 + geom_errorbar(aes(x=0.6, ymin=0.4-0.15/2, ymax=0.4+0.15/2), width=0.25, colour="#000000")
+iwn2 <- iwn2 + mytheme1
+iwn2 <- iwn2 + ggtitle("b)")
+iwn2
+
+iwn3 <- ggplot(means6, aes(x=Treatment, y=WhiteNod, group=Cultivar, shape=Cultivar, colour=Cultivar)) 
+iwn3 <- iwn3 + geom_line(aes(), size=1)
+iwn3 <- iwn3 + geom_point(size=4, fill="white") 
+iwn3 <- iwn3 + scale_shape_manual(values=c(0,1,2,5))
+iwn3 <- iwn3 + scale_y_continuous(breaks = seq(0, 8, by =2), limits=c(0,8)) 
+iwn3 <- iwn3 + ylab("Number of White Nodules") + xlab("Treatment") 
+iwn3 <- iwn3 + annotate("text", x= 0.9, y=7, size = 5, label ="bold(LSD)==0.93", parse=T)
+iwn3 <- iwn3 + geom_errorbar(aes(x=0.6, ymin=7-0.93/2, ymax=7+0.93/2), width=0.25, colour="#000000")
+iwn3 <- iwn3 + mytheme1
+iwn3 <- iwn3 + ggtitle("c)")
+iwn3
+
+iwn4 <- ggplot(means7, aes(x=Treatment, y=WhiteNod, group=Cultivar, shape=Cultivar, colour=Cultivar)) 
+iwn4 <- iwn4 + geom_line(aes(), size=1)
+iwn4 <- iwn4 + geom_point(size=4, fill="white") 
+iwn4 <- iwn4 + scale_shape_manual(values=c(0,1,2,5,15,16,17,18))
+iwn4 <- iwn4 + scale_y_continuous(breaks = seq(0, 0.5, by =0.1), limits=c(0,0.5)) 
+iwn4 <- iwn4 + ylab("") + xlab("Treatment") 
+iwn4 <- iwn4 + annotate("text", x= 0.9, y=0.4, size = 5, label ="bold(LSD)==0.15", parse=T)
+iwn4 <- iwn4 + geom_errorbar(aes(x=0.6, ymin=0.4-0.15/2, ymax=0.4+0.15/2), width=0.25, colour="#000000")
+iwn4 <- iwn4 + mytheme1
+iwn4 <- iwn4 + ggtitle("d)")
+iwn4
+
+#png("WhiteNod_Exps_Int(LSD).png", width=1800, height=900, units="px", pointsize=20) 
+
+grid.arrange(iwn1,iwn2,iwn3,iwn4)
+
+dev.off()
+
+
+
+
+############################################################All_Exp_data################################################################################################################ 
+
+
+#Combined Interaction plots
+
+means <- NULL
+means <- aggregate(Allexps, by=list(Allexps$Treatment,Allexps$Cultivar), FUN=mean)
+means$Treatment <- means$Group.1
+means$Cultivar <- means$Group.2
+
+
+means1 <- NULL
+means1 <- aggregate(Allexpsb, by=list(Allexpsb$Treatment,Allexpsb$Cultivar), FUN=mean)
+means1$Treatment <- means1$Group.1
+means1$Cultivar <- means1$Group.2
+
+
+#SDMsc
+
+#All TRT
+
+AS1 <- ggplot(means, aes(x=Treatment, y=SDMsc, group=Cultivar, shape=Cultivar, colour=Cultivar)) 
+AS1 <- AS1 + geom_line(aes(), size=1)
+AS1 <- AS1 + geom_point(size=4, fill="white") 
+AS1 <- AS1 + geom_hline(yintercept=1)
+AS1 <- AS1 + scale_shape_manual(values=c(0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17))
+AS1 <- AS1 + scale_y_continuous(breaks = seq(0, 400, by =1), labels = percent)   #limits=c(0,3.5))
+AS1 <- AS1 + ylab("Mean Shoot Dry Matter (mg)") + xlab("Treatment") 
+AS1 <- AS1 + mytheme
+AS1
+
+#Rhizobia Treatments
+
+AS2 <- ggplot(means1, aes(x=Treatment, y=SDMsc, group=Cultivar, shape=Cultivar, colour=Cultivar)) 
+AS2 <- AS2 + geom_line(aes(), size=1)
+AS2 <- AS2 + geom_point(size=4, fill="white") 
+AS2 <- AS2 + scale_shape_manual(values=c(0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17))
+AS2 <- AS2 + scale_y_continuous(breaks = seq(0, 3.5, by =0.5), limits=c(0,3.5))
+AS2 <- AS2 + ylab("Mean Shoot Dry Matter (mg)") + xlab("") 
+AS2 <- AS2 + mytheme
+AS2
+
+
+
+#SDM
+
+#jpeg("IntPlotALL(SDM).jpg", width=1000, height=700, units="px", pointsize=20, quality=800) 
+
+AS3 <- ggplot(means1, aes(x=Treatment, y=SDM, group=Cultivar, shape=Cultivar, colour=Cultivar)) 
+AS3 <- AS3 + geom_line(aes(), size=1)
+AS3 <- AS3 + geom_point(size=4, fill="white") 
+AS3 <- AS3 + scale_shape_manual(values=c(0,1,2,3,4,5,6,7,8,9,10,12,13,15,17,18,19))
+AS3 <- AS3 + scale_y_continuous(breaks = seq(0, 22, by =2), limits=c(0,22))
+AS3 <- AS3 + ylab("Mean Shoot Dry Matter (mg)") + xlab("") 
+AS3 <- AS3 + mytheme
+AS3
+
+dev.off()
+
+
+#RDM
+
+#jpeg("IntPlotALL(RDM).jpg", width=1250, height=800, units="px", pointsize=20, quality=800) 
+
+AR3 <- ggplot(means, aes(x=Treatment, y=RDM, group=Cultivar, shape=Cultivar, colour=Cultivar)) 
+AR3 <- AR3 + geom_line(aes(), size=1)
+AR3 <- AR3 + geom_point(size=4, fill="white") 
+AR3 <- AR3 + scale_shape_manual(values=c(0,1,2,3,4,5,6,7,8,9,10,12,13,15,17,18,19))
+AR3 <- AR3 + scale_y_continuous(breaks = seq(0, 10, by =1), limits=c(0,10))
+AR3 <- AR3 + ylab("Mean Root Dry Matter (mg)") + xlab("") 
+AR3 <- AR3 + mytheme
+AR3
+
+
+dev.off()
+
+
+#PinkNod
+
+#jpeg("IntPlotALL(PinkNod).jpg", width=1250, height=800, units="px", pointsize=20, quality=800) 
+
+APN1 <- ggplot(means1, aes(x=Treatment, y=PinkNod, group=Cultivar, shape=Cultivar, colour=Cultivar)) 
+APN1 <- APN1 + geom_line(aes(), size=1)
+APN1 <- APN1 + geom_point(size=4, fill="white") 
+APN1 <- APN1 + scale_shape_manual(values=c(0,1,2,3,4,5,6,7,8,9,10,12,13,15,17,18,19))
+APN1 <- APN1 + scale_y_continuous(breaks = seq(0, 11, by =1), limits=c(0,11))
+APN1 <- APN1 + ylab("Number of Pink Nodules") + xlab("") 
+APN1 <- APN1 + mytheme
+APN1
+
+dev.off()
+
+
+#WhiteNod
+
+#jpeg("IntPlotALL(WhiteNod).jpg", width=1250, height=800, units="px", pointsize=20, quality=800) 
+
+AWN1 <- ggplot(means1, aes(x=Treatment, y=WhiteNod, group=Cultivar, shape=Cultivar, colour=Cultivar)) 
+AWN1 <- AWN1 + geom_line(aes(), size=1)
+AWN1 <- AWN1 + geom_point(size=4, fill="white") 
+AWN1 <- AWN1 + scale_shape_manual(values=c(0,1,2,3,4,5,6,7,8,9,10,12,13,15,17,18,19))
+AWN1 <- AWN1 + scale_y_continuous(breaks = seq(0, 8, by =0.5), limits=c(0,8))
+AWN1 <- AWN1 + ylab("Number of White Nodules") + xlab("") 
+AWN1 <- AWN1 + mytheme
+AWN1
+
+dev.off()
+
+
+
+##########################################################Trait#Correlation#Graphs######################################################################
+
+
+#SDM_Raw_vs._No_of_PinkNod
+
+
+
+lm_eqn <- function(Allexpsb){
+  m <- lm(SDM ~ PinkNod, Allexpsb);
+  eq <- substitute(italic(y) == PinkNod + SDM %.% italic(PinkNod)*","~~italic(r)^2~"="~r2, 
+                   list(PinkNod = format(coef(m)[1], digits = 2), 
+                        SDM= format(coef(m)[2], digits = 2), 
+                        r2 = format(summary(m)$r.squared, digits = 3)))
+  as.character(as.expression(eq));                 
+}
+
+Allexpsb$group <- c(rep(2:2,4402))
+
+eq <- ddply(Allexpsb,.(TrtbyCult),lm_eqn)
+
+eqns <- by(Allexpsb, Allexpsb$TrtbyCult, lm_eqn)
+
+fit <- lm(SDM ~ PinkNod, data = Allexpsb)
+summary(fit)
+
+
+
+#png("Corplot.SDM-PinkNod(facets).png", width=1350, height=700, units="px", pointsize=24) 
+
+Cor1 <- ggplot(Allexpsb, aes(x=PinkNod, y=SDM), aes(Colour = Leaf.Size)) 
+Cor1 <- Cor1 + geom_point(aes(colour=Leaf.Size, shape = Leaf.Size))
+Cor1 <- Cor1 + geom_smooth(method="lm", colour = "red", linetype = "solid", se=FALSE)  
+Cor1 <- Cor1 + scale_color_manual("Leaf Size", values = c("#009E73","#56B4E9","#D55E00"), labels=c("Large Leaf", "Medium Leaf","Small Leaf"))
+Cor1 <- Cor1 + scale_shape_manual("Leaf Size", values =c(1,2,3), labels=c("Large Leaf", "Medium Leaf","Small Leaf"))
+Cor1 <- Cor1 + facet_wrap(~ TrtbyCult)
+Cor1 <- Cor1 + annotate("text", x=15, y=55, size = 4.5, label = eqns, parse=T)
+Cor1 <- Cor1 + annotate("rect", xmin = 1, xmax = 1, ymin = 1, ymax = 1, fill="white", colour="red")
+Cor1 <- Cor1 + scale_y_continuous(breaks = seq(0, 60, by =20), limits=c(0,60))
+Cor1 <- Cor1 + scale_x_continuous(breaks = seq(0, 30, by =5), limits=c(0,30))  
+Cor1 <- Cor1 + ylab("SDM Production (mg)") 
+Cor1 <- Cor1 + xlab("Number of Pink Nodules per Plant")
+Cor1 <- Cor1 + mytheme2
+Cor1 <- Cor1 + theme(legend.position = "bottom", legend.box = "horizontal")
+Cor1
+
+dev.off()
+
+
+
+
+
+
+
+
+
+###############################################################################################################################################################
+
+
+
+#SDM_Raw_vs._RDM_Raw
+
+
+
+lm_eqn <- function(Allexpsb){
+  m <- lm(SDM ~ RDM, Allexpsb);
+  eq <- substitute(italic(y) == RDM + SDM %.% italic(RDM)*","~~italic(r)^2~"="~r2, 
+                   list(RDM = format(coef(m)[1], digits = 2), 
+                        SDM= format(coef(m)[2], digits = 2), 
+                        r2 = format(summary(m)$r.squared, digits = 3)))
+  as.character(as.expression(eq));                 
+}
+
+Allexpsb$group <- c(rep(2:2,4402))
+
+eq <- ddply(Allexpsb,.(TrtbyCult),lm_eqn)
+
+eqns <- by(Allexpsb, Allexpsb$TrtbyCult, lm_eqn)
+
+fit <- lm(SDM ~ RDM, data = Allexpsb)
+summary(fit)
+
+
+#png("Corplot.SDM-RDM(facets).png", width=1450, height=700, units="px", pointsize=24) 
+
+Cor2 <- ggplot(Allexpsb, aes(x=RDM, y=SDM), aes(Colour = Leaf.Size)) 
+Cor2 <- Cor2 + geom_point(aes(colour=Leaf.Size, shape = Leaf.Size))
+Cor2 <- Cor2 + geom_smooth(method="lm", colour = "red", linetype = "solid", se=FALSE)  
+Cor2 <- Cor2 + scale_color_manual("Leaf Size", values = c("#009E73","#56B4E9","#D55E00"), labels=c("Large Leaf", "Medium Leaf","Small Leaf"))
+Cor2 <- Cor2 + scale_shape_manual("Leaf Size", values =c(1,2,3), labels=c("Large Leaf", "Medium Leaf","Small Leaf"))
+Cor2 <- Cor2 + facet_wrap(~ TrtbyCult)
+Cor2 <- Cor2 + annotate("text", x=20, y=56, size = 4.5, label = eqns, parse=T)
+Cor2 <- Cor2 + annotate("rect", xmin = 1, xmax = 1, ymin = 1, ymax = 1, fill="white", colour="red")
+Cor2 <- Cor2 + scale_y_continuous(breaks = seq(0, 60, by =20), limits=c(0,60))
+Cor2 <- Cor2 + scale_x_continuous(breaks = seq(0, 35, by =5), limits=c(0,35))  
+Cor2 <- Cor2 + ylab("SDM Production (mg)") 
+Cor2 <- Cor2 + xlab("RDM Production (mg)")
+Cor2 <- Cor2 + mytheme2
+Cor2 <- Cor2 + theme(legend.position = "bottom", legend.box = "horizontal")
+Cor2
+
+dev.off()
+
+
+
+
+###################################################################################################################################################################
+
+
+
+#RDM_Raw_vs._PinkNod
+
+
+lm_eqn <- function(Allexpsb){
+  m <- lm(RDM ~ PinkNod, Allexpsb);
+  eq <- substitute(italic(y) == PinkNod + RDM %.% italic(PinkNod)*","~~italic(r)^2~"="~r2, 
+                   list(PinkNod = format(coef(m)[1], digits = 2), 
+                        RDM= format(coef(m)[2], digits = 2), 
+                        r2 = format(summary(m)$r.squared, digits = 3)))
+  as.character(as.expression(eq));                 
+}
+
+Allexpsb$group <- c(rep(2:2,4402))
+
+eq <- ddply(Allexpsb,.(TrtbyCult),lm_eqn)
+
+eqns <- by(Allexpsb, Allexpsb$TrtbyCult, lm_eqn)
+
+fit <- lm(RDM ~ PinkNod, data = Allexpsb)
+summary(fit)
+
+
+#png("Corplot.RDM-PinkNod(facets).png", width=1450, height=700, units="px", pointsize=24) 
+
+Cor3 <- ggplot(Allexpsb, aes(x=PinkNod, y=RDM), aes(Colour = Leaf.Size)) 
+Cor3 <- Cor3 + geom_point(aes(colour=Leaf.Size, shape = Leaf.Size))
+Cor3 <- Cor3 + geom_smooth(method="lm", colour = "red", linetype = "solid", se=FALSE)  
+Cor3 <- Cor3 + scale_color_manual("Leaf Size", values = c("#009E73","#56B4E9","#D55E00"), labels=c("Large Leaf", "Medium Leaf","Small Leaf"))
+Cor3 <- Cor3 + scale_shape_manual("Leaf Size", values =c(1,2,3), labels=c("Large Leaf", "Medium Leaf","Small Leaf"))
+Cor3 <- Cor3 + facet_wrap(~ TrtbyCult)
+Cor3 <- Cor3 + annotate("text", x=15, y=35, size = 4.5, label = eqns, parse=T)
+Cor3 <- Cor3 + annotate("rect", xmin = 1, xmax = 1, ymin = 1, ymax = 1, fill="white", colour="red")
+Cor3 <- Cor3 + scale_y_continuous(breaks = seq(0, 40, by =10), limits=c(0,40))
+Cor3 <- Cor3 + scale_x_continuous(breaks = seq(0, 30, by =10), limits=c(0,30))  
+Cor3 <- Cor3 + ylab("RDM Production (mg)") 
+Cor3 <- Cor3 + xlab("Number of Pink Nodules per Plant")
+Cor3 <- Cor3 + mytheme2
+Cor3 <- Cor3 + theme(legend.position = "bottom", legend.box = "horizontal")
+Cor3
+
+dev.off()
+
+
+
+
+###############################################################################################################################################################
+
+
+#Print LSD value
+#S2 <- S2 + annotate("text", x=2, y=4, size = 3, label ="italic(LSD)==0.17977", parse=T)
+
+
+#Makeshift LSD bar
+
+#S2 <- S2 + annotate("pointrange", x = 1, y = 4, ymin = 4.18, ymax = 4-.18, colour = "black", size = 0.6)
+
+
+#Show length of LSD above and below Trib-TA1 treatment
+
+#S2 <- S2 + geom_hline(yintercept=1.18, colour = "red", size = 0.5)
+#S2 <- S2 + geom_hline(yintercept=1-.18, colour = "red", size = 0.5)
+
+
+#How to add a plot caption (i.e. reference etc.)
+
+#S2 <- S2 + labs(caption = "SK Weith Test Plot July 2018")
+
+
+
+
+#Key R points to remember!
+
+#NOTE: Can use command console to enter variables to determine lengths of vectors and determine sources of errors in the code
+
+#Note return = Enter!
+
+#Can use broom symbol in Plot window to clear plots
+
+
+
+# "" '' symbols are used to string lines of code = tell computer what vectors you want it to read
+
+#paste function = tell the computer to ignore the meaning and put ut together 
+
+
+
+#Hexadecimal code = #ffffffaa = first 6 letters equal the code of the colour you want - last two letters (aa) refer to transparency i.e. #00000000 = completely transparent
+
+#The first two digits are the level of red, the next two green, and the last two blue. 
+#The value for each ranges from 00 to FF in hexadecimal (base-16) notation, which is equivalent to 0 and 255 in base-10. 
+#For example, in the table below, "#FFFFFF" is white and "#990000" is a deep red.
+
+
+#png("SDMsc(ENFC).png", width=1950, height=750, units="px", pointsize=28) 
+
+s1a <- ggplot(Allexpsb, aes(x=TrtbyCult, y=SDMsc, colour = Leaf.Size, as.factor = Exp)) 
+s1a <- s1a + geom_jitter(aes(shape=Leaf.Size, color = Leaf.Size), size = 1.5, width=0.2, height=0) 
+s1a <- s1a + stat_boxplot(geom ='errorbar', colour = "black", size = 0.4) 
+s1a <- s1a + geom_boxplot(colour = "black", fill="#ffffff77", size = 0.4, outlier.colour="#00000000")
+s1a <- s1a + scale_color_manual("Leaf Size", values = c("#009E73","#56B4E9","#D55E00"), labels=c("Large Leaf", "Medium Leaf","Small Leaf"))
+s1a <- s1a + scale_shape_manual("Leaf Size", values =c(1,2,3), labels=c("Large Leaf", "Medium Leaf","Small Leaf"))
+s1a <- s1a + scale_y_continuous(breaks = seq(0, 400, by =1), labels = percent)  
+s1a <- s1a + stat_summary(fun.y=mean, colour="Black", geom="point", shape=18, size=3) 
+s1a <- s1a + guides(colour=guide_legend(title="Leaf Size")) 
+s1a <- s1a + ylab("Shoot DM relative to Tribute-TA1 mean (%)") + xlab("Treatment - White Clover Cultivar (Year of Introduction)") 
+s1a <- s1a + geom_hline(yintercept=1, colour = "black", size = 0.5)
+s1a <- s1a + annotate("text", x= 2, y=4, size = 5, label ="paste(bold(LSD)==18, '%')", parse=T)
+s1a <- s1a + geom_errorbar(aes(x=1, ymin=4-0.18/2, ymax=4+0.18/2), width=0.3, colour="#000000")
+s1a <- s1a + mytheme
+s1a <- s1a + theme(legend.position = "bottom", legend.box = "horizontal")
+s1a
+
+dev.off()
+
+
+
+
+lm_eqn <- function(Allexpsb){
+  m <- lm(SDM ~ RDM, Allexpsb);
+  eq <- substitute(italic(y) == RDM + SDM %.% italic(RDM)*","~~italic(r)^2~"="~r2, 
+                   list(RDM = format(coef(m)[1], digits = 2), 
+                        SDM= format(coef(m)[2], digits = 2), 
+                        r2 = format(summary(m)$r.squared, digits = 3)))
+  as.character(as.expression(eq));                 
+}
+
+Allexpsb$group <- c(rep(2:2,4402))
+
+eq <- ddply(Allexpsb,.(TrtbyCult),lm_eqn)
+
+eqns <- by(Allexpsb, Allexpsb$TrtbyCult, lm_eqn)
+
+fit <- lm(SDM ~ RDM, data = Allexpsb)
+summary(fit)
+
+

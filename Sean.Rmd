@@ -1,0 +1,140 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+
+```{r}
+library(ggplot2)
+df <- ToothGrowth
+df$dose <- as.factor(df$dose)
+head(df)
+
+#Function to calculate the mean and the standard deviation
+# for each group
+#+++++++++++++++++++++++++
+# data : a data frame
+# varname : the name of a column containing the variable
+#to be summariezed
+# groupnames : vector of column names to be used as
+# grouping variables
+
+data_summary <- function(data, varname, groupnames){
+  require(plyr)
+  summary_func <- function(x, col){
+    c(mean = mean(x[[col]], na.rm=TRUE),
+      sd = sd(x[[col]], na.rm=TRUE))
+  }
+  
+  data_sum<-ddply(data, groupnames, .fun=summary_func,
+                  varname)
+  data_sum <- rename(data_sum, c("mean" = varname))
+  return(data_sum)
+}
+ToothGrowth1<-ToothGrowth%>%
+        mutate(sdose=paste0(supp,dose))
+
+df2 <- data_summary(ToothGrowth1, varname="len", 
+                    groupnames=c("supp", "dose"))
+
+
+# Convert dose to a factor variable
+df2$dose=as.factor(df2$dose)
+head(df2)
+
+p<- ggplot(df2, aes(x=dose, y=len, fill=supp)) + 
+  geom_bar(stat="identity", color="black", 
+           position=position_dodge()) +
+  geom_errorbar(aes(ymin=len-sd, ymax=len+sd), width=.2,
+                position=position_dodge(.9))
+p
+
+
+```
+```{r}
+upDir <- "D:/R/Sean/"
+obsData <- "D:/R/Sean/"
+Allcv<- read.csv(paste0(obsData, "Allmeans_sc.csv"),
+               header = TRUE)
+str(Allcv)
+
+Allcva <- Allcv[which(Allcv$Treatment!="No Rhizobia, No N"),]
+Allcvb <- Allcva[which(Allcva$Treatment!="No Rhizobia, + N"),]
+
+
+CVtheme = theme(plot.margin = margin(1, 1, 1, 1.2, "cm"),
+                plot.title = element_text(lineheight=.4, face="bold", colour = "Black", size = 18),
+                legend.title = element_text(colour="black", size=18, face="bold"), 
+                legend.text = element_text(colour="black", size = 16),
+                panel.border=element_rect(colour="black",size=0.5, fill = NA),
+                axis.line = element_line(colour = "black", size = 0.5),
+                panel.grid.major.y = element_line(colour = "white", size = 0.2),
+                panel.grid.major.x = element_line(colour = "white", size = 0.2),
+                panel.background = element_rect(fill = "white", size = 0.5),
+                panel.spacing = unit(0.2, "lines"),
+                axis.title.x = element_text(face = "bold", colour = "Black", size = 18), 
+                axis.title.y = element_text(face = "bold", colour = "black", size = 18), 
+                axis.text = element_text(face = "bold", vjust = 0.5, size = 18),
+                axis.text.x  = element_text(angle=0, vjust=0, hjust = 0.35),
+                strip.text.x = element_text(size=18, angle=0, face = "bold"), 
+                strip.text.y = element_text(size=18, face="bold"), 
+                strip.background = element_rect(colour="black", fill="#FFFFFF"),
+                axis.ticks.x = element_line(colour = "black", size = 0.1),
+                axis.ticks.y = element_line(colour = "black", size = 0.1),
+                axis.ticks.length = unit(0.35, "lines"))
+
+
+df <- Allcv
+
+df$Cultivar <- as.factor(df$Cultivar)
+
+head(df)
+
+#Function to calculate the mean and the standard deviation
+# for each group
+
+# data : a data frame
+# varname : the name of a column containing the variable
+#to be summariezed
+# groupnames : vector of column names to be used as
+# grouping variables
+
+
+data_summary <- function(data, varname, groupnames){
+  require(plyr)
+  summary_func <- function(x, col){
+    c(mean = mean(x[[col]], na.rm=TRUE),
+      sd = sd(x[[col]], na.rm=TRUE))
+  }
+  data_sum<-ddply(data, groupnames, .fun=summary_func,
+                  varname)
+  data_sum <- rename(data_sum, c("mean" = varname))
+  return(data_sum)
+}
+
+data.frame<-Allcv%>%
+        dplyr::select(CVsc,Cultivar,Code)%>%
+        mutate(Cultivar=as.factor(Cultivar))
+
+
+df2 <- data_summary(data.frame, varname="CVsc", groupnames=c("Cultivar","Code"))
+                    
+ #Convert dose to a factor variable
+
+df2$Cultivar=as.factor(df2$Cultivar)
+df2$Treatment=as.factor(df2$Treatment)
+head(df2)
+
+
+
+p<- ggplot(df2, aes(x=Cultivar, y=CVsc, fill = Cultivar)) + 
+  geom_bar(stat="identity", color="black", 
+           position=position_dodge()) +
+  geom_errorbar(aes(ymin=CVsc-sd, ymax=CVsc+sd), width=.2,
+                position=position_dodge(.9)) +
+  CVtheme +
+  coord_flip()
+p
+```
+
+

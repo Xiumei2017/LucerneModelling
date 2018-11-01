@@ -412,7 +412,7 @@ ungroup.rowwise_df <- function(x) {
   x
 }
 
-uniTb <- unique(TtAll$Tb)
+uniTb <- unique(TtAll$Tbb)
 
 UniExp <- unique(ExpList_worked$ExpUnitCode)
 
@@ -421,7 +421,7 @@ df.all <- data.frame()
 for(i in 1:length(uniTb)){
   
   TtAll1 <- TtAll %>%
-  filter(Tb==uniTb[i])  
+  filter(Tbb==uniTb[i])  
   
 
 for(i in 1:length(UniExp))
@@ -460,7 +460,7 @@ tt.df <- Met.sub %>%
 
 summary(df.all)
 df.all
-write.csv(df.all,"D:/R/TtAll/df.all.CSV", row.names = FALSE)
+#write.csv(df.all,"D:/R/TtAll/df.all.CSV", row.names = FALSE)
 
 ```
 ```{r}
@@ -472,3 +472,88 @@ df.all1<-df.all%>%
   
 ```
 
+## Root remoblisation and respiration 
+
+- Calculate Tt sums for each method
+#### get raw data
+
+```{r}
+upDir <- "D:/R/"
+obsData <- "D:/R/CombinedData/"
+
+Rootdata.List_raw<- read.table(paste0(obsData, "Rootdata.list.txt"),
+                       header = TRUE)
+summary(Rootdata.List_raw)
+Rootdata.List_raw
+
+```
+###Expunicode
+
+```{r}
+Rootdata_worked <- Rootdata.List_raw %>%
+  mutate(StartDate=dmy(StartDate),MidDate=dmy(MidDate),FinishDate=dmy(FinishDate)) %>%
+  #mutate(SowingDate=as.factor(ifelse(SowingDate=="no","Sd_No",paste0("Sd_",SowingDate)))) %>% # assume this is typo to be fixed?
+  mutate(GrowthSeason=as.factor(paste0("Gs_",GrowthSeason))) %>% # creating more intuitive labels here
+  mutate(Rotation=as.factor(paste0("Rt_",Rotation))) %>%
+  mutate(ExpUnitCode=as.factor(paste0(Name,GrowthSeason,Rotation)))
+
+summary(Rootdata_worked)
+```
+
+  
+###Tt calculation 
+```{r}
+
+# add function to "turn-off" rowise() in dplyr. FIXME: maybe there's a better/simpler solution?
+ungroup.rowwise_df <- function(x) {
+  class(x) <- c( "tbl_df", "data.frame")
+  x
+}
+
+
+uniTb <- unique(TtAll$Tbb)
+
+UniExp <- unique(Rootdata_worked$ExpUnitCode)
+
+df.all.root <- data.frame()
+ 
+for(i in 1:length(uniTb)){
+  
+  TtAll1 <- TtAll %>%
+  filter(Tbb==uniTb[i])  
+  
+
+for(i in 1:length(UniExp))
+{
+
+ # print(i)
+  
+ Exp.sub <- Rootdata_worked %>%
+   filter(ExpUnitCode==UniExp[i]) 
+  
+ StDate <- ymd(Exp.sub$StartDate)
+ EndDate <- ymd(Exp.sub$FinishDate)
+  
+Met.sub<-TtAll1 %>%
+  filter(between(Clock.Today,StDate,EndDate))
+  
+
+tt.df <- Met.sub %>% 
+  rowwise() %>%
+  mutate(ExpName=Exp.sub$ExpUnitCode,
+         GrowthSeason=Exp.sub$GrowthSeason,
+         Rotation=Exp.sub$Rotation) %>%
+         ungroup.rowwise_df()%>%
+         mutate( Tt_beta_sum = cumsum(TTbeta),
+                  Tt_fick_sum =cumsum(TTfick),
+                  Tt_broken_sum= cumsum(TTbroken))%>%
+         mutate(Ppm=mean(Pp), Tmean=mean(mean))
+ df.all.root <- rbind(df.all.root,tt.df)
+
+}}
+
+summary(df.all.root)
+df.all.root
+write.csv(df.all.root,"D:/R/TtAll/df.all.root.CSV", row.names = FALSE)
+
+```

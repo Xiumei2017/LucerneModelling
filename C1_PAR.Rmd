@@ -26,7 +26,7 @@ library(reshape2)
 upDir <- "D:/R/CombinedData/"
 obsData <- "D:/R/CombinedData/"
 
-obsAll <- read.table(paste0(obsData, "ObsAll.txt"),
+obsAll <- read.table(paste0(obsData, "ObsAll1.txt"),
                    header = TRUE)
 obsA<- obsAll %>%
   mutate(StartDate=dmy(StartDate),MidDate=dmy(MidDate),FinishDate=dmy(FinishDate),Clock.Today=dmy(Clock.Today)) %>%
@@ -82,7 +82,7 @@ mytheme3<-theme(
 ```
 
 ###LAI and PAR
-```{r,fig.height=5, fig.width=10}
+```{r,fig.height=4, fig.width=8}
 ObsLP<-ObsPAR%>%
   unique()%>%
   dplyr::filter(Collection!="2010_2012")%>%
@@ -102,25 +102,33 @@ StartGrazing1<-StartGrazing %>%
   mutate(GrowthRotation= as.factor(paste0(GrowthSeason,Rotation)))
 ObsPL1<- merge(StartGrazing1,ObsPL,by=c("Name","Collection","GrowthRotation"))%>%
  dplyr::filter(Name!="Iversen_121DefoliationLLFDFD5"|GrowthSeason.x!="2")%>%
-  dplyr::filter(Name!="Iversen_121DefoliationLLFDFD5"|GrowthRotation!="13")
+  dplyr::filter(Name!="Iversen_121DefoliationLLFDFD5"|GrowthRotation!="13")%>%
+  dplyr::filter(Name!="Iversen_121DefoliationLLFDFD5"|GrowthRotation!="33")%>%
+  dplyr::filter(ID!="E3ILL"|GrowthRotation!="14")
 
-test1 <- function(x) {1-exp(-0.76*x)}
+test1 <- function(x) {1-exp(-0.81*x)}
 stat_function(fun = test1)
  
 ObsPL1%>%
   dplyr::filter(Stage=="Regrowth")%>%
-  ggplot(aes(x=Observed.x,y=Observed.y,color=ID,label=GrowthRotation))+theme_bw()+ylab("Franctional radiation interception")+xlab(bquote(bold('LAI ('*m^2~m^-2*')')))+
+  ggplot(aes(x=Observed.x,y=Observed.y,shape=ID,label=GrowthRotation))+theme_bw()+ylab("Franctional radiation interception")+xlab(bquote(bold('LAI ('*m^2~m^-2*')')))+
   geom_point(size=2)+theme(legend.title = element_blank())+
-  facet_wrap(~Stage,ncol = 2)+
+  #geom_vline(xintercept = 3.45, linetype="dotted", color = "black", size=1.2)+
+   geom_segment(aes(x = 3.6, y = 0, xend = 3.6, yend = 0.95))+
+  #geom_segment(aes(x = 0, y = 0.95, xend = 3.45, yend = 0.95))+
+  geom_segment(aes(x = 4.25, y = 0.2, xend = 3.6, yend = 0),
+                  arrow = arrow(length = unit(0.5, "cm")))+
+  #facet_wrap(~Stage,ncol = 2)+
   stat_function(fun = test1,color="black",size=1)+
   theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
  theme(axis.title.y=element_text(face="bold",colour="black",size = 12))+mytheme3+
- annotate("text", x=1.5, y=1, size = 5, label ="paste(y == 1-exp(-0.76*x),~~R^2==0.93 )", parse=T)
+ annotate("text", x=1.4, y=1, size = 5, label ="paste(y == 1-exp(-0.81*x),~~R^2==0.96 )", parse=T)+
+annotate("text", x=4.5, y=0.25, size = 5, label ="paste(LAIcrit==3.6)", parse=T)
   #ggsave("D:/R/Pictures/PAR/Regrowth.png", width=8, height=5  , dpi=500) 
 ```
 ###seedling crop
 ```{r,fig.height=5, fig.width=10}
-test1 <- function(x) {1-exp(-0.61*x)}
+test1 <- function(x) {1-exp(-0.71*x)}
 stat_function(fun = test1)
  
 ObsPL1%>%
@@ -129,7 +137,7 @@ ObsPL1%>%
   geom_point(size=2)+
   facet_wrap(~Stage,ncol = 2)+
   stat_function(fun = test1,color="black",size=1)+mytheme3+theme(legend.title = element_blank())+
- annotate("text", x=1.5, y=1, size = 5, label ="paste(y == 1-exp(-0.61*x),~~R^2==0.90 )", parse=T)
+ annotate("text", x=1.5, y=1, size = 5, label ="paste(y == 1-exp(-0.76*x),~~R^2==0.90 )", parse=T)
   #ggsave("D:/R/Pictures/PAR/Seedling.png", width=8, height=5  , dpi=500) 
 ```
 
@@ -155,11 +163,11 @@ eqs2 <- ddply(Exc.K,.(Stage),lm_eqn3)
 
 
 Exc.K%>%
-  ggplot(aes(x=Observed.x,y=lnFI,color=Name,label=GrowthRotation,shape=Stage))+geom_text()+theme_bw()+xlab("ln(I/IO)")+ylab(bquote(bold('LAI ('*m^2~m^-2*')')))+
+  ggplot(aes(x=Observed.x,y=lnFI,color=Name,label=GrowthRotation,shape=Stage))+geom_text()+theme_bw()+ylab("ln(I/IO)")+xlab(bquote(bold('LAI ('*m^2~m^-2*')')))+
   #geom_point(size=2)+
    geom_smooth(method = "lm", se = TRUE,linetype=1 , colour="black")+
   facet_wrap(~Stage,ncol = 2)+
-  mytheme2+
+  mytheme3+
   geom_text(data = eqs2, aes(y =0, x = 3.5, label = V1), 
           color = 'black',  parse = TRUE)+
   theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
@@ -182,7 +190,7 @@ m.e.s<-nls(Observed.y~1-I(exp(1)^(a*Observed.x)), data=Exc.KS,start=list(a=1), t
 summary(m.e.s)$coefficients
 plot(m.e.s)
 
-R2=1-RSS/TSS
+#R2=1-RSS/TSS
 
 RSS.P<-sum(residuals(m.e.s)^2)
 TSS<-sum((Exc.KS$Observed.y-mean(Exc.KS$Observed.y))^2)
@@ -323,6 +331,7 @@ ggplot(result, aes(x = x, y = fitted)) +
 ```
 ###PAR and acculmated PARi
 ##PAR
+###dataframe format
 
 ```{r}
 TtA1<-TtA%>%
@@ -434,6 +443,7 @@ obsTDM<-ObsL.Raw%>%
   
 RUE.RAW<-merge(obsTDM,PARi.df1,by=c("Clock.Today","Name","ExpUnitCode"))
 ```
+
 ###check the intepolate function
 ```{r,fig.height=5, fig.width=8}
 PARi.df2<-PARi.df1%>%

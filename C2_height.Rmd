@@ -117,7 +117,7 @@ ggsave("D:/R/Pictures/C5/Height/Iversen_91DefoliationLSHeight.png", width=8, hei
   scale_y_continuous(breaks = seq(0, 800, by =200), limits=c(0,700))+
  geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="blue")+
  facet_grid(GrowthSeason2~Rotation2)+mytheme1
-ggsave("D:/R/Pictures/C5/Height/Iversen_91DefoliationSLHeight.png", width=8, height=6, dpi=500)
+#ggsave("D:/R/Pictures/C5/Height/Iversen_91DefoliationSLHeight.png", width=8, height=6, dpi=500)
 
 ```
 ###SS
@@ -131,7 +131,7 @@ ggsave("D:/R/Pictures/C5/Height/Iversen_91DefoliationSLHeight.png", width=8, hei
   scale_y_continuous(breaks = seq(0, 500, by =200), limits=c(0,500))+
  geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="blue")+
  facet_grid(GrowthSeason2~Rotation2)+mytheme1
-ggsave("D:/R/Pictures/C5/Height/Iversen_91DefoliationSSHeight.png", width=8, height=6, dpi=500)
+#ggsave("D:/R/Pictures/C5/Height/Iversen_91DefoliationSSHeight.png", width=8, height=6, dpi=500)
 
 ```
 
@@ -147,7 +147,7 @@ ggsave("D:/R/Pictures/C5/Height/Iversen_91DefoliationSSHeight.png", width=8, hei
   scale_y_continuous(breaks = seq(0, 800, by =200), limits=c(0,700))+
  geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="blue")+
  facet_grid(GrowthSeason2~Rotation2)+mytheme1
-ggsave("D:/R/Pictures/C5/Height/Iversen_121DefoliationSSFD5Height.png", width=8, height=6, dpi=500)
+#ggsave("D:/R/Pictures/C5/Height/Iversen_121DefoliationSSFD5Height.png", width=8, height=6, dpi=500)
 
 ```
 ###Heightchron
@@ -163,34 +163,123 @@ obsDH2<-obsDH%>%
 obsDH0<-rbind(obsDH1,obsDH2)
 
  Heightchron <- obsDH0%>%
-  dplyr::filter(Defoliation.x!="HH")%>%
+  #dplyr::filter(Defoliation.x!="SS")%>%
   mutate(GrowthSeason=as.factor(GrowthSeason.x),Rotation=as.factor(Rotation.x))%>%
-  group_by(Name,GrowthSeason,Rotation,Tmean,Ppm,Tb,ID) %>%
+  mutate(GrowthRotation=as.factor(paste0(GrowthSeason,Rotation)))%>%
+  group_by(Name,GrowthSeason,Rotation,Tmean,Ppm,Tb,ID,GrowthRotation) %>%
     do(mod = lm(Tt_broken_sum~Observed,data=.))%>%
   mutate(HeightchronSS= summary(mod)$coeff[2])%>%
   dplyr::select(-mod)
  
  
  HeightchronSS <- obsDH0%>%
-  dplyr::filter(Defoliation.x!="SS")%>%
+  dplyr::filter(Defoliation.x=="SS")%>%
   mutate(GrowthSeason=as.factor(GrowthSeason.x),Rotation=as.factor(Rotation.x))%>%
-  group_by(Name,GrowthSeason,Rotation,Tmean,Ppm,Tb,ID) %>%
+   mutate(GrowthRotation=as.factor(paste0(GrowthSeason,Rotation)))%>%
+  group_by(Name,GrowthSeason,Rotation,Tmean,Ppm,Tb,ID,GrowthRotation) %>%
     do(mod = lm(Tt_broken_sum~Observed,data=.))%>%
   mutate(HeightchronS= summary(mod)$coeff[2])%>%
   dplyr::select(-mod)
   
 ```
 
-```{r}
-HeightchronSS%>%
-  mutate(GrowthRotation=as.factor(paste0(GrowthSeason,Rotation)))%>%
-  filter(GrowthRotation!="29")%>%
-  ggplot(aes(x=Ppm, y=HeightchronS,colour=factor(ID),label=GrowthRotation))+geom_text()+
-  #geom_point(size=2)+
-  theme_bw()+xlab("Photoperiod (h)")+ylab(bquote(bold('Heightchron ('*'°Cd'~'mm'^-1*')')))+
- geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="blue")+
- mytheme3+
-   theme(legend.title=element_blank(),legend.position = "blank")
+##load Rotation and Growth seasoN
+###Heightchorn for all experiments
+```{r,fig.height=4, fig.width=8}
+library(plyr)
+phyll <- "D:\\R\\"
+StartGrazing <- read.table(paste0(phyll, "ExperimentList.txt"), 
+                      header = TRUE)
+StartGrazing1<-StartGrazing %>%
+  mutate(GrowthRotation= as.factor(paste0(GrowthSeason,Rotation)))
+HchronPp<- merge(StartGrazing1,Heightchron ,by=c("Name","GrowthRotation"))
+
+my.formula  <- function(HchronPp){
+  my.formula <- HeightchronSS~ poly(Ppm, 2, raw = TRUE)
+  m <- lm(my.formula, HchronPp)
+  my.eq <- as.character(signif(as.polynomial(coef(m)), 2))
+  label.text <- paste("y","'='",paste(gsub(y, "~italic(x)",my.eq, fixed = TRUE)),
+              paste("italic(R)^2",format(summary(m)$r.squared, digits = 2), 
+                    sep = "~`=`~"),
+                    sep = "~~~~")
+  as.character(as.expression(label.text));                 
+}
+
+my.eqs <- ddply(HchronPp,.(Stage),my.formula)
+
+b<-HchronPp%>%
+  ggplot(aes(x=Ppm, y=HeightchronSS, colour=factor(ID),label=GrowthRotation))+geom_text()+theme_bw()+xlab("Mean photoperiod (h)")+ylab(bquote(bold('Heightchron ('*'°Cd'~'mm'^-1*')')))+
+  geom_smooth(method = "lm", se = TRUE, formula=y ~ poly(x, 2, raw=TRUE), colour="darkgrey")+
+  facet_wrap(~Stage,ncol = 2)+mytheme3+theme(legend.title = element_blank())
+
+b+geom_text(data = my.eqs, aes(x = 13.7, y = 6, label = V1), 
+          color = 'black',  parse = TRUE, size=5)
+detach(package:plyr)
+#ggsave("D:/R/Pictures/C5/Height/Heightchornall.png", width=8, height=4, dpi=500)
+```
+###heightchron for SS cutting treatment only 
+
+```{r,fig.height=4, fig.width=8}
+library(plyr)
+phyll <- "D:\\R\\"
+StartGrazing <- read.table(paste0(phyll, "ExperimentList.txt"), 
+                      header = TRUE)
+StartGrazing1<-StartGrazing %>%
+  mutate(GrowthRotation= as.factor(paste0(GrowthSeason,Rotation)))
+HchronPpss<- merge(StartGrazing1,HeightchronSS ,by=c("Name","GrowthRotation"))
+
+my.formula  <- function(HchronPpss){
+  my.formula <- HeightchronS ~ poly(Ppm, 2, raw = TRUE)
+  m <- lm(my.formula, HchronPpss)
+  my.eq <- as.character(signif(as.polynomial(coef(m)), 2))
+  label.text <- paste("y","'='",paste(gsub(y, "~italic(x)",my.eq, fixed = TRUE)),
+              paste("italic(R)^2",format(summary(m)$r.squared, digits = 2), 
+                    sep = "~`=`~"),
+                    sep = "~~~~")
+  as.character(as.expression(label.text));                 
+}
+
+my.eqs <- ddply(HchronPpss,.(Stage),my.formula)
+
+b<-HchronPpss%>%
+  ggplot(aes(x=Ppm, y=HeightchronS, colour=factor(ID),label=GrowthRotation))+geom_text()+theme_bw()+xlab("Mean photoperiod (h)")+ylab(bquote(bold('Heightchron ('*'°Cd'~'mm'^-1*')')))+
+  geom_smooth(method = "lm", se = TRUE, formula=y ~ poly(x, 2, raw=TRUE), colour="darkgrey")+
+  facet_wrap(~Stage,ncol = 2)+mytheme3+theme(legend.title = element_blank())
+
+b+geom_text(data = my.eqs, aes(x = 13.7, y = 6, label = V1), 
+          color = 'black',  parse = TRUE, size=5)
+detach(package:plyr)
+#ggsave("D:/R/Pictures/C5/Height/HeightchornSS.png", width=8, height=4, dpi=500)
+```
+
+####base photoperiod
+
+```{r,fig.height=4, fig.width=8}
+library(plyr)
+Pb<-HchronPp%>%
+   mutate(pb=1/HeightchronSS)
+
+lm_eqn <- function(Pb){
+  m <- lm(pb ~ Ppm, Pb);
+  eq <- substitute(italic(y) == Ppm + pb %.% italic(Ppm)*","~~italic(R)^2~"="~r2, 
+                   list(Ppm = format(coef(m)[1], digits = 2), 
+                         pb = format(coef(m)[2], digits = 2), 
+                       r2 = format(summary(m)$r.squared, digits = 3)))
+  as.character(as.expression(eq));                 
+}
+
+eqns <- ddply(Pb,.(Stage),lm_eqn)
+
+Pb%>%
+  ggplot(aes(x=Ppm, y=pb, colour=factor(ID),label=GrowthRotation))+geom_text()+theme_bw()+xlab("Mean photoperiod (h)")+ylab("1/y")+
+  geom_smooth(method = "lm", se = TRUE,  colour="darkgrey")+
+  facet_wrap(~Stage,ncol = 2)+mytheme3+theme(legend.title = element_blank())+
+  scale_x_continuous(breaks = seq(10, 17, by =3), limits=c(10,17))+
+  geom_text(data = eqns, aes(x = 12, y = 2, label = V1), 
+          color = 'black',  parse = TRUE, size=5)
+detach(package:plyr)
+#ggsave("D:/R/Pictures/Height/Heightchorny1.png", width=8, height=4, dpi=500)
+#ggsave("D:/R/Pictures/C5/Height/HeightchornALL.png", width=8, height=4, dpi=500)
 ```
 
 ```{r,fig.height=4, fig.width=6}
@@ -590,19 +679,20 @@ obsDHeight4<-obsDH0%>%
 simD4a<-simD%>%
   mutate(Clock.Today = ymd_hms(Clock.Today))%>%
   dplyr::filter(Variable=="Height")%>%
-  dplyr::filter(Name=="Iversen_121DefoliationLLFDFD5")%>%
+  dplyr::filter(Name=="Iversen_121DefoliationSSFDFD5")%>%
   dplyr::filter(Clock.Today<"2015-01-06")
 
 
 simD4b<-simD%>%
   mutate(Clock.Today = ymd_hms(Clock.Today))%>%
   dplyr::filter(Variable=="Height")%>%
-  dplyr::filter(Name=="Iversen_121DefoliationLLFDFD5")%>%
+  dplyr::filter(Name=="Iversen_121DefoliationSSFDFD5")%>%
   dplyr::filter(Clock.Today>"2015-01-30")
 simD4<-rbind(simD4a,simD4b)
   
 str(simD4)
 simD4%>%
+  dplyr::filter(Clock.Today>"2015-01-31")%>%
 ggplot(aes(x=Clock.Today,y=Predicted))+geom_line(size=1)+theme_bw()+
   facet_wrap(~ID,ncol = 1)+
   geom_point(data=obsDHeight4, aes(x=Clock.Today1, y=Observed),colour="green",size=3)+
@@ -623,8 +713,8 @@ ggplot(aes(x=Clock.Today,y=Predicted))+geom_line(size=1)+theme_bw()+
      strip.text.y = element_text(size=14, face="plain"),
      legend.title = element_text(colour="black", size=14, face="bold"),
      axis.text = element_text(face = "bold", vjust = 0.5, size = 14))+
-   annotate("text", x=ymd_hms("2016-07-24 12:00:00"), y=800, size = 5, label ="paste(R_RMSD == 30,'%')", parse=T)
-   #ggsave("D:/R/Pictures/C5/Height/Iversen_121DefoliationSSFDFD5Height1.png", width=8, height=4, dpi=500)
+   annotate("text", x=ymd_hms("2016-07-24 12:00:00"), y=600, size = 5, label ="paste(R_RMSD == 30,'%')", parse=T)
+   ggsave("D:/R/Pictures/C5/Height/Iversen_121DefoliationSSFDFD5Height1.png", width=8, height=4, dpi=500)
   
   
 

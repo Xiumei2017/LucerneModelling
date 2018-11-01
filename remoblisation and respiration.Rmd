@@ -1,0 +1,1214 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+library(dplyr)
+library(ggplot2)
+library(lubridate)   
+library(hydroGOF)
+library(xtable)
+library(knitr)
+library(tidyr)
+library(RSQLite)
+library(agricolae)
+library(scales)
+library(zoo)
+library(polynom)
+
+```
+## lode observed data
+```{r}
+upDir <- "D:/R/CombinedData/"
+obsData <- "D:/R/CombinedData/"
+
+obsAll <- read.table(paste0(obsData, "ObsAll1.txt"),
+                   header = TRUE)
+obsA4<- obsAll %>%
+  dplyr::filter(Collection=="2014_2018")%>%
+  mutate(StartDate=dmy(StartDate),MidDate=dmy(MidDate),FinishDate=dmy(FinishDate),Clock.Today=dmy(Clock.Today)) %>%
+  #mutate(SowingDate=as.factor(ifelse(SowingDate=="no","Sd_No",paste0("Sd_",SowingDate)))) %>% # assume this is typo to be fixed?
+  mutate(GrowthSeason1=as.factor(paste0("Gs_",GrowthSeason))) %>% # creating more intuitive labels here
+  mutate(Rotation1=as.factor(paste0("Rt_",Rotation))) %>%
+  mutate(ExpUnitCode=as.factor(paste0(Name,GrowthSeason1,Rotation1))) %>%
+  mutate(Clock.Today1 = as.POSIXct(paste(Clock.Today,Time),format="%Y-%m-%d %H:%M:%S"))%>%
+  mutate(GrowthSeason2=as.factor(paste0("Y",GrowthSeason,"(",Period,")"))) %>%
+  mutate(Rotation2=as.factor(ifelse(Rotation=="1",paste0("S",Rotation),paste0("R",Rotation))))
+ 
+
+obsA3<- obsAll %>%
+  dplyr::filter(Collection=="2002_2004")%>%
+  mutate(StartDate=dmy(StartDate),MidDate=dmy(MidDate),FinishDate=dmy(FinishDate),Clock.Today=dmy(Clock.Today)) %>%
+  #mutate(SowingDate=as.factor(ifelse(SowingDate=="no","Sd_No",paste0("Sd_",SowingDate)))) %>% # assume this is typo to be fixed?
+  mutate(GrowthSeason1=as.factor(paste0("Gs_",GrowthSeason))) %>% # creating more intuitive labels here
+  mutate(Rotation1=as.factor(paste0("Rt_",Rotation))) %>%
+  mutate(ExpUnitCode=as.factor(paste0(Name,GrowthSeason1,Rotation1))) %>%
+  mutate(Clock.Today1 = as.POSIXct(paste(Clock.Today,Time),format="%Y-%m-%d %H:%M:%S"))%>%
+  mutate(GrowthSeason2=as.factor(paste0("Y",GrowthSeason,"(",Period,")"))) %>%
+  mutate(Rotation2=as.factor(paste0("R",Rotation)))
+  
+obsAR<-rbind(obsA3,obsA4)
+summary(obsAR)
+ obsAR
+
+
+```
+```{r}
+upDir <- "D:/R/CombinedData/"
+obsData <- "D:/R/CombinedData/"
+
+obsSRF <- read.table(paste0(obsData, "Defoliation.txt"),
+                   header = TRUE)
+obsDS<- obsSRF %>%
+  dplyr::filter(FD=="FD5")%>%
+  mutate(StartDate=dmy(StartDate),MidDate=dmy(MidDate),FinishDate=dmy(FinishDate),Clock.Today=dmy(Clock.Today))%>%
+  mutate(GrowthSeason1=as.factor(paste0("Gs_",GrowthSeason))) %>% # creating more intuitive labels here
+  mutate(Rotation1=as.factor(paste0("Rt_",Rotation))) %>%
+  mutate(ExpUnitCode=as.factor(paste0(Name,GrowthSeason1,Rotation1))) %>%
+  mutate(Clock.Today1 = as.POSIXct(paste(Clock.Today,Time),format="%Y-%m-%d %H:%M:%S"))%>%
+  mutate(GrowthSeason2=as.factor(paste0("Y",GrowthSeason,"(",Period,")"))) %>%
+ mutate(Rotation2=as.factor(paste0("R",Rotation)))%>%
+   dplyr::filter(Variable==c("shootbiomass"))
+ obsDS
+ obsDR<- obsSRF %>%
+  dplyr::filter(FD=="FD5")%>%
+  mutate(StartDate=dmy(StartDate),MidDate=dmy(MidDate),FinishDate=dmy(FinishDate),Clock.Today=dmy(Clock.Today))%>%
+  mutate(GrowthSeason1=as.factor(paste0("Gs_",GrowthSeason))) %>% # creating more intuitive labels here
+  mutate(Rotation1=as.factor(paste0("Rt_",Rotation))) %>%
+  mutate(ExpUnitCode=as.factor(paste0(Name,GrowthSeason1,Rotation1))) %>%
+  mutate(Clock.Today1 = as.POSIXct(paste(Clock.Today,Time),format="%Y-%m-%d %H:%M:%S"))%>%
+  mutate(GrowthSeason2=as.factor(paste0("Y",GrowthSeason,"(",Period,")"))) %>%
+ mutate(Rotation2=as.factor(paste0("R",Rotation)))%>%
+   dplyr::filter(Variable==c("RootWt"))
+ obsDSR<-rbind(obsDS,obsDR)
+ 
+ write.csv( obsDSR,"D:/R/CombinedData/obsDSR.csv", row.names = FALSE) 
+```
+## obs Vs Pre for each experiment
+```{r}
+upDir <- "D:/R/"
+obsData <- "D:/R/TtAll/"
+
+Tt<- read.table(paste0(obsData, "df.all.txt"),
+               header = TRUE)
+TtA <- Tt %>% mutate(Clock.Today=dmy(Clock.Today), ExpUnitCode=as.factor(ExpName))
+TtA
+ObsRS1 <-merge(obsDSR,TtA,by=c("Clock.Today","ExpUnitCode")) %>%
+  mutate(GrowthRotation=as.factor(paste0(GrowthSeason.x,Rotation.x)))%>%
+  dplyr::filter(Water.x=="irr")%>%
+  dplyr::filter(Defoliation.x=="LL")%>%
+  dplyr::filter(Variable=="RootWt"|Variable=="shootbiomass")
+  
+summary(ObsRS1)
+```
+###Combine observed data with Tt
+```{r}
+upDir <- "D:/R/"
+obsData <- "D:/R/TtAll/"
+
+Tt<- read.table(paste0(obsData, "df.all.txt"),
+               header = TRUE)
+TtA <- Tt %>% mutate(Clock.Today=dmy(Clock.Today), ExpUnitCode=as.factor(ExpName))
+TtA
+ObsRS1 <-merge(obsAR,TtA,by=c("Clock.Today","ExpUnitCode")) %>%
+  mutate(GrowthRotation=as.factor(paste0(GrowthSeason.x,Rotation.x)))%>%
+  dplyr::filter(Water.x=="irr")%>%
+  dplyr::filter(Defoliation.x=="LL")%>%
+  dplyr::filter(Variable=="RootWt"|Variable=="shootbiomass")%>%
+   mutate(Clock.Today1 = as.POSIXct(paste(Clock.Today,Time),format="%Y-%m-%d %H:%M:%S"))
+  
+summary(ObsRS1)
+```
+```{r}
+mytheme1<-theme(
+     panel.spacing=unit(.01, "lines"),
+     panel.border = element_rect(colour = "black",size=1), 
+     panel.grid.major = element_blank(),
+     panel.grid.minor = element_blank(),
+     axis.line = element_line(colour = "black",size = 1),
+     axis.text.x = element_text(face = "plain", color = "black", size = 14,angle=90, vjust=0.5, hjust = 1),
+     axis.text.y = element_text(face = "plain", color = "black", size = 14),
+     axis.title.x=element_text(face="bold",colour="black",size = 14),
+     axis.title.y=element_text(face="bold",colour="black",size = 14),
+     strip.background = element_rect(colour = "black", fill = "white",size=1),
+     strip.text.x = element_text(size=14, angle=0, face = "plain"), 
+     strip.text.y = element_text(size=14, face="plain"),
+     legend.title = element_text(colour="black", size=14, face="bold"),
+     axis.text = element_text(face = "bold", vjust = 0.5, size = 14))
+
+mytheme3<-theme(
+     legend.title = element_text(colour="black", size=14, face="bold"),
+     legend.text = element_text(colour="black", size = 14,face="plain"),
+     panel.spacing=unit(.01, "lines"),
+     panel.border = element_rect(colour = "black",size=1), 
+     panel.grid.major = element_blank(),
+     panel.grid.minor = element_blank(),
+     axis.line = element_line(colour = "black",size = 1),
+     axis.text.x = element_text(face = "plain", color = "black", size = 14, vjust=0.5, hjust = 1),
+     axis.text.y = element_text(face = "plain", color = "black", size = 14),
+     axis.title.x=element_text(face="bold",colour="black",size = 14),
+     axis.title.y=element_text(face="bold",colour="black",size = 14),
+     strip.background = element_rect(colour = "black", fill = "white",size=1),
+     strip.text.x = element_text(size=14, angle=0, face = "plain"), 
+     strip.text.y = element_text(size=14, face="plain"),
+     axis.text = element_text(face = "bold", vjust = 0.5, size = 14),
+    legend.position = "right", legend.box = "vertical")
+```
+
+## Load simulated database
+## create function to read data (Justin's script)
+```{r LoadSim, include = FALSE, echo=FALSE, warning=FALSE, fig.height=8, fig.width=8}
+GetApsimNGTable <- function(dbLoc, table) 
+{
+  connection <- dbConnect(SQLite(), dbname = dbLoc, flags = SQLITE_RW)
+  table <- dbReadTable(connection, table, row.names=NULL)
+  dbDisconnect(connection)
+  return(table)
+}
+
+```
+# load address of db
+# set table to be enquierd
+# load table into an object
+# make it a dataframe
+# change date to corerct format 
+# explore the df
+```{r}
+db.address <- "D:\\APSIMX2\\Prototypes\\Lucerne\\LucerneValidation.db"
+tableName<-"Report"
+DbTable <- GetApsimNGTable(db.address,tableName)
+df <- as.data.frame(DbTable)
+df$Clock.Today <- ymd_hms(df$Clock.Today)
+str(df)
+summary(df)
+head(df) # simulation results
+```
+
+# get sim names (different table)
+# merge names 
+# remove unecessary variables
+```{r}
+simNameDf <- as.data.frame (GetApsimNGTable(db.address,"_Simulations"))
+myDb <- merge(df, simNameDf, by.x= c("SimulationID"), by.y= c("ID"))
+
+
+#str(myDb)
+head(myDb)
+summary(myDb)
+
+# myDb %>%
+#   dplyr::select(Name) %>%
+#   unique()
+
+```
+
+## Prepare merge
+## Add info for merging
+## select variables that are for comparing with observed data
+
+```{r}
+simD <- myDb %>%
+  dplyr::select(Name,Clock.Today,LAI,SWC,Height,shootbiomass,RootWt, StemWt, LeafWt,NodeNumber) %>%
+  tidyr::gather("Variable","Predicted",LAI:NodeNumber) %>%
+  mutate(Name = as.factor(Name)) %>%
+  mutate(Variable = as.factor(Variable)) %>%
+  mutate(Clock.Today = ymd_hms(Clock.Today))
+
+head(simD)
+summary(simD)
+
+
+
+```
+
+##Plot data
+
+```{r,fig.height=6, fig.width=10}
+ObsRS1$Variable<- factor(ObsRS1$Variable, levels=c("shootbiomass","RootWt"))
+E3ILL<-ObsRS1%>%
+  filter(ID=="E3ILL")
+# simD1<-simD%>%
+#    mutate(Clock.Today = ymd_hms(Clock.Today))%>%
+#    dplyr::filter(Variable=="RootWt"|Variable=="shootbiomass")%>%
+#    dplyr::filter(Clock.Today>"2002-06-01")%>%
+#    dplyr::filter(Name=="Iversen_91DefoliationLL")
+#   simD1$Variable<- factor( simD1$Variable, levels=c("shootbiomass","RootWt"))  
+# Root.L<-Root.dfA%>%
+#   dplyr::filter(Name==c("Iversen_91DefoliationLL"))
+#   
+  
+E3ILL%>%
+  dplyr::filter(GrowthSeason.x=="1")%>%
+ggplot(aes(x=Clock.Today,y=Observed,color=Variable))+geom_line(size=1)+theme_bw()+
+  geom_point(aes(x=Clock.Today,y=Observed))+geom_point(size=3)+
+  facet_grid(Variable~ID)+ggtitle(paste0("E3ILL","(Iversen_91DefoliationLL)"))+
+  #geom_point(data=Root.L,aes(x=Clock.Today1,y=RootWt,size=2))+
+  theme(legend.title=element_blank(),legend.position = "blank")+xlab("Date")+ylab("Biomass (kg/ha)")+
+  #remove grid lines 
+   theme(
+     panel.spacing=unit(.01, "lines"),
+     panel.border = element_rect(colour = "black",size=1), 
+     panel.grid.major = element_blank(),
+     panel.grid.minor = element_blank(),
+     axis.line = element_line(colour = "black",size = 1),
+     axis.text.x = element_text(face = "plain", color = "black", size = 14, vjust=0.5, hjust = 1),
+     axis.text.y = element_text(face = "plain", color = "black", size = 14),
+     axis.title.x=element_text(face="bold",colour="black",size = 14),
+     axis.title.y=element_text(face="bold",colour="black",size = 14),
+     strip.background = element_rect(colour = "black", fill = "white",size=1),
+     strip.text.x = element_text(size=14, angle=0, face = "plain"), 
+     strip.text.y = element_text(size=14, face="plain"),
+     legend.title = element_text(colour="black", size=14, face="bold"),
+     axis.text = element_text(face = "bold", vjust = 0.5, size = 14))
+#ggsave("D:/R/Pictures/C5/Yield//E3ILL.png", width=8, height=6, dpi=500)
+```
+```{r,fig.height=6, fig.width=10}
+ObsRS1$Variable<- factor(ObsRS1$Variable, levels=c("shootbiomass","RootWt"))
+E3ILL<-ObsRS1%>%
+  filter(ID=="E3ILL")
+# simD1<-simD%>%
+#    mutate(Clock.Today = ymd_hms(Clock.Today))%>%
+#    dplyr::filter(Variable=="RootWt"|Variable=="shootbiomass")%>%
+#    dplyr::filter(Clock.Today>"2002-06-01")%>%
+#    dplyr::filter(Name=="Iversen_91DefoliationLL")
+#   simD1$Variable<- factor( simD1$Variable, levels=c("shootbiomass","RootWt"))  
+# Root.L<-Root.dfA%>%
+#   dplyr::filter(Name==c("Iversen_91DefoliationLL"))
+#   
+  
+E3ILL%>%
+  dplyr::filter(GrowthSeason.x=="2")%>%
+ggplot(aes(x=Clock.Today,y=Observed,color=Variable))+geom_line(size=1)+theme_bw()+
+  geom_point(aes(x=Clock.Today,y=Observed))+geom_point(size=3)+
+  facet_grid(Variable~ID)+ggtitle(paste0("E3ILL","(Iversen_91DefoliationLL)"))+
+  #geom_point(data=Root.L,aes(x=Clock.Today1,y=RootWt,size=2))+
+  theme(legend.title=element_blank(),legend.position = "blank")+xlab("Date")+ylab("Biomass (kg/ha)")+
+  #remove grid lines 
+   theme(
+     panel.spacing=unit(.01, "lines"),
+     panel.border = element_rect(colour = "black",size=1), 
+     panel.grid.major = element_blank(),
+     panel.grid.minor = element_blank(),
+     axis.line = element_line(colour = "black",size = 1),
+     axis.text.x = element_text(face = "plain", color = "black", size = 14, vjust=0.5, hjust = 1),
+     axis.text.y = element_text(face = "plain", color = "black", size = 14),
+     axis.title.x=element_text(face="bold",colour="black",size = 14),
+     axis.title.y=element_text(face="bold",colour="black",size = 14),
+     strip.background = element_rect(colour = "black", fill = "white",size=1),
+     strip.text.x = element_text(size=14, angle=0, face = "plain"), 
+     strip.text.y = element_text(size=14, face="plain"),
+     legend.title = element_text(colour="black", size=14, face="bold"),
+     axis.text = element_text(face = "bold", vjust = 0.5, size = 14))
+#ggsave("D:/R/Pictures/C5/Yield//E3ILL.png", width=8, height=6, dpi=500)
+```
+
+
+
+
+
+
+```{r,fig.height=6, fig.width=8}
+E3ILL%>%
+ggplot(aes(x=Clock.Today,y=Observed,color=Variable))+geom_line(size=1)+theme_bw()+
+  geom_point(aes(x=Clock.Today,y=Observed))+geom_point(size=3)+
+  #geom_line(y=5500,size=2)+
+  facet_grid(Variable~ID)+ggtitle(paste0("E3ILL","(Iversen_91DefoliationLL)"))+
+  #geom_point(data=Root.L,aes(x=Clock.Today1,y=RootWt,size=2))+
+  theme(legend.title=element_blank(),legend.position = "blank")+xlab("Date")+ylab("Biomass (kg/ha)")+
+  #remove grid lines 
+   theme(
+     panel.spacing=unit(.01, "lines"),
+     panel.border = element_rect(colour = "black",size=1), 
+     panel.grid.major = element_blank(),
+     panel.grid.minor = element_blank(),
+     axis.line = element_line(colour = "black",size = 1),
+     axis.text.x = element_text(face = "plain", color = "black", size = 14, vjust=0.5, hjust = 1),
+     axis.text.y = element_text(face = "plain", color = "black", size = 14),
+     axis.title.x=element_text(face="bold",colour="black",size = 14),
+     axis.title.y=element_text(face="bold",colour="black",size = 14),
+     strip.background = element_rect(colour = "black", fill = "white",size=1),
+     strip.text.x = element_text(size=14, angle=0, face = "plain"), 
+     strip.text.y = element_text(size=14, face="plain"),
+     legend.title = element_text(colour="black", size=14, face="bold"),
+     axis.text = element_text(face = "bold", vjust = 0.5, size = 14))
+#ggsave("D:/R/Pictures/C5/Yield//E3ILL.png", width=8, height=6, dpi=500)
+```
+
+###E5LS
+
+```{r,fig.height=6, fig.width=8}
+obsDSR$Variable<- factor(obsDSR$Variable, levels=c("shootbiomass","RootWt"))
+E3ILS<-obsDSR%>%
+  filter(ID=="E3ILS")
+E3ILS%>%
+ggplot(aes(x=Clock.Today,y=Observed,color=Variable))+geom_line(size=1)+theme_bw()+
+  geom_point(aes(x=Clock.Today,y=Observed))+geom_point(size=3)+
+  #geom_line(y=5500,size=2)+
+  facet_grid(Variable~ID)+ggtitle(paste0("E3ILS","(Iversen_91DefoliationLS)"))+
+  theme(legend.title=element_blank(),legend.position = "blank")+xlab("Date")+ylab("Biomass (kg/ha)")+
+  #remove grid lines 
+   theme(
+     panel.spacing=unit(.01, "lines"),
+     panel.border = element_rect(colour = "black",size=1), 
+     panel.grid.major = element_blank(),
+     panel.grid.minor = element_blank(),
+     axis.line = element_line(colour = "black",size = 1),
+     axis.text.x = element_text(face = "plain", color = "black", size = 14, vjust=0.5, hjust = 1),
+     axis.text.y = element_text(face = "plain", color = "black", size = 14),
+     axis.title.x=element_text(face="bold",colour="black",size = 14),
+     axis.title.y=element_text(face="bold",colour="black",size = 14),
+     strip.background = element_rect(colour = "black", fill = "white",size=1),
+     strip.text.x = element_text(size=14, angle=0, face = "plain"), 
+     strip.text.y = element_text(size=14, face="plain"),
+     legend.title = element_text(colour="black", size=14, face="bold"),
+     axis.text = element_text(face = "bold", vjust = 0.5, size = 14))
+#ggsave("D:/R/Pictures/C5/Yield//E3ILS.png", width=8, height=6, dpi=500)
+```
+###E5SL
+
+```{r,fig.height=6, fig.width=8}
+obsDSR$Variable<- factor(obsDSR$Variable, levels=c("shootbiomass","RootWt"))
+E3ISL<-obsDSR%>%
+  filter(ID=="E3ISL")
+E3ISL%>%
+  ggplot(aes(x=Clock.Today,y=Observed,color=Variable))+geom_line(size=1)+theme_bw()+
+  geom_point(aes(x=Clock.Today,y=Observed))+geom_point(size=3)+
+  facet_grid(Variable~ID)+ggtitle(paste0("E3ISL","(Iversen_91DefoliationSL)"))+
+  theme(legend.title=element_blank(),legend.position = "blank")+xlab("Date")+ylab("Biomass (kg/ha)")+
+  #remove grid lines 
+   theme(
+     panel.spacing=unit(.01, "lines"),
+     panel.border = element_rect(colour = "black",size=1), 
+     panel.grid.major = element_blank(),
+     panel.grid.minor = element_blank(),
+     axis.line = element_line(colour = "black",size = 1),
+     axis.text.x = element_text(face = "plain", color = "black", size = 14, vjust=0.5, hjust = 1),
+     axis.text.y = element_text(face = "plain", color = "black", size = 14),
+     axis.title.x=element_text(face="bold",colour="black",size = 14),
+     axis.title.y=element_text(face="bold",colour="black",size = 14),
+     strip.background = element_rect(colour = "black", fill = "white",size=1),
+     strip.text.x = element_text(size=14, angle=0, face = "plain"), 
+     strip.text.y = element_text(size=14, face="plain"),
+     legend.title = element_text(colour="black", size=14, face="bold"),
+     axis.text = element_text(face = "bold", vjust = 0.5, size = 14))
+#ggsave("D:/R/Pictures/C5/Yield//E3ISL.png", width=8, height=6, dpi=500)
+```
+##E3ISS
+```{r,fig.height=6, fig.width=8}
+obsDSR$Variable<- factor(obsDSR$Variable, levels=c("shootbiomass","RootWt"))
+E3ISS<-obsDSR%>%
+  filter(ID=="E3ISS")
+E3ISS%>%
+ggplot(aes(x=Clock.Today,y=Observed,color=Variable))+geom_line(size=1)+theme_bw()+
+  geom_point(aes(x=Clock.Today,y=Observed))+geom_point(size=3)+
+ # geom_line(y=5500,size=2)+
+  facet_grid(Variable~ID)+ggtitle(paste0("E3ISS","(Iversen_91DefoliationSS)"))+
+  theme(legend.title=element_blank(),legend.position = "blank")+xlab("Date")+ylab("Biomass (kg/ha)")+
+  #remove grid lines 
+   theme(
+     panel.spacing=unit(.01, "lines"),
+     panel.border = element_rect(colour = "black",size=1), 
+     panel.grid.major = element_blank(),
+     panel.grid.minor = element_blank(),
+     axis.line = element_line(colour = "black",size = 1),
+     axis.text.x = element_text(face = "plain", color = "black", size = 14, vjust=0.5, hjust = 1),
+     axis.text.y = element_text(face = "plain", color = "black", size = 14),
+     axis.title.x=element_text(face="bold",colour="black",size = 14),
+     axis.title.y=element_text(face="bold",colour="black",size = 14),
+     strip.background = element_rect(colour = "black", fill = "white",size=1),
+     strip.text.x = element_text(size=14, angle=0, face = "plain"), 
+     strip.text.y = element_text(size=14, face="plain"),
+     legend.title = element_text(colour="black", size=14, face="bold"),
+     axis.text = element_text(face = "bold", vjust = 0.5, size = 14))
+#ggsave("D:/R/Pictures/C5/Yield//E3ISS.png", width=8, height=6, dpi=500)
+```
+
+###E5ILLF5
+```{r,fig.height=6, fig.width=8}
+ObsRS1$Variable<- factor(ObsRS1$Variable, levels=c("shootbiomass","RootWt"))
+E5ILLF5<-ObsRS1%>%
+  filter(ID=="E5ILLF5")
+# simD1<-simD%>%
+#    mutate(Clock.Today = ymd_hms(Clock.Today))%>%
+#    dplyr::filter(Variable=="RootWt"|Variable=="shootbiomass")%>%
+#    dplyr::filter(Clock.Today>"2002-06-01")%>%
+#    dplyr::filter(Name=="Iversen_91DefoliationLL")
+#   simD1$Variable<- factor( simD1$Variable, levels=c("shootbiomass","RootWt"))  
+# Root.L<-Root.dfA%>%
+#   dplyr::filter(Name==c("Iversen_91DefoliationLL"))
+#   
+  
+E5ILLF5%>%
+ggplot(aes(x=Clock.Today,y=Observed,color=Variable))+geom_line(size=1)+theme_bw()+
+  geom_point(aes(x=Clock.Today,y=Observed))+geom_point(size=3)+
+  facet_grid(Variable~ID)+ggtitle(paste0("E3ILL","(Iversen_91DefoliationLL)"))+
+  #geom_point(data=Root.L,aes(x=Clock.Today1,y=RootWt,size=2))+
+  theme(legend.title=element_blank(),legend.position = "blank")+xlab("Date")+ylab("Biomass (kg/ha)")+
+  #remove grid lines 
+   theme(
+     panel.spacing=unit(.01, "lines"),
+     panel.border = element_rect(colour = "black",size=1), 
+     panel.grid.major = element_blank(),
+     panel.grid.minor = element_blank(),
+     axis.line = element_line(colour = "black",size = 1),
+     axis.text.x = element_text(face = "plain", color = "black", size = 14, vjust=0.5, hjust = 1),
+     axis.text.y = element_text(face = "plain", color = "black", size = 14),
+     axis.title.x=element_text(face="bold",colour="black",size = 14),
+     axis.title.y=element_text(face="bold",colour="black",size = 14),
+     strip.background = element_rect(colour = "black", fill = "white",size=1),
+     strip.text.x = element_text(size=14, angle=0, face = "plain"), 
+     strip.text.y = element_text(size=14, face="plain"),
+     legend.title = element_text(colour="black", size=14, face="bold"),
+     axis.text = element_text(face = "bold", vjust = 0.5, size = 14))
+ggsave("D:/R/Pictures/C5/Yield//E5ILLF5.png", width=8, height=6, dpi=500)
+```
+
+##E5ISSF5
+```{r,fig.height=6, fig.width=8}
+obsDSR$Variable<- factor(obsDSR$Variable, levels=c("shootbiomass","RootWt"))
+E3ISS<-obsDSR%>%
+  filter(ID=="E5ISSF5")
+E3ISS%>%
+ggplot(aes(x=Clock.Today,y=Observed,color=Variable))+geom_line(size=1)+theme_bw()+
+  geom_point(aes(x=Clock.Today,y=Observed))+geom_point(size=3)+
+  facet_grid(Variable~ID)+ggtitle("E5ISSF5")+
+  theme(legend.title=element_blank(),legend.position = "blank")+xlab("Date")+ylab("Biomass (kg/ha)")+
+  #remove grid lines 
+   theme(
+     panel.spacing=unit(.01, "lines"),
+     panel.border = element_rect(colour = "black",size=1), 
+     panel.grid.major = element_blank(),
+     panel.grid.minor = element_blank(),
+     axis.line = element_line(colour = "black",size = 1),
+     axis.text.x = element_text(face = "plain", color = "black", size = 14, vjust=0.5, hjust = 1),
+     axis.text.y = element_text(face = "plain", color = "black", size = 14),
+     axis.title.x=element_text(face="bold",colour="black",size = 14),
+     axis.title.y=element_text(face="bold",colour="black",size = 14),
+     strip.background = element_rect(colour = "black", fill = "white",size=1),
+     strip.text.x = element_text(size=14, angle=0, face = "plain"), 
+     strip.text.y = element_text(size=14, face="plain"),
+     legend.title = element_text(colour="black", size=14, face="bold"),
+     axis.text = element_text(face = "bold", vjust = 0.5, size = 14))
+ggsave("D:/R/Pictures/C5/Yield//E5ISSF5.png", width=8, height=6, dpi=500)
+```
+
+###load Root and shoot data for HH
+
+```{r,fig.height=6, fig.width=10}
+obsDSR$Variable<- factor(obsDSR$Variable, levels=c("shootbiomass","RootWt"))
+E5IHHFD5<-obsDSR%>%
+  filter(ID=="E5IHHF5")%>%
+  mutate(GrowthRotation=paste0(GrowthSeason,Rotation))
+E5IHHFD5%>%
+ggplot(aes(x=Clock.Today,y=Observed,color=Variable))+geom_line(size=1)+theme_bw()+
+  geom_point(aes(x=Clock.Today,y=Observed))+geom_point(size=3)+
+  facet_grid(Variable~ID)+ggtitle(paste0("E5IHHF5"))+
+  theme(legend.title=element_blank(),legend.position = "blank")+xlab("Date")+ylab("Biomass (kg/ha)")+
+  #remove grid lines 
+   theme(
+     panel.spacing=unit(.01, "lines"),
+     panel.border = element_rect(colour = "black",size=1), 
+     panel.grid.major = element_blank(),
+     panel.grid.minor = element_blank(),
+     axis.line = element_line(colour = "black",size = 1),
+     axis.text.x = element_text(face = "plain", color = "black", size = 14, vjust=0.5, hjust = 1),
+     axis.text.y = element_text(face = "plain", color = "black", size = 14),
+     axis.title.x=element_text(face="bold",colour="black",size = 14),
+     axis.title.y=element_text(face="bold",colour="black",size = 14),
+     strip.background = element_rect(colour = "black", fill = "white",size=1),
+     strip.text.x = element_text(size=14, angle=0, face = "plain"), 
+     strip.text.y = element_text(size=14, face="plain"),
+     legend.title = element_text(colour="black", size=14, face="bold"),
+     axis.text = element_text(face = "bold", vjust = 0.5, size = 14))
+ggsave("D:/R/Pictures/C5/Yield//E5IHHF5.png", width=8, height=6, dpi=500)
+```
+
+
+
+```{r}
+E5IHHFD5%>%
+  filter(GrowthSeason=="4")%>%
+ggplot(aes(x=Clock.Today,y=Observed,color=Variable))+geom_line(size=1)+theme_bw()+
+  geom_point(aes(x=Clock.Today,y=Observed))+geom_point(size=3)+
+  facet_grid(Variable~GrowthRotation)+ggtitle(paste0("E5IHHF5"))+
+  theme(legend.title=element_blank(),legend.position = "blank")+xlab("Date")+ylab("Biomass (kg/ha)")+
+  #remove grid lines 
+   theme(
+     panel.spacing=unit(.01, "lines"),
+     panel.border = element_rect(colour = "black",size=1), 
+     panel.grid.major = element_blank(),
+     panel.grid.minor = element_blank(),
+     axis.line = element_line(colour = "black",size = 1),
+     axis.text.x = element_text(face = "plain", color = "black", size = 14, vjust=0.5, hjust = 1),
+     axis.text.y = element_text(face = "plain", color = "black", size = 14),
+     axis.title.x=element_text(face="bold",colour="black",size = 14),
+     axis.title.y=element_text(face="bold",colour="black",size = 14),
+     strip.background = element_rect(colour = "black", fill = "white",size=1),
+     strip.text.x = element_text(size=14, angle=0, face = "plain"), 
+     strip.text.y = element_text(size=14, face="plain"),
+     legend.title = element_text(colour="black", size=14, face="bold"),
+     axis.text = element_text(face = "bold", vjust = 0.5, size = 14))
+```
+
+
+###proof
+
+```{r,height=6, fig.width=8}
+
+obsDSRR<-obsDSR%>%
+  filter(Variable=="RootWt")%>%
+  mutate(RootWt=Observed)
+obsDSRS<-obsDSR%>%
+   filter(Variable=="shootbiomass")%>%
+  dplyr::select(Name,Clock.Today,Observed)%>%
+  mutate(shootbiomass=Observed)%>%
+  mutate(Clock.Today=ymd(Clock.Today))%>%
+  mutate(Name=factor(Name))
+ 
+All<-merge(obsDSRR,obsDSRS,by=c("Clock.Today","Name"))%>%
+  mutate(Biomass=RootWt+shootbiomass)%>%
+  mutate(Proot=1-shootbiomass/Biomass)%>%
+  mutate(GrowthRotation=paste0(GrowthSeason,Rotation))
+
+All%>%
+  filter(ExperimentID=="E3")%>%
+  unique()%>%
+ggplot(aes(x=Clock.Today,y=Proot,color=ID,label=GrowthRotation))+geom_text()+
+  theme_bw()+
+  facet_wrap(~ID,ncol = 1)+
+  theme(legend.title=element_blank(),legend.position = "blank")+xlab("Date")+ylab("Proot")+
+  #remove grid lines 
+   theme(
+     panel.spacing=unit(.01, "lines"),
+     panel.border = element_rect(colour = "black",size=1), 
+     panel.grid.major = element_blank(),
+     panel.grid.minor = element_blank(),
+     axis.line = element_line(colour = "black",size = 1),
+     axis.text.x = element_text(face = "plain", color = "black", size = 14, vjust=0.5, hjust = 1),
+     axis.text.y = element_text(face = "plain", color = "black", size = 14),
+     axis.title.x=element_text(face="bold",colour="black",size = 14),
+     axis.title.y=element_text(face="bold",colour="black",size = 14),
+     strip.background = element_rect(colour = "black", fill = "white",size=1),
+     strip.text.x = element_text(size=14, angle=0, face = "plain"), 
+     strip.text.y = element_text(size=14, face="plain"),
+     legend.title = element_text(colour="black", size=14, face="bold"),
+     axis.text = element_text(face = "bold", vjust = 0.5, size = 14))
+ggsave("D:/R/Pictures/C5/Yield/E3Proot.png", width=8, height=6, dpi=500)
+```
+```{r,height=4, fig.width=8}
+All%>%
+  filter(ExperimentID=="E5")%>%
+ggplot(aes(x=Clock.Today,y=Proot,color=ID,label=GrowthRotation))+geom_text()+
+  theme_bw()+
+  facet_wrap(~ID,ncol = 1)+
+  theme(legend.title=element_blank(),legend.position = "blank")+xlab("Date")+ylab("Proot")+
+  #remove grid lines 
+   theme(
+     panel.spacing=unit(.01, "lines"),
+     panel.border = element_rect(colour = "black",size=1), 
+     panel.grid.major = element_blank(),
+     panel.grid.minor = element_blank(),
+     axis.line = element_line(colour = "black",size = 1),
+     axis.text.x = element_text(face = "plain", color = "black", size = 14, vjust=0.5, hjust = 1),
+     axis.text.y = element_text(face = "plain", color = "black", size = 14),
+     axis.title.x=element_text(face="bold",colour="black",size = 14),
+     axis.title.y=element_text(face="bold",colour="black",size = 14),
+     strip.background = element_rect(colour = "black", fill = "white",size=1),
+     strip.text.x = element_text(size=14, angle=0, face = "plain"), 
+     strip.text.y = element_text(size=14, face="plain"),
+     legend.title = element_text(colour="black", size=14, face="bold"),
+     axis.text = element_text(face = "bold", vjust = 0.5, size = 14))
+ggsave("D:/R/Pictures/C5/Yield/E5Proot.png", width=8, height=6, dpi=500)
+```
+
+###Proot LL
+```{r,height=4, fig.width=8}
+ObsRS1R<-ObsRS1%>%
+  filter(Variable=="RootWt")%>%
+  mutate(RootWt=Observed)
+ObsRS1S<-ObsRS1%>%
+   filter(Variable=="shootbiomass")%>%
+  dplyr::select(Name,Clock.Today,Observed)%>%
+  mutate(shootbiomass=Observed)%>%
+  mutate(Clock.Today=ymd(Clock.Today))%>%
+  mutate(Name=factor(Name))
+ 
+LLAll<-merge(ObsRS1R,ObsRS1S,by=c("Clock.Today","Name"))%>%
+  filter(Tb==1)%>%
+  mutate(Biomass=RootWt+shootbiomass)%>%
+  mutate(Proot=1-shootbiomass/Biomass)%>%
+  unique()
+
+LLAll%>%
+  filter(ExperimentID=="E3")%>%
+ggplot(aes(x=Clock.Today,y=Proot,color=ID,label=GrowthRotation))+geom_text()+
+  theme_bw()+
+  facet_wrap(~ID,ncol = 1)+
+  theme(legend.title=element_blank(),legend.position = "blank")+xlab("Date")+ylab("Proot")+
+  #remove grid lines 
+   theme(
+     panel.spacing=unit(.01, "lines"),
+     panel.border = element_rect(colour = "black",size=1), 
+     panel.grid.major = element_blank(),
+     panel.grid.minor = element_blank(),
+     axis.line = element_line(colour = "black",size = 1),
+     axis.text.x = element_text(face = "plain", color = "black", size = 14, vjust=0.5, hjust = 1),
+     axis.text.y = element_text(face = "plain", color = "black", size = 14),
+     axis.title.x=element_text(face="bold",colour="black",size = 14),
+     axis.title.y=element_text(face="bold",colour="black",size = 14),
+     strip.background = element_rect(colour = "black", fill = "white",size=1),
+     strip.text.x = element_text(size=14, angle=0, face = "plain"), 
+     strip.text.y = element_text(size=14, face="plain"),
+     legend.title = element_text(colour="black", size=14, face="bold"),
+     axis.text = element_text(face = "bold", vjust = 0.5, size = 14))
+ggsave("D:/R/Pictures/C5/Yield/E3LLProot.png", width=8, height=6, dpi=500)
+
+```
+```{r,height=4, fig.width=8}
+LLAll%>%
+  filter(ExperimentID=="E5")%>%
+  filter(shootbiomass!="0")%>%
+ggplot(aes(x=Clock.Today,y=Proot,color=ID,label=GrowthRotation))+geom_line(size=2)+
+  theme_bw()+
+  facet_wrap(~ID,ncol = 1)+
+  theme(legend.title=element_blank(),legend.position = "blank")+xlab("Date")+ylab("Proot")+
+  #remove grid lines 
+   theme(
+     panel.spacing=unit(.01, "lines"),
+     panel.border = element_rect(colour = "black",size=1), 
+     panel.grid.major = element_blank(),
+     panel.grid.minor = element_blank(),
+     axis.line = element_line(colour = "black",size = 1),
+     axis.text.x = element_text(face = "plain", color = "black", size = 14, vjust=0.5, hjust = 1),
+     axis.text.y = element_text(face = "plain", color = "black", size = 14),
+     axis.title.x=element_text(face="bold",colour="black",size = 14),
+     axis.title.y=element_text(face="bold",colour="black",size = 14),
+     strip.background = element_rect(colour = "black", fill = "white",size=1),
+     strip.text.x = element_text(size=14, angle=0, face = "plain"), 
+     strip.text.y = element_text(size=14, face="plain"),
+     legend.title = element_text(colour="black", size=14, face="bold"),
+     axis.text = element_text(face = "bold", vjust = 0.5, size = 14))
+ggsave("D:/R/Pictures/C5/Yield/E5LLProot.png", width=8, height=6, dpi=500)
+```
+
+
+###Cum oberved
+```{r}
+ungroup.rowwise_df <- function(x) {
+  class(x) <- c( "tbl_df", "data.frame")
+  x
+}
+
+E5IHHFD5S<-E5IHHFD5%>%
+dplyr::filter(Variable=="shootbiomass")
+
+
+uniGY <- unique(E5IHHFD5S$ExpUnitCode)
+
+
+
+df.all <- data.frame()
+ 
+for(i in 1:length(uniGY)){
+  
+ cum<-E5IHHFD5S%>%
+   rowwise() %>%
+   mutate(GrowthRotation=paste0(GrowthRotation,Rotation))%>%
+  ungroup.rowwise_df()%>%
+  mutate(Shoot=cumsum(Observed))
+ 
+ df.all <- rbind(df.all,cum)
+ }
+  
+summary(df.all)
+df.all
+
+
+```
+
+###load Root and shoot data for SS
+```{r,fig.height=6, fig.width=8}
+obsDSR$Variable<- factor(obsDSR$Variable, levels=c("shootbiomass","RootWt"))
+E5ISSFD5<-obsDSR%>%
+  filter(ID=="E5ISSF5")
+E5ISSFD5%>%
+ggplot(aes(x=Clock.Today,y=Observed,color=Variable))+geom_line(size=1)+theme_bw()+
+  geom_point(aes(x=Clock.Today,y=Observed))+geom_point(size=3)+
+  facet_grid(Variable~ID)+ggtitle(paste0("E5ISSF5"))+
+  theme(legend.title=element_blank(),legend.position = "blank")+xlab("Date")+ylab("Biomass (kg/ha)")+
+  #remove grid lines 
+   theme(
+     panel.spacing=unit(.01, "lines"),
+     panel.border = element_rect(colour = "black",size=1), 
+     panel.grid.major = element_blank(),
+     panel.grid.minor = element_blank(),
+     axis.line = element_line(colour = "black",size = 1),
+     axis.text.x = element_text(face = "plain", color = "black", size = 14, vjust=0.5, hjust = 1),
+     axis.text.y = element_text(face = "plain", color = "black", size = 14),
+     axis.title.x=element_text(face="bold",colour="black",size = 14),
+     axis.title.y=element_text(face="bold",colour="black",size = 14),
+     strip.background = element_rect(colour = "black", fill = "white",size=1),
+     strip.text.x = element_text(size=14, angle=0, face = "plain"), 
+     strip.text.y = element_text(size=14, face="plain"),
+     legend.title = element_text(colour="black", size=14, face="bold"),
+     axis.text = element_text(face = "bold", vjust = 0.5, size = 14))
+ggsave("D:/R/Pictures/C5/Yield//E5ISSF5.png", width=8, height=6, dpi=500)
+```
+###load Root and shoot data for LL
+```{r,fig.height=6, fig.width=8}
+ObsRS1$Variable<- factor(ObsRS1$Variable, levels=c("shootbiomass","RootWt"))
+E5ILLF5<-ObsRS1%>%
+  filter(ID=="E5ILLF5")
+E5ILLF5%>%
+ggplot(aes(x=Clock.Today,y=Observed,color=Variable))+geom_line(size=1)+theme_bw()+
+  geom_point(aes(x=Clock.Today,y=Observed))+geom_point(size=3)+
+  facet_grid(Variable~ID)+ggtitle(paste0("E5ILLF5"))+
+  theme(legend.title=element_blank(),legend.position = "blank")+xlab("Date")+ylab("Biomass (kg/ha)")+
+  #remove grid lines 
+   theme(
+     panel.spacing=unit(.01, "lines"),
+     panel.border = element_rect(colour = "black",size=1), 
+     panel.grid.major = element_blank(),
+     panel.grid.minor = element_blank(),
+     axis.line = element_line(colour = "black",size = 1),
+     axis.text.x = element_text(face = "plain", color = "black", size = 14, vjust=0.5, hjust = 1),
+     axis.text.y = element_text(face = "plain", color = "black", size = 14),
+     axis.title.x=element_text(face="bold",colour="black",size = 14),
+     axis.title.y=element_text(face="bold",colour="black",size = 14),
+     strip.background = element_rect(colour = "black", fill = "white",size=1),
+     strip.text.x = element_text(size=14, angle=0, face = "plain"), 
+     strip.text.y = element_text(size=14, face="plain"),
+     legend.title = element_text(colour="black", size=14, face="bold"),
+     axis.text = element_text(face = "bold", vjust = 0.5, size = 14))
+ggsave("D:/R/Pictures/C5/Yield//E5ILLF5.png", width=8, height=6, dpi=500)
+```
+### load Root data analysis data frame
+```{r}
+upDir <- "D:/R/"
+Rootdf <- "D:/R/CombinedData/"
+
+Root.df<- read.table(paste0(Rootdf, "Root.dataframe.txt"),
+               header = TRUE)
+Root.dfA <- Root.df %>% mutate(Clock.Today=dmy(Clock.Today),
+                               StartDate=dmy(StartDate),FinishDate=dmy(FinishDate),
+                               StartDate1=dmy(StartDate1),FinishDate1=dmy(FinishDate1))%>%
+   mutate(Clock.Today1 = as.POSIXct(paste(Clock.Today,Time),format="%Y-%m-%d %H:%M:%S"))
+```
+
+##Remoblisation 
+
+```{r}
+Root.HH<-Root.dfA%>%
+  dplyr::filter(Name==c("Iversen_121DefoliationHHFDFD5"))%>%
+  dplyr::filter(Trend=="RB")
+
+Root.HH1<-Root.HH%>%
+  ggplot(aes(x=IRW,y=ChangeWt, colur=Name))+geom_point(size=2)+theme_bw()+mytheme3
+```
+
+```{r}
+Root.LL<-Root.dfA%>%
+  dplyr::filter(Name==c("Iversen_91DefoliationLL"))%>%
+  dplyr::filter(Trend=="RB")
+
+Root.HH.graph<-Root.dfA%>%
+  dplyr::filter(ID==c("E5IHHF5"))%>%
+  ggplot(aes(x=Clock.Today,y=RootWt))+geom_line(size=1.5)+theme_bw()+mytheme3
+ggsave("D:/R/Pictures/C5/Yield//SimpleE3HH.png", width=8, height=4, dpi=500)
+```
+##remoblisation DM and structural DM
+```{r,fig.height=4, fig.width=8}
+Root.LL1<-Root.dfA%>%
+  dplyr::filter(Name==c("Iversen_121DefoliationLLFDFD5"))%>%
+ dplyr::filter(Trend=="RB")
+
+Root.LL1a<-Root.LL1%>%
+  ggplot(aes(x=IRW,y=ChangeWt, colur=Name))+geom_point(size=2)+theme_bw()+mytheme3
+
+ReRoot<-rbind(Root.HH,Root.LL,Root.LL1)
+
+
+library(plyr)
+lm_eqn1 <- function(ReRoot){
+  m <- lm(ChangeWt~IRW , ReRoot);
+  eq <- substitute(italic(y) == IRW + ChangeWt %.% italic(IRW)*","~~italic(R)^2~"="~r2, 
+                   list(IRW= format(coef(m)[1], digits = 2), 
+                        ChangeWt = format(coef(m)[2], digits = 2), 
+                        r2 = format(summary(m)$r.squared, digits = 3)))
+  as.character(as.expression(eq));                 
+}
+
+
+eqs <- ddply(ReRoot,.(Trend),lm_eqn1)
+
+ReRoot%>%
+  ggplot(aes(x=IRW,y=ChangeWt, color=ID))+geom_point(size=2)+theme_bw()+mytheme3+
+  geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="darkgrey")+xlab(bquote(bold('Intial root biomass ('*kg~DM~ha^-1*')')))+ylab(bquote(bold('Remoblised lost ('*kg~DM~ha^-1*')')))+
+  geom_text(data = eqs, aes(x =7000, y =7000, label = V1), 
+          color = 'black',  parse = TRUE)+
+  ggtitle("Remoblisation potential")
+ detach(package:plyr)
+ggsave("D:/R/Pictures/C5/Yield//RemoblisationHL.png", width=8, height=6, dpi=500)
+```
+##remoblisation rate
+```{r,,fig.height=4, fig.width=8}
+ReRoot.Rate<-ReRoot%>%
+  mutate(Re.rate=ChangeWt/ChangeTt)%>%
+  mutate(Re.rate.Pp=Re.rate/ChangePp)
+
+ReRoot.Rate%>%
+  ggplot(aes(x=IRW,y=Re.rate, color=ID))+geom_point(size=2)+theme_bw()+mytheme3+
+  geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="darkgrey")
+
+```
+
+
+
+
+```{r,,fig.height=4, fig.width=8}
+Root.LS<-Root.dfA%>%
+  dplyr::filter(Name==c("Iversen_91DefoliationLS"))%>%
+dplyr::filter(Trend=="RB")
+
+Root.SL<-Root.dfA%>%
+  dplyr::filter(Name==c("Iversen_91DefoliationSL"))%>%
+  dplyr::filter(Trend=="RB")
+
+Root.SS<-Root.dfA%>%
+  dplyr::filter(Name==c("Iversen_91DefoliationSS"))%>%
+  dplyr::filter(Trend=="RB")
+
+Root.SSa<-Root.dfA%>%
+  dplyr::filter(Name==c("Iversen_121DefoliationSSFDFD5"))%>%
+  dplyr::filter(Trend=="RB")
+
+RootSS<-rbind(Root.LS,Root.SL,Root.SS,Root.SSa)
+
+
+library(plyr)
+lm_eqn1 <- function(RootSS){
+  m <- lm(ChangeWt~IRW , RootSS);
+  eq <- substitute(italic(y) == IRW + ChangeWt %.% italic(IRW)*","~~italic(R)^2~"="~r2, 
+                   list(IRW= format(coef(m)[1], digits = 2), 
+                        ChangeWt = format(coef(m)[2], digits = 2), 
+                        r2 = format(summary(m)$r.squared, digits = 3)))
+  as.character(as.expression(eq));                 
+}
+
+
+eqs1 <- ddply(RootSS,.(Trend),lm_eqn1)
+
+RootSS%>%
+  ggplot(aes(x=IRW,y=ChangeWt, color=ID))+geom_point(size=2)+theme_bw()+mytheme3+xlab(bquote(bold('Intial root biomass ('*kg~DM~ha^-1*')')))+ylab(bquote(bold('Remoblised lost ('*kg~DM~ha^-1*')')))+
+  geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="darkgrey")+
+  geom_text(data = eqs1, aes(x =4000, y =2500, label = V1), 
+          color = 'black',  parse = TRUE)
+ detach(package:plyr)
+ggsave("D:/R/Pictures/C5/Yield//Remoblisationss.png", width=8, height=6, dpi=500)
+
+```
+
+#####
+
+
+```{r}
+Root.dfA1<-Root.dfA%>%
+     dplyr::filter(Trend=="RB")
+
+library(plyr)
+lm_eqn1 <- function(Root.dfA1){
+  m <- lm(ChangeWt~IRW , Root.dfA1);
+  eq <- substitute(italic(y) == IRW + ChangeWt %.% italic(IRW)*","~~italic(R)^2~"="~r2, 
+                   list(IRW= format(coef(m)[1], digits = 2), 
+                        ChangeWt = format(coef(m)[2], digits = 2), 
+                        r2 = format(summary(m)$r.squared, digits = 3)))
+  as.character(as.expression(eq));                 
+}
+
+
+eqs1 <- ddply(Root.dfA1,.(Trend),lm_eqn1)
+
+Root.dfA1%>%
+  ggplot(aes(x=IRW,y=ChangeWt, color=ID))+geom_point(size=2)+theme_bw()+mytheme3+xlab(bquote(bold('Intial root biomass ('*kg~DM~ha^-1*')')))+ylab(bquote(bold('Remoblised lost ('*kg~DM~ha^-1*')')))+
+  geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="darkgrey")+
+  geom_text(data = eqs1, aes(x =6000, y =6000, label = V1), 
+          color = 'black',  parse = TRUE)
+ detach(package:plyr)
+ggsave("D:/R/Pictures/C5/Yield//RemoblisationALL.png", width=8, height=6, dpi=500)
+
+
+```
+```{r}
+Root.dfA1<-Root.dfA%>%
+     dplyr::filter(Trend=="RB")%>%
+  mutate(Per=ChangeWt/IRW)
+
+library(plyr)
+lm_eqn1 <- function(Root.dfA1){
+  m <- lm(Per~IRW , Root.dfA1);
+  eq <- substitute(italic(y) == IRW + Per %.% italic(IRW)*","~~italic(R)^2~"="~r2, 
+                   list(IRW= format(coef(m)[1], digits = 2), 
+                        Per = format(coef(m)[2], digits = 2), 
+                        r2 = format(summary(m)$r.squared, digits = 3)))
+  as.character(as.expression(eq));                 
+}
+
+
+eqs11 <- ddply(Root.dfA1,.(Trend),lm_eqn1)
+
+Root.dfA1%>%
+  ggplot(aes(x=IRW,y=Per, color=ID))+geom_point(size=2)+theme_bw()+mytheme3+xlab(bquote(bold('Intial root biomass ('*kg~DM~ha^-1*')')))+ylab("Remoblised lost(%)")+
+  geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="darkgrey")+
+  geom_text(data = eqs11, aes(x =6000, y =0.75, label = V1), 
+          color = 'black',  parse = TRUE)
+ detach(package:plyr)
+ggsave("D:/R/Pictures/C5/Yield//RemoblisationALLper.png", width=8, height=6, dpi=500)
+
+
+```
+
+
+
+```{r}
+Root.dfA1<-Root.dfA%>%
+     dplyr::filter(Trend=="RB")
+
+library(plyr)
+my.formula  <- function(Root.dfA1){
+  my.formula <- ChangeWt ~ poly(IRW, 2, raw = TRUE)
+  m <- lm(my.formula, Root.dfA1)
+  my.eq <- as.character(signif(as.polynomial(coef(m)), 2))
+  label.text <- paste("y","'='",paste(gsub("y", "~italic(x)",my.eq, fixed = TRUE)),
+              paste("italic(R)^2",format(summary(m)$r.squared, digits = 2), 
+                    sep = "~`=`~"),
+                    sep = "~~~~")
+  as.character(as.expression(label.text));                 
+}
+
+my.eqs <- ddply(Root.dfA1,.(FD),my.formula)
+
+b<-Root.dfA1%>%
+  ggplot(aes(x=IRW,y=ChangeWt, color=ID))+geom_point(size=2)+theme_bw()+mytheme3+xlab(bquote(bold('Intial root biomass ('*kg~DM~ha^-1*')')))+ylab(bquote(bold('Remoblised lost ('*kg~DM~ha^-1*')')))+
+  geom_smooth(method = "lm", se = TRUE, formula=y ~ poly(x, 2, raw=TRUE), colour="darkgrey")+
+  theme(legend.title = element_blank())
+
+b+geom_text(data = my.eqs, aes(x = 6000, y = 6000, label = V1), 
+          color = 'black',  parse = TRUE, size=4)
+  
+ detach(package:plyr)
+ggsave("D:/R/Pictures/C5/Yield/RemoblisationALLploy2.png", width=8, height=6, dpi=500)
+
+
+```
+```{r}
+Root.dfA1<-Root.dfA%>%
+     dplyr::filter(Trend=="RB")
+
+library(plyr)
+my.formula  <- function(Root.dfA1){
+  my.formula <- ChangeWt ~ poly(IRW, 3, raw = TRUE)
+  m <- lm(my.formula, Root.dfA1)
+  my.eq <- as.character(signif(as.polynomial(coef(m)), 2))
+  label.text <- paste("y","'='",paste(gsub("y", "~italic(x)",my.eq, fixed = TRUE)),
+              paste("italic(R)^2",format(summary(m)$r.squared, digits = 2), 
+                    sep = "~`=`~"),
+                    sep = "~~~~")
+  as.character(as.expression(label.text));                 
+}
+
+my.eqs <- ddply(Root.dfA1,.(FD),my.formula)
+
+b<-Root.dfA1%>%
+  ggplot(aes(x=IRW,y=ChangeWt, color=ID))+geom_point(size=2)+theme_bw()+mytheme3+xlab(bquote(bold('Intial root biomass ('*kg~DM~ha^-1*')')))+ylab(bquote(bold('Remoblised lost ('*kg~DM~ha^-1*')')))+
+  geom_smooth(method = "lm", se = TRUE, formula=y ~ poly(x, 3, raw=TRUE), colour="darkgrey")+
+  theme(legend.title = element_blank())
+
+b+geom_text(data = my.eqs, aes(x = 6800, y = 6000, label = V1), 
+          color = 'black',  parse = TRUE, size=4)
+  
+ detach(package:plyr)
+ggsave("D:/R/Pictures/C5/Yield//RemoblisationALLploy3.png", width=8, height=6, dpi=500)
+
+
+```
+
+
+
+##remoblisation rate
+```{r}
+Root.dfALL<-Root.dfA1%>%
+  mutate(Re.rate=ChangeWt/ChangeTt)%>%
+  mutate(Re.rate.Pp=Re.rate/ChangePp)
+
+library(plyr)
+lm_eqn1 <- function(Root.dfALL){
+  m <- lm(Re.rate~IRW , Root.dfALL);
+  eq <- substitute(italic(y) == IRW + Re.rate %.% italic(IRW)*","~~italic(R)^2~"="~r2, 
+                   list(IRW= format(coef(m)[1], digits = 2), 
+                        Re.rate = format(coef(m)[2], digits = 2), 
+                        r2 = format(summary(m)$r.squared, digits = 3)))
+  as.character(as.expression(eq));                 
+}
+
+
+eqs11 <- ddply(Root.dfALL,.(Trend),lm_eqn1)
+
+Root.dfALL%>%
+ggplot(aes(x=IRW,y=Re.rate, color=ID))+geom_point(size=2)+theme_bw()+mytheme3+
+  xlab(bquote(bold('Intial root biomass ('*kg~ha^-1*')')))+ylab(bquote(bold('Remoblise rate ('*kg~cd^-1*')')))+
+  geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="darkgrey")+
+  geom_text(data = eqs11, aes(x =6000, y =4, label = V1), 
+          color = 'black',  parse = TRUE)
+ detach(package:plyr)
+ggsave("D:/R/Pictures/C5/Yield//Remoblisation rate.png", width=8, height=6, dpi=500)
+
+
+```
+
+####root respiration rate SS
+```{r,fig.height=4, fig.width=8}
+RootSS.Rate<-RootSS%>%
+  mutate(Re.rate=ChangeWt/ChangeTt)%>%
+  mutate(Re.rate.Pp=Re.rate/ChangePp)
+
+RootSS.Rate%>%
+  ggplot(aes(x=IRW,y=Re.rate, color=ID))+geom_point(size=2)+theme_bw()+mytheme3+
+  geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="darkgrey")
+
+```
+
+
+###when partitioning start? Pp
+
+```{r}
+Root.PT<-Root.dfA%>%
+  filter(Trend=="PT")%>%
+  mutate(Pt.rate=ChangeWt/ChangeTt)%>%
+  mutate(Pt.rate.Pp=Pt.rate/ChangePp)%>%
+  mutate(PTR=ChangeWt/IRW)
+
+
+library(plyr)
+lm_eqn1 <- function(Root.PT){
+  m <- lm(HRW~ChangeWt , Root.dfALL);
+  eq <- substitute(italic(y) == ChangeWt+ HRW %.% italic(ChangeWt)*","~~italic(R)^2~"="~r2, 
+                   list(ChangeWt= format(coef(m)[1], digits = 2), 
+                        HRW = format(coef(m)[2], digits = 2), 
+                        r2 = format(summary(m)$r.squared, digits = 3)))
+  as.character(as.expression(eq));                 
+}
+
+
+eqs12 <- ddply(Root.PT,.(Trend),lm_eqn1)
+
+Root.PT%>%
+  ggplot(aes(x=ChangeWt,y=HRW, color=ID))+geom_point(size=2)+theme_bw()+mytheme3+ggtitle("Recharging potential ")+
+  xlab(bquote(bold('Recharging root biomass ('*kg~ha^-1*')')))+ylab(bquote(bold('Maximum root bomass ('*kg~ha^-1*')')))+
+  geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="darkgrey")+
+  geom_text(data = eqs11, aes(x =2500, y =8800, label = V1), 
+          color = 'black',  parse = TRUE)
+ detach(package:plyr)
+ggsave("D:/R/Pictures/C5/Yield//Rechanging potential.png", width=8, height=6, dpi=500)
+
+```
+###when partitioning start? Pp
+###Recharging rate
+```{r}
+Root.PT<-Root.dfA%>%
+  filter(Trend=="PT")%>%
+  mutate(Pt.rate=ChangeWt/ChangeTt)%>%
+  mutate(Pt.rate.Pp=Pt.rate/ChangePp)%>%
+  mutate(PTR=ChangeWt/IRW)
+
+
+library(plyr)
+lm_eqn1 <- function(Root.PT){
+  m <- lm(HRW~Pt.rate , Root.PT);
+  eq <- substitute(italic(y) == Pt.rate+ HRW %.% italic(Pt.rate)*","~~italic(R)^2~"="~r2, 
+                   list(Pt.rate= format(coef(m)[1], digits = 2), 
+                        HRW = format(coef(m)[2], digits = 2), 
+                        r2 = format(summary(m)$r.squared, digits = 3)))
+  as.character(as.expression(eq));                 
+}
+
+
+eqs12 <- ddply(Root.PT,.(Trend),lm_eqn1)
+
+Root.PT%>%
+  ggplot(aes(x=Pt.rate,y=HRW, color=ID))+geom_point(size=2)+theme_bw()+mytheme3+ggtitle("Recharging rate ")+
+  xlab(bquote(bold('Recharging rate ('*kg~cd^-1*')')))+ylab(bquote(bold('Maximum root bomass ('*kg~ha^-1*')')))+
+  geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="darkgrey")+
+  geom_text(data = eqs12, aes(x =2, y =8800, label = V1), 
+          color = 'black',  parse = TRUE)
+ detach(package:plyr)
+ggsave("D:/R/Pictures/C5/Yield//Rechanging rate.png", width=8, height=6, dpi=500)
+
+```
+
+
+
+###RootPT in LL and HH
+```{r}
+Root.PTLH<-Root.PT%>%
+  dplyr::filter(ID!="E3ILL")%>%
+  dplyr::filter(ID!="E5ILLF5")%>% 
+  dplyr::filter(ID!="E5IHHF5")
+Root.PTLH%>%
+  ggplot(aes(x=IRW,y=ChangeWt, color=ID))+geom_point(size=2)+theme_bw()+mytheme3+ggtitle("Recharging potential")
+  #geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="darkgrey")
+
+```
+
+```{r}
+Root.PTLH%>%
+  ggplot(aes(x=IRW,y=Pt.rate, color=ID))+geom_point(size=2)+theme_bw()+mytheme3+ggtitle("Recharging potential")
+  #geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="darkgrey")
+```
+
+###Respiration Rate and intial biomass
+
+```{r,fig.height=4, fig.width=8}
+Root.dfR<-Root.dfA%>%
+  filter(Trend=="RP")%>%
+  mutate(RP.rate=ChangeWt/ChangeTt)%>%
+  mutate(GrowthRotation=paste(GrowthSeason,Rotation))
+
+library(plyr)
+lm_eqn1 <- function(Root.dfR){
+  m <- lm(RP.rate~IRW , Root.dfR);
+  eq <- substitute(italic(y) == IRW+ RP.rate %.% italic(RP.rate)*","~~italic(R)^2~"="~r2, 
+                   list(IRW= format(coef(m)[1], digits = 2), 
+                        RP.rate = format(coef(m)[2], digits = 2), 
+                        r2 = format(summary(m)$r.squared, digits = 3)))
+  as.character(as.expression(eq));                 
+}
+
+
+eqs12 <- ddply(Root.dfR,.(Trend),lm_eqn1)
+
+detach(package:plyr)
+
+Root.dfR%>%
+  ggplot(aes(x=IRW, y=RP.rate,color=ID,label=GrowthRotation))+geom_text()+theme_bw()+mytheme3+
+  xlab(bquote(bold('Intial root biomass ('*kg~DM~ha^-1*')')))+ylab(bquote(bold('Repiration rate ('*kg~Cd^-1*')')))+ggtitle("Respiration in Winter")+
+  geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="darkgrey")+
+  geom_text(data = eqs12, aes(y=6, x =5000, label = V1),
+          color = 'black',  parse = TRUE)
+
+ ggsave("D:/R/Pictures/C5/Yield/Respiartion rate.png", width=8, height=4, dpi=500)
+  
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
