@@ -61,7 +61,7 @@ obsData <- "D:/R/CombinedData/"
 obsSRF <- read.table(paste0(obsData, "Defoliation.txt"),
                    header = TRUE)
 obsDS<- obsSRF %>%
-  dplyr::filter(FD=="FD5")%>%
+  #dplyr::filter(FD=="FD5")%>%
   mutate(StartDate=dmy(StartDate),MidDate=dmy(MidDate),FinishDate=dmy(FinishDate),Clock.Today=dmy(Clock.Today))%>%
   mutate(GrowthSeason1=as.factor(paste0("Gs_",GrowthSeason))) %>% # creating more intuitive labels here
   mutate(Rotation1=as.factor(paste0("Rt_",Rotation))) %>%
@@ -72,7 +72,7 @@ obsDS<- obsSRF %>%
    dplyr::filter(Variable==c("shootbiomass"))
  obsDS
  obsDR<- obsSRF %>%
-  dplyr::filter(FD=="FD5")%>%
+  #dplyr::filter(FD=="FD5")%>%
   mutate(StartDate=dmy(StartDate),MidDate=dmy(MidDate),FinishDate=dmy(FinishDate),Clock.Today=dmy(Clock.Today))%>%
   mutate(GrowthSeason1=as.factor(paste0("Gs_",GrowthSeason))) %>% # creating more intuitive labels here
   mutate(Rotation1=as.factor(paste0("Rt_",Rotation))) %>%
@@ -94,13 +94,17 @@ Tt<- read.table(paste0(obsData, "df.all.txt"),
                header = TRUE)
 TtA <- Tt %>% mutate(Clock.Today=dmy(Clock.Today), ExpUnitCode=as.factor(ExpName))
 TtA
-ObsRS1 <-merge(obsDSR,TtA,by=c("Clock.Today","ExpUnitCode")) %>%
+ObsDRSR1 <-merge(obsDSR,TtA,by=c("Clock.Today","ExpUnitCode")) %>%
   mutate(GrowthRotation=as.factor(paste0(GrowthSeason.x,Rotation.x)))%>%
   dplyr::filter(Water.x=="irr")%>%
-  dplyr::filter(Defoliation.x=="LL")%>%
-  dplyr::filter(Variable=="RootWt"|Variable=="shootbiomass")
+  dplyr::filter(Variable=="RootWt")
   
-summary(ObsRS1)
+ObsDRSS1 <-merge(obsDSR,TtA,by=c("Clock.Today","ExpUnitCode")) %>%
+  mutate(GrowthRotation=as.factor(paste0(GrowthSeason.x,Rotation.x)))%>%
+  dplyr::filter(Water.x=="irr")%>%
+  dplyr::filter(Variable=="shootbiomass")
+ObsDRS1<-rbind(ObsDRSR1,ObsDRSS1)
+summary(ObsDRS1)
 ```
 ###Combine observed data with Tt
 ```{r}
@@ -111,13 +115,22 @@ Tt<- read.table(paste0(obsData, "df.all.txt"),
                header = TRUE)
 TtA <- Tt %>% mutate(Clock.Today=dmy(Clock.Today), ExpUnitCode=as.factor(ExpName))
 TtA
-ObsRS1 <-merge(obsAR,TtA,by=c("Clock.Today","ExpUnitCode")) %>%
+ObsRSR1 <-merge(obsAR,TtA,by=c("Clock.Today","ExpUnitCode")) %>%
   mutate(GrowthRotation=as.factor(paste0(GrowthSeason.x,Rotation.x)))%>%
+  dplyr::filter(Tbb==1)%>%
   dplyr::filter(Water.x=="irr")%>%
   dplyr::filter(Defoliation.x=="LL")%>%
   dplyr::filter(Variable=="RootWt"|Variable=="shootbiomass")%>%
    mutate(Clock.Today1 = as.POSIXct(paste(Clock.Today,Time),format="%Y-%m-%d %H:%M:%S"))
-  
+
+ObsRSS1 <-merge(obsAR,TtA,by=c("Clock.Today","ExpUnitCode")) %>%
+  mutate(GrowthRotation=as.factor(paste0(GrowthSeason.x,Rotation.x)))%>%
+  dplyr::filter(Tbb==1)%>%
+  dplyr::filter(Water.x=="irr")%>%
+  dplyr::filter(Defoliation.x=="LL")%>%
+  dplyr::filter(Variable=="RootWt"|Variable=="shootbiomass")%>%
+   mutate(Clock.Today1 = as.POSIXct(paste(Clock.Today,Time),format="%Y-%m-%d %H:%M:%S"))
+ObsRS1<-rbind(ObsRSR1,ObsRSS1)  
 summary(ObsRS1)
 ```
 ```{r}
@@ -156,75 +169,10 @@ mytheme3<-theme(
     legend.position = "right", legend.box = "vertical")
 ```
 
-## Load simulated database
-## create function to read data (Justin's script)
-```{r LoadSim, include = FALSE, echo=FALSE, warning=FALSE, fig.height=8, fig.width=8}
-GetApsimNGTable <- function(dbLoc, table) 
-{
-  connection <- dbConnect(SQLite(), dbname = dbLoc, flags = SQLITE_RW)
-  table <- dbReadTable(connection, table, row.names=NULL)
-  dbDisconnect(connection)
-  return(table)
-}
-
-```
-# load address of db
-# set table to be enquierd
-# load table into an object
-# make it a dataframe
-# change date to corerct format 
-# explore the df
-```{r}
-db.address <- "D:\\APSIMX2\\Prototypes\\Lucerne\\LucerneValidation.db"
-tableName<-"Report"
-DbTable <- GetApsimNGTable(db.address,tableName)
-df <- as.data.frame(DbTable)
-df$Clock.Today <- ymd_hms(df$Clock.Today)
-str(df)
-summary(df)
-head(df) # simulation results
-```
-
-# get sim names (different table)
-# merge names 
-# remove unecessary variables
-```{r}
-simNameDf <- as.data.frame (GetApsimNGTable(db.address,"_Simulations"))
-myDb <- merge(df, simNameDf, by.x= c("SimulationID"), by.y= c("ID"))
-
-
-#str(myDb)
-head(myDb)
-summary(myDb)
-
-# myDb %>%
-#   dplyr::select(Name) %>%
-#   unique()
-
-```
-
-## Prepare merge
-## Add info for merging
-## select variables that are for comparing with observed data
-
-```{r}
-simD <- myDb %>%
-  dplyr::select(Name,Clock.Today,LAI,SWC,Height,shootbiomass,RootWt, StemWt, LeafWt,NodeNumber) %>%
-  tidyr::gather("Variable","Predicted",LAI:NodeNumber) %>%
-  mutate(Name = as.factor(Name)) %>%
-  mutate(Variable = as.factor(Variable)) %>%
-  mutate(Clock.Today = ymd_hms(Clock.Today))
-
-head(simD)
-summary(simD)
-
-
-
-```
 
 ##Plot data
 
-```{r,fig.height=6, fig.width=10}
+```{r,fig.height=6, fig.width=8}
 ObsRS1$Variable<- factor(ObsRS1$Variable, levels=c("shootbiomass","RootWt"))
 E3ILL<-ObsRS1%>%
   filter(ID=="E3ILL")
@@ -263,7 +211,7 @@ ggplot(aes(x=Clock.Today,y=Observed,color=Variable))+geom_line(size=1)+theme_bw(
      axis.text = element_text(face = "bold", vjust = 0.5, size = 14))
 #ggsave("D:/R/Pictures/C5/Yield//E3ILL.png", width=8, height=6, dpi=500)
 ```
-```{r,fig.height=6, fig.width=10}
+```{r,fig.height=6, fig.width=8}
 ObsRS1$Variable<- factor(ObsRS1$Variable, levels=c("shootbiomass","RootWt"))
 E3ILL<-ObsRS1%>%
   filter(ID=="E3ILL")
@@ -302,11 +250,6 @@ ggplot(aes(x=Clock.Today,y=Observed,color=Variable))+geom_line(size=1)+theme_bw(
      axis.text = element_text(face = "bold", vjust = 0.5, size = 14))
 #ggsave("D:/R/Pictures/C5/Yield//E3ILL.png", width=8, height=6, dpi=500)
 ```
-
-
-
-
-
 
 ```{r,fig.height=6, fig.width=8}
 E3ILL%>%
@@ -392,7 +335,7 @@ E3ISL%>%
      strip.text.y = element_text(size=14, face="plain"),
      legend.title = element_text(colour="black", size=14, face="bold"),
      axis.text = element_text(face = "bold", vjust = 0.5, size = 14))
-#ggsave("D:/R/Pictures/C5/Yield//E3ISL.png", width=8, height=6, dpi=500)
+ggsave("D:/R/Pictures/C5/Yield//E3ISL.png", width=8, height=6, dpi=500)
 ```
 ##E3ISS
 ```{r,fig.height=6, fig.width=8}
@@ -421,7 +364,7 @@ ggplot(aes(x=Clock.Today,y=Observed,color=Variable))+geom_line(size=1)+theme_bw(
      strip.text.y = element_text(size=14, face="plain"),
      legend.title = element_text(colour="black", size=14, face="bold"),
      axis.text = element_text(face = "bold", vjust = 0.5, size = 14))
-#ggsave("D:/R/Pictures/C5/Yield//E3ISS.png", width=8, height=6, dpi=500)
+ggsave("D:/R/Pictures/C5/Yield//E3ISS.png", width=8, height=6, dpi=500)
 ```
 
 ###E5ILLF5
@@ -442,7 +385,7 @@ E5ILLF5<-ObsRS1%>%
 E5ILLF5%>%
 ggplot(aes(x=Clock.Today,y=Observed,color=Variable))+geom_line(size=1)+theme_bw()+
   geom_point(aes(x=Clock.Today,y=Observed))+geom_point(size=3)+
-  facet_grid(Variable~ID)+ggtitle(paste0("E3ILL","(Iversen_91DefoliationLL)"))+
+  facet_grid(Variable~ID)+ggtitle(paste0("E5ILLF5","(Iversen_121DefoliationLLFD5)"))+
   #geom_point(data=Root.L,aes(x=Clock.Today1,y=RootWt,size=2))+
   theme(legend.title=element_blank(),legend.position = "blank")+xlab("Date")+ylab("Biomass (kg/ha)")+
   #remove grid lines 
@@ -461,18 +404,18 @@ ggplot(aes(x=Clock.Today,y=Observed,color=Variable))+geom_line(size=1)+theme_bw(
      strip.text.y = element_text(size=14, face="plain"),
      legend.title = element_text(colour="black", size=14, face="bold"),
      axis.text = element_text(face = "bold", vjust = 0.5, size = 14))
-ggsave("D:/R/Pictures/C5/Yield//E5ILLF5.png", width=8, height=6, dpi=500)
+ggsave("D:/R/Pictures/C5/Yield/E5ILLF5.png", width=8, height=6, dpi=500)
 ```
 
 ##E5ISSF5
 ```{r,fig.height=6, fig.width=8}
 obsDSR$Variable<- factor(obsDSR$Variable, levels=c("shootbiomass","RootWt"))
-E3ISS<-obsDSR%>%
+E5ISSF5<-obsDSR%>%
   filter(ID=="E5ISSF5")
-E3ISS%>%
+E5ISSF5%>%
 ggplot(aes(x=Clock.Today,y=Observed,color=Variable))+geom_line(size=1)+theme_bw()+
   geom_point(aes(x=Clock.Today,y=Observed))+geom_point(size=3)+
-  facet_grid(Variable~ID)+ggtitle("E5ISSF5")+
+  facet_grid(Variable~ID)+ggtitle(paste0("E5ISSF5","(Iversen_121DefoliationSSFD5)"))+
   theme(legend.title=element_blank(),legend.position = "blank")+xlab("Date")+ylab("Biomass (kg/ha)")+
   #remove grid lines 
    theme(
@@ -490,17 +433,45 @@ ggplot(aes(x=Clock.Today,y=Observed,color=Variable))+geom_line(size=1)+theme_bw(
      strip.text.y = element_text(size=14, face="plain"),
      legend.title = element_text(colour="black", size=14, face="bold"),
      axis.text = element_text(face = "bold", vjust = 0.5, size = 14))
-ggsave("D:/R/Pictures/C5/Yield//E5ISSF5.png", width=8, height=6, dpi=500)
+ggsave("D:/R/Pictures/C5/Yield/E5ISSF5.png", width=8, height=6, dpi=500)
 ```
 
 ###load Root and shoot data for HH
 
-```{r,fig.height=6, fig.width=10}
+```{r,fig.height=6, fig.width=8}
 obsDSR$Variable<- factor(obsDSR$Variable, levels=c("shootbiomass","RootWt"))
 E5IHHFD5<-obsDSR%>%
   filter(ID=="E5IHHF5")%>%
   mutate(GrowthRotation=paste0(GrowthSeason,Rotation))
 E5IHHFD5%>%
+ggplot(aes(x=Clock.Today,y=Observed,color=Variable))+geom_line(size=1)+theme_bw()+
+  geom_point(aes(x=Clock.Today,y=Observed))+geom_point(size=3)+
+  facet_grid(Variable~ID)+ggtitle(paste0("E5IHHF5","(Iversen_121DefoliationHHFD5)"))+
+  theme(legend.title=element_blank(),legend.position = "blank")+xlab("Date")+ylab("Biomass (kg/ha)")+
+  #remove grid lines 
+   theme(
+     panel.spacing=unit(.01, "lines"),
+     panel.border = element_rect(colour = "black",size=1), 
+     panel.grid.major = element_blank(),
+     panel.grid.minor = element_blank(),
+     axis.line = element_line(colour = "black",size = 1),
+     axis.text.x = element_text(face = "plain", color = "black", size = 14, vjust=0.5, hjust = 1),
+     axis.text.y = element_text(face = "plain", color = "black", size = 14),
+     axis.title.x=element_text(face="bold",colour="black",size = 14),
+     axis.title.y=element_text(face="bold",colour="black",size = 14),
+     strip.background = element_rect(colour = "black", fill = "white",size=1),
+     strip.text.x = element_text(size=14, angle=0, face = "plain"), 
+     strip.text.y = element_text(size=14, face="plain"),
+     legend.title = element_text(colour="black", size=14, face="bold"),
+     axis.text = element_text(face = "bold", vjust = 0.5, size = 14))
+ggsave("D:/R/Pictures/C5/Yield/E5IHHF5.png", width=8, height=6, dpi=500)
+```
+```{r,fig.height=6, fig.width=8}
+obsDSR$Variable<- factor(obsDSR$Variable, levels=c("shootbiomass","RootWt"))
+E5IHHFD2<-obsDSR%>%
+  filter(ID=="E5IHHF2")%>%
+  mutate(GrowthRotation=paste0(GrowthSeason,Rotation))
+E5IHHFD2%>%
 ggplot(aes(x=Clock.Today,y=Observed,color=Variable))+geom_line(size=1)+theme_bw()+
   geom_point(aes(x=Clock.Today,y=Observed))+geom_point(size=3)+
   facet_grid(Variable~ID)+ggtitle(paste0("E5IHHF5"))+
@@ -521,17 +492,30 @@ ggplot(aes(x=Clock.Today,y=Observed,color=Variable))+geom_line(size=1)+theme_bw(
      strip.text.y = element_text(size=14, face="plain"),
      legend.title = element_text(colour="black", size=14, face="bold"),
      axis.text = element_text(face = "bold", vjust = 0.5, size = 14))
-ggsave("D:/R/Pictures/C5/Yield//E5IHHF5.png", width=8, height=6, dpi=500)
+ggsave("D:/R/Pictures/C5/Yield//E5IHHF2.png", width=8, height=6, dpi=500)
 ```
 
 
-
+##E5ILLF2 
 ```{r}
-E5IHHFD5%>%
-  filter(GrowthSeason=="4")%>%
+ObsRS1$Variable<- factor(ObsRS1$Variable, levels=c("shootbiomass","RootWt"))
+E5ILLF2<-ObsRS1%>%
+  filter(ID=="E5ILLF2")
+# simD1<-simD%>%
+#    mutate(Clock.Today = ymd_hms(Clock.Today))%>%
+#    dplyr::filter(Variable=="RootWt"|Variable=="shootbiomass")%>%
+#    dplyr::filter(Clock.Today>"2002-06-01")%>%
+#    dplyr::filter(Name=="Iversen_91DefoliationLL")
+#   simD1$Variable<- factor( simD1$Variable, levels=c("shootbiomass","RootWt"))  
+# Root.L<-Root.dfA%>%
+#   dplyr::filter(Name==c("Iversen_91DefoliationLL"))
+#   
+  
+E5ILLF2%>%
 ggplot(aes(x=Clock.Today,y=Observed,color=Variable))+geom_line(size=1)+theme_bw()+
   geom_point(aes(x=Clock.Today,y=Observed))+geom_point(size=3)+
-  facet_grid(Variable~GrowthRotation)+ggtitle(paste0("E5IHHF5"))+
+  facet_grid(Variable~ID)+
+  #geom_point(data=Root.L,aes(x=Clock.Today1,y=RootWt,size=2))+
   theme(legend.title=element_blank(),legend.position = "blank")+xlab("Date")+ylab("Biomass (kg/ha)")+
   #remove grid lines 
    theme(
@@ -549,6 +533,47 @@ ggplot(aes(x=Clock.Today,y=Observed,color=Variable))+geom_line(size=1)+theme_bw(
      strip.text.y = element_text(size=14, face="plain"),
      legend.title = element_text(colour="black", size=14, face="bold"),
      axis.text = element_text(face = "bold", vjust = 0.5, size = 14))
+ggsave("D:/R/Pictures/C5/Yield//E5ILLF2.png", width=8, height=6, dpi=500)
+```
+
+###E5ILLF10
+```{r}
+ObsRS1$Variable<- factor(ObsRS1$Variable, levels=c("shootbiomass","RootWt"))
+E5ILLF10<-ObsRS1%>%
+  filter(ID=="E5ILLF10")
+# simD1<-simD%>%
+#    mutate(Clock.Today = ymd_hms(Clock.Today))%>%
+#    dplyr::filter(Variable=="RootWt"|Variable=="shootbiomass")%>%
+#    dplyr::filter(Clock.Today>"2002-06-01")%>%
+#    dplyr::filter(Name=="Iversen_91DefoliationLL")
+#   simD1$Variable<- factor( simD1$Variable, levels=c("shootbiomass","RootWt"))  
+# Root.L<-Root.dfA%>%
+#   dplyr::filter(Name==c("Iversen_91DefoliationLL"))
+#   
+  
+E5ILLF10%>%
+ggplot(aes(x=Clock.Today,y=Observed,color=Variable))+geom_line(size=1)+theme_bw()+
+  geom_point(aes(x=Clock.Today,y=Observed))+geom_point(size=3)+
+  facet_grid(Variable~ID)+
+  #geom_point(data=Root.L,aes(x=Clock.Today1,y=RootWt,size=2))+
+  theme(legend.title=element_blank(),legend.position = "blank")+xlab("Date")+ylab("Biomass (kg/ha)")+
+  #remove grid lines 
+   theme(
+     panel.spacing=unit(.01, "lines"),
+     panel.border = element_rect(colour = "black",size=1), 
+     panel.grid.major = element_blank(),
+     panel.grid.minor = element_blank(),
+     axis.line = element_line(colour = "black",size = 1),
+     axis.text.x = element_text(face = "plain", color = "black", size = 14, vjust=0.5, hjust = 1),
+     axis.text.y = element_text(face = "plain", color = "black", size = 14),
+     axis.title.x=element_text(face="bold",colour="black",size = 14),
+     axis.title.y=element_text(face="bold",colour="black",size = 14),
+     strip.background = element_rect(colour = "black", fill = "white",size=1),
+     strip.text.x = element_text(size=14, angle=0, face = "plain"), 
+     strip.text.y = element_text(size=14, face="plain"),
+     legend.title = element_text(colour="black", size=14, face="bold"),
+     axis.text = element_text(face = "bold", vjust = 0.5, size = 14))
+ggsave("D:/R/Pictures/C5/Yield//E5ILLF10.png", width=8, height=6, dpi=500)
 ```
 
 
@@ -635,7 +660,7 @@ ObsRS1S<-ObsRS1%>%
   mutate(Name=factor(Name))
  
 LLAll<-merge(ObsRS1R,ObsRS1S,by=c("Clock.Today","Name"))%>%
-  filter(Tb==1)%>%
+  filter(Tbb==1)%>%
   mutate(Biomass=RootWt+shootbiomass)%>%
   mutate(Proot=1-shootbiomass/Biomass)%>%
   unique()
@@ -844,7 +869,7 @@ eqs <- ddply(ReRoot,.(Trend),lm_eqn1)
 
 ReRoot%>%
   ggplot(aes(x=IRW,y=ChangeWt, color=ID))+geom_point(size=2)+theme_bw()+mytheme3+
-  geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="darkgrey")+xlab(bquote(bold('Intial root biomass ('*kg~DM~ha^-1*')')))+ylab(bquote(bold('Remoblised lost ('*kg~DM~ha^-1*')')))+
+  geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="darkgrey")+xlab(bquote(bold('Intial root biomass ('*kg~DM~ha^-1*')')))+ylab(bquote(bold('Remoblisation lost ('*kg~DM~ha^-1*')')))+
   geom_text(data = eqs, aes(x =7000, y =7000, label = V1), 
           color = 'black',  parse = TRUE)+
   ggtitle("Remoblisation potential")
@@ -900,7 +925,7 @@ lm_eqn1 <- function(RootSS){
 eqs1 <- ddply(RootSS,.(Trend),lm_eqn1)
 
 RootSS%>%
-  ggplot(aes(x=IRW,y=ChangeWt, color=ID))+geom_point(size=2)+theme_bw()+mytheme3+xlab(bquote(bold('Intial root biomass ('*kg~DM~ha^-1*')')))+ylab(bquote(bold('Remoblised lost ('*kg~DM~ha^-1*')')))+
+  ggplot(aes(x=IRW,y=ChangeWt, color=ID))+geom_point(size=2)+theme_bw()+mytheme3+xlab(bquote(bold('Intial root biomass ('*kg~DM~ha^-1*')')))+ylab(bquote(bold('Remoblisation lost ('*kg~DM~ha^-1*')')))+
   geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="darkgrey")+
   geom_text(data = eqs1, aes(x =4000, y =2500, label = V1), 
           color = 'black',  parse = TRUE)
@@ -930,7 +955,7 @@ lm_eqn1 <- function(Root.dfA1){
 eqs1 <- ddply(Root.dfA1,.(Trend),lm_eqn1)
 
 Root.dfA1%>%
-  ggplot(aes(x=IRW,y=ChangeWt, color=ID))+geom_point(size=2)+theme_bw()+mytheme3+xlab(bquote(bold('Intial root biomass ('*kg~DM~ha^-1*')')))+ylab(bquote(bold('Remoblised lost ('*kg~DM~ha^-1*')')))+
+  ggplot(aes(x=IRW,y=ChangeWt, color=ID))+geom_point(size=2)+theme_bw()+mytheme3+xlab(bquote(bold('Intial root biomass ('*kg~DM~ha^-1*')')))+ylab(bquote(bold('Remoblisation lost ('*kg~DM~ha^-1*')')))+
   geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="darkgrey")+
   geom_text(data = eqs1, aes(x =6000, y =6000, label = V1), 
           color = 'black',  parse = TRUE)
@@ -958,7 +983,7 @@ lm_eqn1 <- function(Root.dfA1){
 eqs11 <- ddply(Root.dfA1,.(Trend),lm_eqn1)
 
 Root.dfA1%>%
-  ggplot(aes(x=IRW,y=Per, color=ID))+geom_point(size=2)+theme_bw()+mytheme3+xlab(bquote(bold('Intial root biomass ('*kg~DM~ha^-1*')')))+ylab("Remoblised lost(%)")+
+  ggplot(aes(x=IRW,y=Per, color=ID))+geom_point(size=2)+theme_bw()+mytheme3+xlab(bquote(bold('Intial root biomass ('*kg~DM~ha^-1*')')))+ylab("Remoblisation lost(%)")+
   geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="darkgrey")+
   geom_text(data = eqs11, aes(x =6000, y =0.75, label = V1), 
           color = 'black',  parse = TRUE)
@@ -989,7 +1014,7 @@ my.formula  <- function(Root.dfA1){
 my.eqs <- ddply(Root.dfA1,.(FD),my.formula)
 
 b<-Root.dfA1%>%
-  ggplot(aes(x=IRW,y=ChangeWt, color=ID))+geom_point(size=2)+theme_bw()+mytheme3+xlab(bquote(bold('Intial root biomass ('*kg~DM~ha^-1*')')))+ylab(bquote(bold('Remoblised lost ('*kg~DM~ha^-1*')')))+
+  ggplot(aes(x=IRW,y=ChangeWt, color=ID))+geom_point(size=2)+theme_bw()+mytheme3+xlab(bquote(bold('Intial root biomass ('*kg~DM~ha^-1*')')))+ylab(bquote(bold('Remoblisation lost ('*kg~DM~ha^-1*')')))+
   geom_smooth(method = "lm", se = TRUE, formula=y ~ poly(x, 2, raw=TRUE), colour="darkgrey")+
   theme(legend.title = element_blank())
 
@@ -1020,7 +1045,7 @@ my.formula  <- function(Root.dfA1){
 my.eqs <- ddply(Root.dfA1,.(FD),my.formula)
 
 b<-Root.dfA1%>%
-  ggplot(aes(x=IRW,y=ChangeWt, color=ID))+geom_point(size=2)+theme_bw()+mytheme3+xlab(bquote(bold('Intial root biomass ('*kg~DM~ha^-1*')')))+ylab(bquote(bold('Remoblised lost ('*kg~DM~ha^-1*')')))+
+  ggplot(aes(x=IRW,y=ChangeWt, color=ID))+geom_point(size=2)+theme_bw()+mytheme3+xlab(bquote(bold('Intial root biomass ('*kg~DM~ha^-1*')')))+ylab(bquote(bold('Remoblisation lost ('*kg~DM~ha^-1*')')))+
   geom_smooth(method = "lm", se = TRUE, formula=y ~ poly(x, 3, raw=TRUE), colour="darkgrey")+
   theme(legend.title = element_blank())
 
@@ -1056,7 +1081,7 @@ eqs11 <- ddply(Root.dfALL,.(Trend),lm_eqn1)
 
 Root.dfALL%>%
 ggplot(aes(x=IRW,y=Re.rate, color=ID))+geom_point(size=2)+theme_bw()+mytheme3+
-  xlab(bquote(bold('Intial root biomass ('*kg~ha^-1*')')))+ylab(bquote(bold('Remoblise rate ('*kg~cd^-1*')')))+
+  xlab(bquote(bold('Intial root biomass ('*kg~ha^-1*')')))+ylab(bquote(bold('Remoblisation  rate ('*kg~cd^-1*')')))+
   geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="darkgrey")+
   geom_text(data = eqs11, aes(x =6000, y =4, label = V1), 
           color = 'black',  parse = TRUE)
@@ -1091,9 +1116,9 @@ Root.PT<-Root.dfA%>%
 
 library(plyr)
 lm_eqn1 <- function(Root.PT){
-  m <- lm(HRW~ChangeWt , Root.dfALL);
-  eq <- substitute(italic(y) == ChangeWt+ HRW %.% italic(ChangeWt)*","~~italic(R)^2~"="~r2, 
-                   list(ChangeWt= format(coef(m)[1], digits = 2), 
+  m <- lm(HRW~IRW , Root.PT);
+  eq <- substitute(italic(y) == IRW+ HRW %.% italic(IRW)*","~~italic(R)^2~"="~r2, 
+                   list(IRW= format(coef(m)[1], digits = 2), 
                         HRW = format(coef(m)[2], digits = 2), 
                         r2 = format(summary(m)$r.squared, digits = 3)))
   as.character(as.expression(eq));                 
@@ -1103,10 +1128,10 @@ lm_eqn1 <- function(Root.PT){
 eqs12 <- ddply(Root.PT,.(Trend),lm_eqn1)
 
 Root.PT%>%
-  ggplot(aes(x=ChangeWt,y=HRW, color=ID))+geom_point(size=2)+theme_bw()+mytheme3+ggtitle("Recharging potential ")+
-  xlab(bquote(bold('Recharging root biomass ('*kg~ha^-1*')')))+ylab(bquote(bold('Maximum root bomass ('*kg~ha^-1*')')))+
+  ggplot(aes(x=IRW,y=HRW, color=ID))+geom_point(size=2)+theme_bw()+mytheme3+ggtitle("Recharging potential ")+
+  xlab(bquote(bold('Inital root biomass ('*kg~ha^-1*')')))+ylab(bquote(bold('Maximum root bomass ('*kg~ha^-1*')')))+
   geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="darkgrey")+
-  geom_text(data = eqs11, aes(x =2500, y =8800, label = V1), 
+  geom_text(data = eqs12, aes(x =4000, y =8800, label = V1), 
           color = 'black',  parse = TRUE)
  detach(package:plyr)
 ggsave("D:/R/Pictures/C5/Yield//Rechanging potential.png", width=8, height=6, dpi=500)
@@ -1197,7 +1222,819 @@ Root.dfR%>%
           color = 'black',  parse = TRUE)
 
  ggsave("D:/R/Pictures/C5/Yield/Respiartion rate.png", width=8, height=4, dpi=500)
+ write.csv(Root.dfR,"D:/R/Respiration/Root.dfR.csv", row.names = FALSE)
   
+```
+
+###respiration and structural root biomass
+###structural root is percentage of total root biomass
+```{r}
+Root.dfper<-Root.dfA%>%
+  filter(Trend=="RP")%>%
+  mutate(Per=1-ChangeTt/IRW)%>%
+   mutate(GrowthRotation=as.factor(paste(GrowthSeason,Rotation)))%>%
+  dplyr::filter(GrowthSeason!="2"|Rotation!="10")
+
+library(plyr)
+lm_eqn11 <- function(Root.dfper){
+  m <- lm(ChangeWt~IRW , Root.dfper);
+  eq <- substitute(italic(y) == IRW+ ChangeWt %.% italic(ChangeWt)*","~~italic(R)^2~"="~r2, 
+                   list(IRW= format(coef(m)[1], digits = 2), 
+                        ChangeWt = format(coef(m)[2], digits = 2), 
+                        r2 = format(summary(m)$r.squared, digits = 3)))
+  as.character(as.expression(eq));                 
+}
+
+
+eqs13 <- ddply(Root.dfper,.(Trend),lm_eqn11)
+
+detach(package:plyr)
+
+Root.dfper%>%
+  ggplot(aes(x=IRW, y=ChangeWt,color=ID,label=GrowthRotation))+geom_text()+theme_bw()+mytheme3+
+  xlab(bquote(bold('Initial root biomass ('*kg~ha^-1*')')))+ylab(bquote(bold('Root respiration ('*kg~ha^-1*')')))+ggtitle("Respiration in Winter")+
+  geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="darkgrey")+
+  geom_text(data = eqs13, aes(y=2000, x =6000, label = V1),
+          color = 'black',  parse = TRUE)
+
+ ggsave("D:/R/Pictures/C5/Yield/rootsturctural.png", width=8, height=4, dpi=500)
+ #write.csv(Root.dfR,"D:/R/Respiration/Root.dfR.csv", row.names = FALSE)
+
+ ###structural root biomass=2491.30
+
+```
+
+### daily winter respiration 
+```{r,,fig.height=8, fig.width=8}
+upDir <- "D:/R/"
+Rootdf <- "D:/R/Respiration/"
+
+RootResp<- read.table(paste0(Rootdf, "RootResp.txt"),
+               header = TRUE)
+Root.resp <- RootResp %>% mutate(Clock.Today=dmy(Clock.Today))%>%
+  filter(FinialRW!="NA")%>%
+  dplyr::select(Name,Clock.Today,Tearth,GrowthRotation,FinialRW,Rm_root_day1,Rm_root_day2,Rm_root_day3, Rm_root_day4, Rm_root_day5,Rm_root_day6,Rm_root_day7,Rm_root_day8,Rm_root_day9,Rm_root_day10) %>%
+  tidyr::gather("Variable","Predicted",Rm_root_day1:Rm_root_day10)
+  #filter(Name!="Iversen_91DefoliationLL"|GrowthRotation!="31")
+  #filter(Name!="Iversen_121DefoliationHHFDFD5")
+
+Root.resp$Variable<- factor(Root.resp$Variable, levels=c("Rm_root_day1", "Rm_root_day2", "Rm_root_day3", "Rm_root_day4", "Rm_root_day5","Rm_root_day6", "Rm_root_day7","Rm_root_day8","Rm_root_day9","Rm_root_day10"))
+Root.resp%>%
+  ggplot(aes(x=FinialRW, y= Predicted, colour= factor(Name))) +
+  geom_point(size=2)+theme_bw()+
+  geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="darkgrey") +
+  geom_abline(intercept = 0, slope = 1) +
+  coord_fixed(ratio = 1)+
+  ggtitle("Root biomass")+
+  facet_wrap(~Variable, ncol = 4)+
+  theme_bw()+mytheme3+
+   scale_x_continuous(breaks = seq(2000,8000, by =3000), limits=c(0,8000))+
+  scale_y_continuous(breaks = seq(2000, 6000, by =2000), limits=c(0,8000))+
+  ylab("Predicted")+xlab("Observed")+ggtitle("Respiration in Winter")+ theme(legend.title=element_blank(),legend.position = "blank")
+ ggsave("D:/R/Pictures/C5/Yield/Rm_root_day.png", width=8, height=8, dpi=500)
+```
+## Define stats function
+
+* Using Gauch et al. 2003 (Model evaluation by comparison of model-based predictions and measured values. Agron. J. 95, 1442-1446) 
+```{r Stats, include = TRUE, echo=FALSE, warning=FALSE, fig.height=8, fig.width=8}
+
+# # R2
+# testDF <- data.frame(a=c(1,2,3,4,5), b=c(10,20,10,40,50))
+# 
+# myR2 <- function(p,o) {
+#  return(summary(lm(p~o, na.action=na.exclude))$r.squared) 
+# }
+# 
+# testDF %>%
+#   summarise(thisR2 = myR2(a,b))
+
+# gauch MSE components
+gauchStats <- function(sim, meas) {
+
+  n_s <- length(sim)
+  n_m <- length(meas)
+  model <- lm(meas~sim)
+  sim_sq <- sum((sim - mean(sim))^2)
+  mes_sq <- sum((meas - mean(meas))^2)
+  r2 <- summary(model)$r.squared
+  slope <- model$coefficients[[2]]
+
+  sb <- (sum(mean(meas)) - sum(mean(sim)))^2
+  nu <- (1-slope)^2 * (sim_sq/n_s)
+  lc <- (1-r2) * (mes_sq/n_m)
+  msd <- sb+nu+lc
+
+  sb_r <- round((sb/msd)*100,1)
+  nu_r <- round((nu/msd)*100,1)
+  lc_r <- round((lc/msd)*100,1)
+
+  msd_r <- sb_r+nu_r+lc_r
+
+  # select which variables to output
+  out <- c(sb_r,nu_r,lc_r, msd_r, round(r2*100,1))
+
+  return(out)
+
+}
+```
+
+## Test stats functions used
+
+```{r}
+s <- c(4231.972,3935.604,3779.652,3627.687,3363.499,3230.566,2868.114,2868.827)
+m <- c(4987.66,5636.09,4754.06,4114.53,4141.72,3704.06,5142.19,4762.03)
+
+x <- gauchStats(s,m)
+
+tempDf <- data.frame(statName=c("SB","NU","LC","r_MSD","R2"), statValue=x)
+# kable(tempDf, digits= 2)
+tempDf2 <- data.frame(Predicted=s, Observed=m)
+
+x <- tempDf2 %>%
+  summarise(
+    n = n(),
+    r2 = gauchStats(Predicted,Observed)[5],
+  #  rmse = round(rmse(Predicted,Observed),0),
+    r_rmse = round(rmse(Predicted,Observed)/mean(Observed)*100,1),
+    nse = round(NSE(Predicted,Observed),1),
+    sb = gauchStats(Predicted,Observed)[1],
+  nu = gauchStats(Predicted,Observed)[2],
+  lc = gauchStats(Predicted,Observed)[3]
+  ) %>% 
+  t() 
+
+df <- data.frame(stat = row.names(x),statvalue = x[,1])
+
+df %>%
+  kable(format = "markdown")
+```
+
+```{r}
+Root.resp$Variable<- factor(Root.resp$Variable, levels=c("Rm_root_day1", "Rm_root_day2", "Rm_root_day3", "Rm_root_day4", "Rm_root_day5","Rm_root_day6", "Rm_root_day7","Rm_root_day8","Rm_root_day9","Rm_root_day10"))
+Root.resp %>%
+  mutate(Observed=FinialRW)%>%
+   #filter(Name!="Iversen_121DefoliationHHFDFD5")%>%
+  group_by(Variable) %>%
+  summarise(
+    n = n(),
+    r2 = gauchStats(Predicted,Observed)[5],
+  #  rmse = round(rmse(Predicted,Observed),0),
+    r_rmse = round(rmse(Predicted,Observed)/mean(Observed)*100,1),
+    nse = round(NSE(Predicted,Observed),1),
+    sb = gauchStats(Predicted,Observed)[1],
+  nu = gauchStats(Predicted,Observed)[2],
+  lc = gauchStats(Predicted,Observed)[3]
+  ) 
+###1=0.013,0.015, 0.02, 0.025,0.028, 0.03, 0.035,0.04,(0.045),0.05
+
+```
+
+### daily winter respiration with structural root biomass
+```{r,,fig.height=8, fig.width=8}
+upDir <- "D:/R/"
+Rootdf <- "D:/R/Respiration/"
+
+RootResp<- read.table(paste0(Rootdf, "RootRespStru.txt"),
+               header = TRUE)
+Root.resp.stru <- RootResp %>% mutate(Clock.Today=dmy(Clock.Today))%>%
+  filter(FinialRW!="NA")%>%
+  dplyr::select(Name,Clock.Today,Tearth,GrowthRotation,FinialRW,Rm_root_day1,Rm_root_day2,Rm_root_day3, Rm_root_day4, Rm_root_day5,Rm_root_day6,Rm_root_day7,Rm_root_day8,Rm_root_day9,Rm_root_day10,Rm_root_day11,Rm_root_day12,Rm_root_day13,Rm_root_day14,Rm_root_day15,Rm_root_day16,Rm_root_day17,Rm_root_day18,Rm_root_day19,Rm_root_day20) %>%
+  tidyr::gather("Variable","Predicted",Rm_root_day1:Rm_root_day20)
+  #filter(Name!="Iversen_91DefoliationLL"|GrowthRotation!="31")
+  #filter(Name!="Iversen_121DefoliationHHFDFD5")
+
+Root.resp.stru$Variable<- factor(Root.resp.stru$Variable, levels=c("Rm_root_day1", "Rm_root_day2", "Rm_root_day3", "Rm_root_day4", "Rm_root_day5","Rm_root_day6", "Rm_root_day7","Rm_root_day8","Rm_root_day9","Rm_root_day10","Rm_root_day11","Rm_root_day12","Rm_root_day13","Rm_root_day14","Rm_root_day15","Rm_root_day16","Rm_root_day17","Rm_root_day18","Rm_root_day19","Rm_root_day20"))
+Root.resp.stru%>%
+  ggplot(aes(x=FinialRW, y= Predicted, colour= factor(Name))) +
+  geom_point(size=2)+theme_bw()+
+  geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="darkgrey") +
+  geom_abline(intercept = 0, slope = 1) +
+  coord_fixed(ratio = 1)+
+  ggtitle("Root biomass")+
+  facet_wrap(~Variable, ncol = 5)+
+  theme_bw()+mytheme3+
+   scale_x_continuous(breaks = seq(2000,8000, by =3000), limits=c(0,8000))+
+  scale_y_continuous(breaks = seq(2000, 6000, by =2000), limits=c(0,8000))+
+  ylab("Predicted")+xlab("Observed")+ggtitle("Respiration in Winter")+ theme(legend.title=element_blank(),legend.position = "blank")
+ ggsave("D:/R/Pictures/C5/Yield/Rm_root_dayStru.png", width=8, height=10, dpi=500)
+```
+###analysis
+```{r}
+Root.resp.stru$Variable<- factor(Root.resp.stru$Variable, levels=c("Rm_root_day1", "Rm_root_day2", "Rm_root_day3", "Rm_root_day4", "Rm_root_day5","Rm_root_day6", "Rm_root_day7","Rm_root_day8","Rm_root_day9","Rm_root_day10","Rm_root_day11","Rm_root_day12","Rm_root_day13","Rm_root_day14","Rm_root_day15","Rm_root_day16","Rm_root_day17","Rm_root_day18","Rm_root_day19","Rm_root_day20"))
+Root.resp.stru %>%
+  mutate(Observed=FinialRW)%>%
+   #filter(Name!="Iversen_121DefoliationHHFDFD5")%>%
+  group_by(Variable) %>%
+  summarise(
+    n = n(),
+    r2 = gauchStats(Predicted,Observed)[5],
+  #  rmse = round(rmse(Predicted,Observed),0),
+    r_rmse = round(rmse(Predicted,Observed)/mean(Observed)*100,1),
+    nse = round(NSE(Predicted,Observed),1),
+    sb = gauchStats(Predicted,Observed)[1],
+  nu = gauchStats(Predicted,Observed)[2],
+  lc = gauchStats(Predicted,Observed)[3]
+  ) 
+###1=0.013,0.018, 0.02, 0.025, 0.03, 0.035, 0.04, 0.045, 0.05, 0.055, 0.06, 0.065, 0.07, 0.075, 0.08, (0.085),0.09,0.095,0.1, 0.15.
+
+```
+
+
+###New ananlysis
+###Interpuolate PARi
+###load data
+```{r}
+
+upDir <- "D:/R/CombinedData/"
+obsData <- "D:/R/CombinedData/"
+
+Rootmet <- read.table(paste0(obsData, "RootMet.txt"),
+                   header = TRUE) %>%
+  dplyr::filter(ExpName!="Iversen_91DefoliationLSGs_1Rt_8")%>%
+  dplyr::filter(ExpName!="Iversen_121DefoliationLLFDFD5Gs_3Rt_6")
+
+```
+###Interpoluate
+###Interpolate temperature factor 
+
+```{r}
+
+# Create a TT linear interpolation function
+
+# Aim: Interpolates linearly between two known x-y pairs
+
+int_func <- function(temp,TT,temp_ref){
+
+# if temp is too low or too high give extreme TT values
+ if(temp_ref>temp[length(temp)]) {
+   
+   out <- TT[length(TT)] 
+   
+ } else if (temp_ref<temp[1]) {
+   
+   out <- TT[1]
+   
+ } else {
+   
+# else interpolate
+   
+   tryCatch(  
+   
+  out <- approx(temp, TT, xout = temp_ref, 
+         method="linear", 
+         rule = 2)$y,
+  error = function(e) 
+  {
+  out <- NA
+  }
+) 
+  
+} # end if check
+
+  return(out)  
+  
+ }
+  
+
+# Test and test interpolation function 
+
+# Set an input cardinal temperature df
+tt_card <- data.frame(x_ref=c(1.0,  5.0,  10,  15,  30,  40),
+                      y_ref=c(0.0,  3.0,  6.5, 10,  25,  0.0))
+
+temp_ref  <- 25 # random input x-axes value to test
+temp <- tt_card$x_ref # x-axes
+TT <- tt_card$y_ref # y-axes
+
+int_func(temp,TT,temp_ref) # result must be 20
+```
+### interpoluate as x and y pairs
+
+```{r}
+
+t_factor <- data.frame(x_ref=c(0.0, 18,  30,  40),
+                        y_ref=c(0.0, 1.0,  1.0,  0.0))
+  
+  
+Tem.factor<-Rootmet %>%
+  mutate(T.factor=int_func(t_factor$x_ref,t_factor$y_ref, mean))%>%
+  #mutate(potentialProduction=PARi*16.2*T.factor)%>%     ###RUE =1.62
+  mutate(Clock.Today=dmy(Clock.Today))%>%
+  mutate(ExpUnitCode=as.factor(ExpName))
+  
+                                       
+Tem.factor  
+write.csv(Tem.factor ,"D:/R/Respiration/Tem.factor.csv", row.names = FALSE)
+
+```
+
+
+
+###fPAR interpolate for each rotation
+####RUE testing
+```{r}
+
+UniExp <- unique(Tem.factor$ExpName)
+
+fPAR.df <- data.frame()
+  
+for(i in 1:length(UniExp))
+{
+  
+ RootmetfPAR<-Tem.factor %>%
+   filter(ExpName==UniExp[i])%>%
+  mutate(Tt_broken_sum=as.numeric(Tt_broken_sum))
+  
+ fPAR.data<-RootmetfPAR%>%
+  mutate(fPAR=approx(Tt_broken_sum, Franction, xout =Tt_broken_sum, 
+         method="linear", 
+         rule = 2)$y)%>%     ##interpolate function 
+ mutate(PARi=radn*fPAR)%>% 
+    unique()%>%
+     ##accmulated function
+ mutate(Production.day0 = PARi*7.2*T.factor)%>%               ###RUE is 0.72g/MJ
+ mutate(Production.sum0 = cumsum(Production.day0))%>%
+ mutate(Production.day1 = PARi*7.7*T.factor)%>%               ###RUE is 0.77g/MJ
+ mutate(Production.sum1 = cumsum(Production.day1))%>%
+ mutate(Production.day2 = PARi*8.2*T.factor)%>%               ###RUE is 0.82g/MJ
+ mutate(Production.sum2 = cumsum(Production.day2))%>%
+ mutate(Production.day3 = PARi*8.7*T.factor)%>%               ###RUE is 0.87g/MJ
+ mutate(Production.sum3 = cumsum(Production.day3))%>%
+ mutate(Production.day3A = PARi*8.8*T.factor)%>%               ###RUE is 0.88g/MJ
+ mutate(Production.sum3A = cumsum(Production.day3A))%>% 
+ mutate(Production.day3B = PARi*8.9*T.factor)%>%               ###RUE is 0.89g/MJ
+ mutate(Production.sum3B = cumsum(Production.day3B))%>%  
+ mutate(Production.day3C = PARi*9.0*T.factor)%>%               ###RUE is 0.90g/MJ
+ mutate(Production.sum3C = cumsum(Production.day3C))%>%    
+ mutate(Production.day3D = PARi*9.1*T.factor)%>%               ###RUE is 0.91g/MJ
+ mutate(Production.sum3D = cumsum(Production.day3D))%>% 
+ mutate(Production.day4 = PARi*9.2*T.factor)%>%               ###RUE is 0.92g/MJ
+ mutate(Production.sum4 = cumsum(Production.day4))%>%
+ mutate(Production.day4A = PARi*9.3*T.factor)%>%               ###RUE is 0.93g/MJ
+ mutate(Production.sum4A = cumsum(Production.day4A))%>% 
+ mutate(Production.day4B = PARi*9.4*T.factor)%>%               ###RUE is 0.94g/MJ
+ mutate(Production.sum4B = cumsum(Production.day4B))%>%  
+ mutate(Production.day4C = PARi*9.5*T.factor)%>%               ###RUE is 0.95g/MJ
+ mutate(Production.sum4C = cumsum(Production.day4C))%>%  
+ mutate(Production.day4D = PARi*9.6*T.factor)%>%               ###RUE is 0.96g/MJ
+ mutate(Production.sum4D = cumsum(Production.day4D))%>%  
+ mutate(Production.day5 = PARi*9.7*T.factor)%>%               ###RUE is 0.97g/MJ
+ mutate(Production.sum5 = cumsum(Production.day5))%>%
+ mutate(Production.day6 = PARi*10.2*T.factor)%>%               ###RUE is 1.02g/MJ
+ mutate(Production.sum6 = cumsum(Production.day6))%>% 
+ mutate(Production.day7 = PARi*10.7*T.factor)%>%               ###RUE is 1.07g/MJ
+ mutate(Production.sum7 = cumsum(Production.day7))%>%  
+ mutate(Production.day7A = PARi*10.8*T.factor)%>%               ###RUE is 1.08g/MJ
+ mutate(Production.sum7A = cumsum(Production.day7A))%>%  
+ mutate(Production.day7B = PARi*10.9*T.factor)%>%               ###RUE is 1.09g/MJ
+ mutate(Production.sum7B = cumsum(Production.day7B))%>% 
+ mutate(Production.day7C = PARi*11.0*T.factor)%>%               ###RUE is 1.10g/MJ
+ mutate(Production.sum7C = cumsum(Production.day7C))%>% 
+ mutate(Production.day7D = PARi*11.1*T.factor)%>%               ###RUE is 1.11g/MJ
+ mutate(Production.sum7D = cumsum(Production.day7D))%>% 
+ mutate(Production.day8 = PARi*11.2*T.factor)%>%                ###RUE is 1.12g/MJ
+ mutate(Production.sum8 = cumsum(Production.day8))%>%
+ mutate(Production.day8A = PARi*11.3*T.factor)%>%               ###RUE is 1.13g/MJ
+ mutate(Production.sum8A = cumsum(Production.day8A))%>%  
+ mutate(Production.day8B = PARi*11.4*T.factor)%>%               ###RUE is 1.14g/MJ
+ mutate(Production.sum8B = cumsum(Production.day8B))%>% 
+ mutate(Production.day8C = PARi*11.5*T.factor)%>%               ###RUE is 1.15g/MJ
+ mutate(Production.sum8C = cumsum(Production.day8C))%>% 
+ mutate(Production.day8D = PARi*11.6*T.factor)%>%               ###RUE is 1.16g/MJ
+ mutate(Production.sum8D = cumsum(Production.day8D))%>% 
+ mutate(Production.day9  = PARi*11.7*T.factor)%>%                ###RUE is 1.17g/MJ
+ mutate(Production.sum9  = cumsum(Production.day9))%>%  
+ mutate(Production.day9A = PARi*11.8*T.factor)%>%               ###RUE is 1.18g/MJ
+ mutate(Production.sum9A = cumsum(Production.day9A))%>%  
+ mutate(Production.day9B = PARi*11.9*T.factor)%>%               ###RUE is 1.19g/MJ
+ mutate(Production.sum9B = cumsum(Production.day9B))%>% 
+ mutate(Production.day9C = PARi*12.0*T.factor)%>%               ###RUE is 1.20g/MJ
+ mutate(Production.sum9C = cumsum(Production.day9C))%>% 
+ mutate(Production.day9D = PARi*12.1*T.factor)%>%               ###RUE is 1.21g/MJ
+ mutate(Production.sum9D = cumsum(Production.day9D))%>% 
+ mutate(Production.day10 = PARi*12.2*T.factor)%>%               ###RUE is 1.22g/MJ
+ mutate(Production.sum10 = cumsum(Production.day10))%>%
+ mutate(Production.day11 = PARi*12.7*T.factor)%>%               ###RUE is 1.27g/MJ
+ mutate(Production.sum11 = cumsum(Production.day11))%>%
+ mutate(Production.day12 = PARi*13.2*T.factor)%>%               ###RUE is 1.32g/MJ
+ mutate(Production.sum12 = cumsum(Production.day12))%>%
+ mutate(Production.day13 = PARi*13.7*T.factor)%>%               ###RUE is 1.37g/MJ
+ mutate(Production.sum13 = cumsum(Production.day13))%>%
+ mutate(Potentialroot1 = PARi*1*T.factor)%>%
+ mutate(Sumpotential1 = cumsum(Potentialroot1))%>%           ###RuE root is 0.1g/MJ
+ mutate(Potentialroot2 = PARi*2*T.factor)%>%
+ mutate(Sumpotential2 = cumsum(Potentialroot2))%>%           ####RUE root is 0.2g/MJ
+ mutate(Potentialroot3 = PARi*2.4*T.factor)%>%
+ mutate(Sumpotential3 = cumsum(Potentialroot3))%>%           ####RUE root is 0.25g/MJ
+ mutate(Potentialroot3A = PARi*2.5*T.factor)%>%
+ mutate(Sumpotential3A = cumsum(Potentialroot3A))%>% 
+ mutate(Potentialroot4 = PARi*3*T.factor)%>%
+ mutate(Sumpotential4 = cumsum(Potentialroot4))%>%           ####RUE root is 0.3g/MJ
+ mutate(Potentialroot5 = PARi*3.5*T.factor)%>%
+ mutate(Sumpotential5 = cumsum(Potentialroot5))%>%           ####RUE root is 0.35g/MJ
+ mutate(Potentialroot6 = PARi*4*T.factor)%>%
+ mutate(Sumpotential6 = cumsum(Potentialroot6))%>%           ####RUE root is 0.4g/MJ
+ mutate(AccPARi=cumsum(PARi))
+
+ fPAR.df<- rbind( fPAR.df, fPAR.data)
+
+}
+
+summary(fPAR.df)
+fPAR.df
+write.csv(fPAR.df,"D:/R/fPARoot1.df.csv", row.names = FALSE)
+```
+
+###calculated protential yield and remoblisation
+###merge PARi and observed data
+```{r}
+E3ILLS1<-E3ILL%>%
+  filter(Tbb==1)%>%
+  filter(Variable=="shootbiomass")%>%
+  dplyr::select(Clock.Today,ExpName,Interval, VariableUnits,Observed,StdDEV,ExperimentID,TreatmentID,ID,GrowthSeason1,
+Rotation1, Clock.Today1,GrowthSeason2,GrowthRotation)%>%
+  mutate(shootbiomass=Observed,StdDEVS=StdDEV)
+  
+
+E3ILLR1<-E3ILL%>%
+  filter(Tbb==1)%>%
+  filter(Variable=="RootWt")%>%
+  dplyr::select(Clock.Today,ExpName,Observed,StdDEV)%>%
+  mutate(RootWt=Observed,StdDEVR=StdDEV)
+
+E3ILL1<-merge(E3ILLS1,E3ILLR1,by=c("Clock.Today","ExpName"))%>%
+  dplyr::select(-Observed.x,-StdDEV.x,-Observed.y, -StdDEV.y)
+  
+
+
+P.E3ILL<-merge(Tem.factor,E3ILLS1,by=c("Clock.Today","ExpName"))%>%
+  unique()
+write.csv(P.E3ILL,"D:/R/Respiration/P.E3ILL.csv", row.names = FALSE)
+
+```
+###plot potentail and shoot biomass
+```{r}
+fPAR.df%>%
+  dplyr::filter(ID=="E3ILL")%>%
+ggplot(aes(x=Clock.Today,y=production.sum2))+geom_line(size=1)+theme_bw()+
+ geom_point(data=E3ILLS1,aes(x=Clock.Today,y=shootbiomass,color="red",size=2))+
+ ##facet_grid(Variable~ID)+ggtitle(paste0("E5ILLF5"))+
+ xlab("Date")+ylab("Biomass (kg/ha)")+mytheme3+ theme(legend.title=element_blank(),legend.position = "blank")
+
+#ggsave("D:/R/Pictures/C5/Yield//E5ILLF5.png", width=8, height=6, dpi=500)
+
+```
+```{r}
+E3ILSS1<-E3ILS%>%
+  #filter(Tbb==1)%>%
+  filter(Variable=="shootbiomass")%>%
+  dplyr::select(Clock.Today, ExpUnitCode,VariableUnits,Observed,Variable,StdDEV,ExperimentID,ID,GrowthSeason1,
+Rotation1, Clock.Today1,GrowthSeason2)%>%
+  mutate(shootbiomass=Observed,StdDEVS=StdDEV)
+
+
+P.E3ILS<-merge(fPAR.df,E3ILSS1,by=c("Clock.Today","ExpUnitCode"))
+
+fPAR.df%>%
+  dplyr::filter(ID=="E3ILS")%>%
+ggplot(aes(x=Clock.Today,y=production.sum2))+geom_line(size=1)+theme_bw()+
+  geom_point(data=E3ILSS1,aes(x=Clock.Today,y=shootbiomass,color="red",size=2))+
+  #facet_grid(Variable~ID)+ggtitle(paste0("E5ILLF5"))+
+ xlab("Date")+ylab("Biomass (kg/ha)")+mytheme3+ theme(legend.title=element_blank(),legend.position = "blank")
+
+
+  #remove grid lines 
+#ggsave("D:/R/Pictures/C5/Yield//E5ILLF5.png", width=8, height=6, dpi=500)
+
+```
+```{r}
+E3ISLS1<-E3ISL%>%
+  #filter(Tbb==1)%>%
+  filter(Variable=="shootbiomass")%>%
+  dplyr::select(Clock.Today, ExpUnitCode,VariableUnits,Observed,Variable,StdDEV,ExperimentID,ID,GrowthSeason1,
+Rotation1, Clock.Today1,GrowthSeason2)%>%
+  mutate(shootbiomass=Observed,StdDEVS=StdDEV)
+
+
+P.E3ISL<-merge(fPAR.df,E3ISLS1,by=c("Clock.Today","ExpUnitCode"))
+
+fPAR.df%>%
+  dplyr::filter(ID=="E3ISL")%>%
+ggplot(aes(x=Clock.Today,y=production.sum2))+geom_line(size=1)+theme_bw()+
+  geom_point(data=E3ISLS1,aes(x=Clock.Today,y=shootbiomass,color="red",size=2))+
+  #facet_grid(Variable~ID)+ggtitle(paste0("E5ILLF5"))+
+ xlab("Date")+ylab("Biomass (kg/ha)")+mytheme3+ theme(legend.title=element_blank(),legend.position = "blank")
+
+  #remove grid lines 
+#ggsave("D:/R/Pictures/C5/Yield//E5ILLF5.png", width=8, height=6, dpi=500)
+
+```
+```{r}
+E3ISSS1<-E3ISS%>%
+  #filter(Tbb==1)%>%
+  filter(Variable=="shootbiomass")%>%
+  dplyr::select(Clock.Today, ExpUnitCode,VariableUnits,Observed,Variable,StdDEV,ExperimentID,ID,GrowthSeason1,
+Rotation1, Clock.Today1,GrowthSeason2)%>%
+  mutate(shootbiomass=Observed,StdDEVS=StdDEV)
+
+
+P.E3ISS<-merge(fPAR.df,E3ISSS1,by=c("Clock.Today","ExpUnitCode"))
+
+fPAR.df%>%
+  dplyr::filter(ID=="E3ISS")%>%
+ggplot(aes(x=Clock.Today,y=production.sum2))+geom_line(size=1)+theme_bw()+
+  geom_point(data=E3ISSS1,aes(x=Clock.Today,y=shootbiomass,color="red",size=2))+
+  #facet_grid(Variable~ID)+ggtitle(paste0("E5ILLF5"))+
+ xlab("Date")+ylab("Biomass (kg/ha)")+mytheme3+ theme(legend.title=element_blank(),legend.position = "blank")
+
+write.csv(P.E3ISS,"D:/R/Respiration/P.E3ISS.csv", row.names = FALSE)
+  #remove grid lines 
+#ggsave("D:/R/Pictures/C5/Yield//E5ILLF5.png", width=8, height=6, dpi=500)
+
+```
+```{r}
+E5IHHF5S1<-E5IHHFD5%>%
+  #filter(Tbb==1)%>%
+  filter(Variable=="shootbiomass")%>%
+  dplyr::select(Clock.Today, ExpUnitCode,VariableUnits,Observed,Variable,StdDEV,ExperimentID,ID,GrowthSeason1,
+Rotation1, Clock.Today1,GrowthSeason2)%>%
+  mutate(shootbiomass=Observed,StdDEVS=StdDEV)
+
+
+P.E5IHHF5<-merge(fPAR.df,E5IHHF5S1,by=c("Clock.Today","ExpUnitCode"))
+
+fPAR.df%>%
+  dplyr::filter(ID=="E5IHHF5")%>%
+ggplot(aes(x=Clock.Today,y=production.sum2))+geom_line(size=1)+theme_bw()+
+  geom_point(data=E5IHHF5S1,aes(x=Clock.Today,y=shootbiomass,color="red",size=2))+
+  #facet_grid(Variable~ID)+ggtitle(paste0("E5ILLF5"))+
+ xlab("Date")+ylab("Biomass (kg/ha)")+mytheme3+ theme(legend.title=element_blank(),legend.position = "blank")
+  #remove grid lines 
+#ggsave("D:/R/Pictures/C5/Yield//E5ILLF5.png", width=8, height=6, dpi=500)
+
+```
+```{r}
+E5ISSF5S1<-E5ISSFD5%>%
+  #filter(Tbb==1)%>%
+  filter(Variable=="shootbiomass")%>%
+  dplyr::select(Clock.Today, ExpUnitCode,VariableUnits,Observed,Variable,StdDEV,ExperimentID,ID,GrowthSeason1,
+Rotation1, Clock.Today1,GrowthSeason2)%>%
+  mutate(shootbiomass=Observed,StdDEVS=StdDEV)
+
+
+P.E5ISSF5S1<-merge(fPAR.df,E5ISSF5S1,by=c("Clock.Today","ExpUnitCode"))
+
+fPAR.df%>%
+  dplyr::filter(ID=="E5ISSF5")%>%
+ggplot(aes(x=Clock.Today,y=production.sum2))+geom_line(size=1)+theme_bw()+
+  geom_point(data=E5ISSF5S1,aes(x=Clock.Today,y=shootbiomass,color="red",size=2))+
+  #facet_grid(Variable~ID)+ggtitle(paste0("E5ILLF5"))+
+ xlab("Date")+ylab("Biomass (kg/ha)")+mytheme3+ theme(legend.title=element_blank(),legend.position = "blank")
+  #remove grid lines 
+#ggsave("D:/R/Pictures/C5/Yield//E5ILLF5.png", width=8, height=6, dpi=500)
+
+```
+
+```{r}
+
+E5ILLF5S1<-E5ILLF5%>%
+  #filter(Tbb==1)%>%
+  filter(Variable=="shootbiomass")%>%
+  dplyr::select(Clock.Today, ExpUnitCode,VariableUnits,Observed,Variable,StdDEV,ExperimentID,ID,GrowthSeason1,
+Rotation1, Clock.Today1,GrowthSeason2)%>%
+  mutate(shootbiomass=Observed,StdDEVS=StdDEV)
+
+
+P.E5ILLF5S1<-merge(fPAR.df,E5ILLF5S1,by=c("Clock.Today","ExpUnitCode"))
+
+
+fPAR.df%>%
+  dplyr::filter(ID=="E5ILLF5")%>%
+ggplot(aes(x=Clock.Today,y=production.sum2))+geom_line(size=1)+theme_bw()+
+  geom_point(data=E5ILLF5S1,aes(x=Clock.Today,y=shootbiomass,color="red",size=2))+
+  #facet_grid(Variable~ID)+ggtitle(paste0("E5ILLF5"))+
+ xlab("Date")+ylab("Biomass (kg/ha)")+mytheme3+ theme(legend.title=element_blank(),legend.position = "blank")
+```
+###Load data 
+###analysis of production
+```{r}
+upDir <- "D:/R/Respiration/"
+obsData <- "D:/R/Respiration/"
+Biomass <- read.csv(paste0(obsData, "fPARoot.df.CSV"),
+                   header = TRUE) %>%
+  mutate(Clock.Today=dmy(Clock.Today))
+
+Biomass.LL<-Biomass%>%                                ####Root biomass just from respiration 0.03
+  filter(ID=="E3ILL")%>%
+  filter(RootRespiration1!="NA")
+
+Biomass.LL%>%
+  ggplot(aes(x=Clock.Today, y=RootRespiration1))+geom_line(size=1)+theme_bw()+mytheme3+
+  geom_point(aes(y=RootWt,size=2))+geom_line(aes(y=RootRespiration2))+ggtitle(paste0("E3ILL"))+
+ xlab("Date")+ylab("Root biomass (kg/ha)")+theme(legend.title=element_blank(),legend.position = "blank")
+
+
+```
+#####Root growth Rate calculation
+###plot potential root biomass aganist accumlated Tt (linear regression analysis)
+####calculate root growth rate
+```{r,height=6, fig.width=9}
+
+Biomass1<-Biomass%>%
+  mutate(PT=Tt_fick_sum/Pp)%>%
+  mutate(per=Partitioning/production.sum)%>%
+  filter(ExperimentID=="E3")%>%
+  filter(Partitioning!="NA")
+
+Biomass1%>%
+  #filter(ID=="E3ILL")%>%
+  ggplot(aes(x=Tt_broken_sum, y=Partitioning,color=ID))+geom_point(size=1)+
+  facet_grid(GrowthSeason~Rotation) + theme_bw()+mytheme3+xlab("Thermal time")+ylab("Potential root storage")
+   #geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="darkgrey") 
+  #geom_point(aes(y=RootWt,size=2))+geom_line(aes(y=RootRespiration2))
+
+ggsave("D:/R/Pictures/C5/Yield/rootstorage.png", width=8, height=6, dpi=500)
+
+```
+####Increasing Pp
+###RUE testing
+
+```{r,width=8, height=6}
+
+BiomassInc <- Biomass %>% 
+  filter(ExperimentID=="E3")%>%
+  filter(shootbiomass!="NA")%>%
+  filter(Trend=="Inc")%>%
+  filter(fPAR!=0)%>%
+  dplyr::select(ExperimentID,TreatmentID,ID,Clock.Today,Tearth,Trend,Stage,GrowthRotation,shootbiomass,StS,Production.sum0,Production.sum1,Production.sum2,Production.sum3,Production.sum3A,Production.sum3B,Production.sum3C,Production.sum3D,Production.sum4,Production.sum4A,Production.sum4B,Production.sum4C,Production.sum4D,Production.sum5,Production.sum6,Production.sum7,Production.sum7A,Production.sum7B,Production.sum7C,Production.sum7D,Production.sum8,Production.sum8A,Production.sum8B,Production.sum8C,Production.sum8D,Production.sum9,Production.sum9A,Production.sum9B,Production.sum9C,Production.sum9D,Production.sum10,Production.sum11,Production.sum12,Production.sum13) %>%
+  tidyr::gather("Variable","Predicted",Production.sum3:Production.sum10)
+  #filter(Name!="Iversen_91DefoliationLL"|GrowthRotation!="31")
+  #filter(Name!="Iversen_121DefoliationHHFDFD5")
+BiomassInc $Variable<-factor(BiomassInc$Variable, levels=c("Production.sum0","Production.sum1","Production.sum2","Production.sum3","Production.sum3A","Production.sum3B","Production.sum3C","Production.sum3D","Production.sum4","Production.sum4A","Production.sum4B","Production.sum4C","Production.sum4D","Production.sum5","Production.sum6","Production.sum7","Production.sum7A","Production.sum7B","Production.sum7C","Production.sum7D","Production.sum8","Production.sum8A","Production.sum8B","Production.sum8C","Production.sum8D","Production.sum9","Production.sum9A","Production.sum9B","Production.sum9C","Production.sum9D","Production.sum10","Production.sum11","Production.sum12","Production.sum13"))
+
+BiomassInc%>%
+  ggplot(aes(x=shootbiomass, y= Predicted, colour= factor(ID))) +
+  geom_point(size=2)+theme_bw()+
+  geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="darkgrey") +
+  geom_abline(intercept = 0, slope = 1) +
+  coord_fixed(ratio = 1)+
+  ggtitle("Shoot biomass (Inc)")+
+  facet_wrap(~Variable, ncol = 6)+
+  theme_bw()+mytheme3+
+   scale_x_continuous(breaks = seq(2000,8000, by =3000), limits=c(0,8000))+
+  scale_y_continuous(breaks = seq(2000, 6000, by =2000), limits=c(0,8000))+
+  ylab("Predicted")+xlab("Observed") +theme(legend.title=element_blank(),legend.position = "blank")
+ ggsave("D:/R/Pictures/C5/Yield/RUEshootInc.png", width=8, height=8, dpi=500)
+ 
+```
+```{r,width=8, height=6}
+BiomassShootE31<-BiomassInc%>%
+  filter(Variable=="Production.sum9")
+BiomassShootE31%>%
+ggplot(aes(x=Clock.Today,y=shootbiomass))+geom_line(size=1)+theme_bw()+
+  facet_wrap(~ID,ncol = 1)+
+  geom_point(aes(x=Clock.Today, y=Predicted),colour="green",size=3)+
+  theme(legend.title=element_blank(),legend.position = "blank")+xlab("Date")+ylab(bquote(bold('Shoot DM ('*kg~ha^-1*')')))+
+ mytheme3
+```
+
+
+```{r}
+
+BiomassInc %>%
+  mutate(Observed=shootbiomass)%>%
+  group_by(Variable) %>%
+  summarise(
+    n = n(),
+    r2 = gauchStats(Predicted,Observed)[5],
+  #  rmse = round(rmse(Predicted,Observed),0),
+    r_rmse = round(rmse(Predicted,Observed)/mean(Observed)*100,1),
+    nse = round(NSE(Predicted,Observed),1),
+    sb = gauchStats(Predicted,Observed)[1],
+  nu = gauchStats(Predicted,Observed)[2],
+  lc = gauchStats(Predicted,Observed)[3]
+  ) 
+###1=0.72, 0.77, 0.82, 0.87, 0.92, 0.97, 1.02, 1.07, 1.12, (1.17), 1.22, 1.27, 1.32,1.37, 1.42, 1.52, 1.62, 1.72
+
+```
+
+####Dec Pp
+```{r,width=8, height=8}
+BiomassDec <- Biomass %>% 
+  filter(ExperimentID=="E3")%>%
+  filter(shootbiomass!="NA")%>%
+  filter(Trend=="Dec")%>%
+  filter(fPAR!=0)%>%
+  dplyr::select(ExperimentID,TreatmentID,ID,Clock.Today,Tearth,Trend,Stage,GrowthRotation,shootbiomass,StS,Production.sum0,Production.sum1,Production.sum2,Production.sum3,Production.sum3A,Production.sum3B,Production.sum3C,Production.sum3D,Production.sum4,Production.sum4A,Production.sum4B,Production.sum4C,Production.sum4D,Production.sum5,Production.sum6,Production.sum7,Production.sum7A,Production.sum7B,Production.sum7C,Production.sum7D,Production.sum8,Production.sum8A,Production.sum8B,Production.sum8C,Production.sum8D,Production.sum9,Production.sum9A,Production.sum9B,Production.sum9C,Production.sum9D,Production.sum10,Production.sum11,Production.sum12,Production.sum13) %>%
+  tidyr::gather("Variable","Predicted",Production.sum3:Production.sum10)
+  #filter(Name!="Iversen_91DefoliationLL"|GrowthRotation!="31")
+  #filter(Name!="Iversen_121DefoliationHHFDFD5")
+BiomassDec $Variable<-factor(BiomassDec$Variable, levels=c("Production.sum0","Production.sum1","Production.sum2","Production.sum3","Production.sum3A","Production.sum3B","Production.sum3C","Production.sum3D","Production.sum4","Production.sum4A","Production.sum4B","Production.sum4C","Production.sum4D","Production.sum5","Production.sum6","Production.sum7","Production.sum7A","Production.sum7B","Production.sum7C","Production.sum7D","Production.sum8","Production.sum8A","Production.sum8B","Production.sum8C","Production.sum8D","Production.sum9","Production.sum9A","Production.sum9B","Production.sum9C","Production.sum9D","Production.sum10","Production.sum11","Production.sum12","Production.sum13"))
+
+BiomassDec%>%
+  ggplot(aes(x=shootbiomass, y= Predicted, colour= factor(ID))) +
+  geom_point(size=2)+theme_bw()+
+  geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="darkgrey") +
+  geom_abline(intercept = 0, slope = 1) +
+  coord_fixed(ratio = 1)+
+  ggtitle("Shoot biomass (Dec)")+
+  facet_wrap(~Variable, ncol = 6)+
+  theme_bw()+mytheme3+
+   scale_x_continuous(breaks = seq(2000,8000, by =3000), limits=c(0,8000))+
+  scale_y_continuous(breaks = seq(2000, 6000, by =2000), limits=c(0,8000))+
+  ylab("Predicted")+xlab("Observed") +theme(legend.title=element_blank(),legend.position = "blank")
+ ggsave("D:/R/Pictures/C5/Yield/RUEshootDec.png", width=8, height=8, dpi=500)
+```
+```{r,width=8, height=6}
+  
+BiomassShootE32<-BiomassDec%>%
+  filter(Variable=="Production.sum4A")
+BiomassShootE32%>%
+ggplot(aes(x=Clock.Today,y=shootbiomass))+geom_line(size=1)+theme_bw()+
+  facet_wrap(~ID,ncol = 1)+
+  geom_point(aes(x=Clock.Today, y=Predicted),colour="green",size=3)+
+  theme(legend.title=element_blank(),legend.position = "blank")+xlab("Date")+ylab(bquote(bold('Shoot DM ('*kg~ha^-1*')')))+
+ mytheme3
+```
+
+###Combine increasinf and decreasing shoot biomass
+```{r,width=8, height=6}
+BiomassShootE3<-rbind(BiomassShootE31,BiomassShootE32)
+
+BiomassShootE3%>%
+ggplot(aes(x=Clock.Today,y=shootbiomass))+geom_line(size=1)+theme_bw()+
+  facet_wrap(~ID,ncol = 1)+
+  geom_point(aes(x=Clock.Today, y=Predicted),colour="green",size=3)+
+  theme(legend.title=element_blank(),legend.position = "blank")+xlab("Date")+ylab(bquote(bold('Shoot DM ('*kg~ha^-1*')')))+
+ mytheme3
+
+ggsave("D:/R/Pictures/C5/Yield/Shootbiomass.png", width=8, height=8, dpi=500)
+
+```
+
+###stistical measurement
+```{r}
+
+BiomassDec %>%
+  mutate(Observed=shootbiomass)%>%
+  group_by(Variable) %>%
+  summarise(
+    n = n(),
+    r2 = gauchStats(Predicted,Observed)[5],
+  #  rmse = round(rmse(Predicted,Observed),0),
+    r_rmse = round(rmse(Predicted,Observed)/mean(Observed)*100,1),
+    nse = round(NSE(Predicted,Observed),1),
+    sb = gauchStats(Predicted,Observed)[1],
+  nu = gauchStats(Predicted,Observed)[2],
+  lc = gauchStats(Predicted,Observed)[3]
+  ) 
+###1=0.72, 0.77, 0.82, 0.87, 0.92,(0.93), 0.97, 1.02, 1.07, 1.12, 1.17, 1.22, 1.27, 1.32,1.37, 1.42, 1.52, 1.62, 1.72
+
+```
+
+
+
+###RUE testing for seedling crop
+
+```{r,width=6, height=8}
+
+BiomassInc1 <- Biomass %>% 
+  filter(ExperimentID=="E5")%>%
+  filter(shootbiomass!="NA")%>%
+  filter(Trend=="Inc")%>%
+  filter(fPAR!=0)%>%
+  filter(Stage!="Seedling")%>%
+  dplyr::select(ExperimentID,TreatmentID,ID,Clock.Today,Tearth,Trend,Stage,GrowthRotation,shootbiomass,StS,Production.sum0,Production.sum1,Production.sum2,Production.sum3,Production.sum3A,Production.sum3B,Production.sum3C,Production.sum3D,Production.sum4,Production.sum4A,Production.sum4B,Production.sum4C,Production.sum4D,Production.sum5,Production.sum6,Production.sum7,Production.sum7A,Production.sum7B,Production.sum7C,Production.sum7D,Production.sum8,Production.sum8A,Production.sum8B,Production.sum8C,Production.sum8D,Production.sum9,Production.sum9A,Production.sum9B,Production.sum9C,Production.sum9D,Production.sum10,Production.sum11,Production.sum12,Production.sum13) %>%
+  tidyr::gather("Variable","Predicted",Production.sum3:Production.sum10)
+  #filter(Name!="Iversen_91DefoliationLL"|GrowthRotation!="31")
+  #filter(Name!="Iversen_121DefoliationHHFDFD5")
+BiomassInc1 $Variable<-factor(BiomassInc1$Variable, levels=c("Production.sum0","Production.sum1","Production.sum2","Production.sum3","Production.sum3A","Production.sum3B","Production.sum3C","Production.sum3D","Production.sum4","Production.sum4A","Production.sum4B","Production.sum4C","Production.sum4D","Production.sum5","Production.sum6","Production.sum7","Production.sum7A","Production.sum7B","Production.sum7C","Production.sum7D","Production.sum8","Production.sum8A","Production.sum8B","Production.sum8C","Production.sum8D","Production.sum9","Production.sum9A","Production.sum9B","Production.sum9C","Production.sum9D","Production.sum10","Production.sum11","Production.sum12","Production.sum13"))
+BiomassInc1%>%
+  ggplot(aes(x=shootbiomass, y= Predicted, colour= factor(ID))) +
+  geom_point(size=2)+theme_bw()+
+  geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="darkgrey") +
+  geom_abline(intercept = 0, slope = 1) +
+  coord_fixed(ratio = 1)+
+  ggtitle("Shoot biomass (Inc)")+
+  facet_wrap(~Variable, ncol = 6)+
+  theme_bw()+mytheme3+
+   scale_x_continuous(breaks = seq(2000,8000, by =3000), limits=c(0,8000))+
+  scale_y_continuous(breaks = seq(2000, 6000, by =2000), limits=c(0,8000))+
+  ylab("Predicted")+xlab("Observed") +
+  theme(legend.title=element_blank(),legend.position = "blank")
+ ggsave("D:/R/Pictures/C5/Yield/RUEshootIncE5.png", width=8, height=8, dpi=500)
+```
+####shoot inc
+
+```{r,width=8, height=8}
+BiomassShootE51<-BiomassInc1%>%
+  filter(Variable=="Production.sum9")
+BiomassShootE51%>%
+ggplot(aes(x=Clock.Today,y=shootbiomass))+geom_line(size=1)+theme_bw()+
+  facet_wrap(~ID,ncol = 1)+
+  geom_point(aes(x=Clock.Today, y=Predicted),colour="green",size=3)+
+  theme(legend.title=element_blank(),legend.position = "blank")+xlab("Date")+ylab(bquote(bold('Shoot DM ('*kg~ha^-1*')')))+
+ mytheme3
 ```
 
 
@@ -1206,9 +2043,714 @@ Root.dfR%>%
 
 
 
+```{r}
+
+BiomassInc1 %>%
+  mutate(Observed=shootbiomass)%>%
+   #filter(Name!="Iversen_121DefoliationHHFDFD5")%>%
+  group_by(Variable) %>%
+  summarise(
+    n = n(),
+    r2 = gauchStats(Predicted,Observed)[5],
+  #  rmse = round(rmse(Predicted,Observed),0),
+    r_rmse = round(rmse(Predicted,Observed)/mean(Observed)*100,1),
+    nse = round(NSE(Predicted,Observed),1),
+    sb = gauchStats(Predicted,Observed)[1],
+  nu = gauchStats(Predicted,Observed)[2],
+  lc = gauchStats(Predicted,Observed)[3]
+  ) 
+###1=0.72, 0.77, 0.82, 0.87, 0.92, 0.97, 1.02, 1.07, 1.12, 1.17, 1.22, 1.27, 1.32,1.37, 1.42, 1.52, 1.62, 1.72
+
+```
+
+
+###RUE testing for regrowth crop
+
+```{r,width=6, height=8}
+
+BiomassDec1 <- Biomass %>% 
+  filter(ExperimentID=="E5")%>%
+  filter(shootbiomass!="NA")%>%
+  filter(Trend=="Dec")%>%
+  filter(fPAR!=0)%>%
+  filter(Stage!="Seedling")%>%
+  dplyr::select(ExperimentID,TreatmentID,ID,Clock.Today,Tearth,Trend,Stage,GrowthRotation,shootbiomass,StS,Production.sum0,Production.sum1,Production.sum2,Production.sum3,Production.sum3A,Production.sum3B,Production.sum3C,Production.sum3D,Production.sum4,Production.sum4A,Production.sum4B,Production.sum4C,Production.sum4D,Production.sum5,Production.sum6,Production.sum7,Production.sum7A,Production.sum7B,Production.sum7C,Production.sum7D,Production.sum8,Production.sum8A,Production.sum8B,Production.sum8C,Production.sum8D,Production.sum9,Production.sum9A,Production.sum9B,Production.sum9C,Production.sum9D,Production.sum10,Production.sum11,Production.sum12,Production.sum13) %>%
+  tidyr::gather("Variable","Predicted",Production.sum3:Production.sum10)
+  #filter(Name!="Iversen_91DefoliationLL"|GrowthRotation!="31")
+  #filter(Name!="Iversen_121DefoliationHHFDFD5")
+BiomassDec1 $Variable<-factor(BiomassDec1$Variable, levels=c("Production.sum0","Production.sum1","Production.sum2","Production.sum3","Production.sum3A","Production.sum3B","Production.sum3C","Production.sum3D","Production.sum4","Production.sum4A","Production.sum4B","Production.sum4C","Production.sum4D","Production.sum5","Production.sum6","Production.sum7","Production.sum7A","Production.sum7B","Production.sum7C","Production.sum7D","Production.sum8","Production.sum8A","Production.sum8B","Production.sum8C","Production.sum8D","Production.sum9","Production.sum9A","Production.sum9B","Production.sum9C","Production.sum9D","Production.sum10","Production.sum11","Production.sum12","Production.sum13"))
+BiomassDec1%>%
+  ggplot(aes(x=shootbiomass, y= Predicted, colour= factor(ID))) +
+  geom_point(size=2)+theme_bw()+
+  geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="darkgrey") +
+  geom_abline(intercept = 0, slope = 1) +
+  coord_fixed(ratio = 1)+
+  ggtitle("Shoot biomass (Dec)")+
+  facet_wrap(~Variable, ncol = 6)+
+  theme_bw()+mytheme3+
+   scale_x_continuous(breaks = seq(2000,8000, by =3000), limits=c(0,8000))+
+  scale_y_continuous(breaks = seq(2000, 6000, by =2000), limits=c(0,8000))+
+  ylab("Predicted")+xlab("Observed")+ 
+  theme(legend.title=element_blank(),legend.position = "blank")
+ ggsave("D:/R/Pictures/C5/Yield/RUEshootDecE5.png", width=8, height=8, dpi=500)
+```
+###shoot Dec
+
+```{r,width=8, height=8}
+BiomassShootE52<-BiomassDec1%>%
+  filter(Variable=="Production.sum4A")
+BiomassShootE52%>%
+ggplot(aes(x=Clock.Today,y=shootbiomass))+geom_line(size=1)+theme_bw()+
+  facet_wrap(~ID,ncol = 1)+
+  geom_point(aes(x=Clock.Today, y=Predicted),colour="green",size=3)+
+  theme(legend.title=element_blank(),legend.position = "blank")+xlab("Date")+ylab(bquote(bold('Shoot DM ('*kg~ha^-1*')')))+
+ mytheme3
+```
+###Combine increasinf and decreasing shoot biomass
+```{r,width=8, height=6}
+BiomassShootE5<-rbind(BiomassShootE51,BiomassShootE52)
+
+BiomassShootE5%>%
+ggplot(aes(x=Clock.Today,y=shootbiomass))+geom_line(size=1)+theme_bw()+
+  facet_wrap(~ID,ncol = 1)+
+  geom_point(aes(x=Clock.Today, y=Predicted),colour="green",size=3)+
+  theme(legend.title=element_blank(),legend.position = "blank")+xlab("Date")+ylab(bquote(bold('Shoot DM ('*kg~ha^-1*')')))+
+ mytheme3
+
+ggsave("D:/R/Pictures/C5/Yield/ShootbiomassE5.png", width=8, height=8, dpi=500)
+
+```
+
+
+```{r}
+
+BiomassDec1 %>%
+  mutate(Observed=shootbiomass)%>%
+   #filter(Name!="Iversen_121DefoliationHHFDFD5")%>%
+  group_by(Variable) %>%
+  summarise(
+    n = n(),
+    r2 = gauchStats(Predicted,Observed)[5],
+  #  rmse = round(rmse(Predicted,Observed),0),
+    r_rmse = round(rmse(Predicted,Observed)/mean(Observed)*100,1),
+    nse = round(NSE(Predicted,Observed),1),
+    sb = gauchStats(Predicted,Observed)[1],
+  nu = gauchStats(Predicted,Observed)[2],
+  lc = gauchStats(Predicted,Observed)[3]
+  ) 
+###1=0.82,0.92, 1.02, 1.12, 1.22, 1.32, 1.42, 1.52,1.62, 1.72
+
+```
+###RUE testing for seedling crop
+
+```{r,width=8, height=8}
+
+BiomassSeedling <- Biomass %>% 
+  filter(ExperimentID=="E5")%>%
+  filter(shootbiomass!="NA")%>%
+  #filter(Trend=="Dec")%>%
+  filter(fPAR!=0)%>%
+  filter(Stage=="Seedling")%>%
+  dplyr::select(ExperimentID,TreatmentID,ID,Clock.Today,Tearth,Trend,Stage,GrowthRotation,shootbiomass,StS,Production.sum0,Production.sum1,Production.sum2,Production.sum3,Production.sum3A,Production.sum3B,Production.sum3C,Production.sum3D,Production.sum4,Production.sum4A,Production.sum4B,Production.sum4C,Production.sum4D,Production.sum5,Production.sum6,Production.sum7) %>%
+  tidyr::gather("Variable","Predicted",Production.sum0:Production.sum7)
+  #filter(Name!="Iversen_91DefoliationLL"|GrowthRotation!="31")
+  #filter(Name!="Iversen_121DefoliationHHFDFD5")
+BiomassSeedling $Variable<-factor(BiomassSeedling$Variable, levels=c("Production.sum0","Production.sum1","Production.sum2","Production.sum3","Production.sum3A","Production.sum3B","Production.sum3C","Production.sum3D","Production.sum4","Production.sum4A","Production.sum4B","Production.sum4C","Production.sum4D","Production.sum5","Production.sum6","Production.sum7","Production.sum7A","Production.sum7B","Production.sum7C","Production.sum7D","Production.sum8","Production.sum8A","Production.sum8B","Production.sum8C","Production.sum8D","Production.sum9","Production.sum9A","Production.sum9B","Production.sum9C","Production.sum9D","Production.sum10","Production.sum11","Production.sum12","Production.sum13"))
+
+
+BiomassSeedling%>%
+  ggplot(aes(x=shootbiomass, y= Predicted, colour= factor(ID))) +
+  geom_point(size=2)+theme_bw()+
+  geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="darkgrey") +
+  geom_abline(intercept = 0, slope = 1) +
+  coord_fixed(ratio = 1)+
+  ggtitle("Shoot biomass (Seedling)")+
+  facet_wrap(~Variable, ncol = 6)+
+  theme_bw()+mytheme3+
+   scale_x_continuous(breaks = seq(2000,8000, by =3000), limits=c(0,8000))+
+  scale_y_continuous(breaks = seq(2000, 6000, by =2000), limits=c(0,8000))+
+  ylab("Predicted")+xlab("Observed") +
+  theme(legend.title=element_blank(),legend.position = "blank")
+ ggsave("D:/R/Pictures/C5/Yield/RUESeedling.png", width=8, height=8, dpi=500)
+```
+
+```{r}
+
+BiomassSeedling %>%
+  mutate(Observed=shootbiomass)%>%
+   #filter(Name!="Iversen_121DefoliationHHFDFD5")%>%
+  group_by(Variable) %>%
+  summarise(
+    n = n(),
+    r2 = gauchStats(Predicted,Observed)[5],
+  #  rmse = round(rmse(Predicted,Observed),0),
+    r_rmse = round(rmse(Predicted,Observed)/mean(Observed)*100,1),
+    nse = round(NSE(Predicted,Observed),1),
+    sb = gauchStats(Predicted,Observed)[1],
+  nu = gauchStats(Predicted,Observed)[2],
+  lc = gauchStats(Predicted,Observed)[3]
+  ) 
+###1=0.82,0.92, 1.02, 1.12, 1.22, 1.32, 1.42, 1.52,1.62, 1.72
+
+```
+
+####Root predicted for E3
+```{r,width=8, height=6}
+
+BiomassRoot <- Biomass %>% 
+  filter(ExperimentID=="E3")%>%
+  filter(RootWt!="NA")%>%
+  #filter(Stage!="Seedling")%>%
+  dplyr::select(ExperimentID,TreatmentID,ID,Clock.Today,Tearth,Trend, Stage,GrowthRotation,RootWt,StS,TotalBiomass,Proot.0.045., Proot1.0.03.,Proot2.0.01.,Proot3.0.005.,Proot4.0.003.,Proot5.0.002.,Proot6.0.0005.,Proot7.0.0005.,Proot8.0.2.,Proot9.0.25.) %>%
+  tidyr::gather("Variable","Predicted",Proot.0.045.:Proot9.0.25.)
+  #filter(Name!="Iversen_91DefoliationLL"|GrowthRotation!="31")
+  #filter(Name!="Iversen_121DefoliationHHFDFD5")
+BiomassRoot $Variable<-factor(BiomassRoot$Variable, levels=c("Proot.0.045.", "Proot1.0.03.","Proot2.0.01.","Proot3.0.005.","Proot4.0.003.","Proot5.0.002.","Proot6.0.0005.","Proot7.0.0005.","Proot8.0.2.","Proot9.0.25."))
+
+BiomassRoot%>%
+  ggplot(aes(x=RootWt, y= Predicted, colour= factor(ID))) +
+  geom_point(size=2)+theme_bw()+
+  geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="darkgrey") +
+  geom_abline(intercept = 0, slope = 1) +
+  coord_fixed(ratio = 1)+
+  ggtitle("Root biomass (E3)")+
+  facet_wrap(~Variable, ncol = 4)+
+  theme_bw()+mytheme3+
+   scale_x_continuous(breaks = seq(2000,8000, by =3000), limits=c(0,8000))+
+  scale_y_continuous(breaks = seq(2000, 6000, by =2000), limits=c(0,8000))+
+  ylab("Predicted")+xlab("Observed") +
+  theme(legend.title=element_blank(),legend.position = "blank")
+ ggsave("D:/R/Pictures/C5/Yield/RootWtE3.png", width=8, height=8, dpi=500)
+```
+
+```{r}
+
+BiomassRoot %>%
+  mutate(Observed=RootWt)%>%
+   #filter(Name!="Iversen_121DefoliationHHFDFD5")%>%
+  group_by(Variable) %>%
+  summarise(
+    n = n(),
+    r2 = gauchStats(Predicted,Observed)[5],
+  #  rmse = round(rmse(Predicted,Observed),0),
+    r_rmse = round(rmse(Predicted,Observed)/mean(Observed)*100,1),
+    nse = round(NSE(Predicted,Observed),1),
+    sb = gauchStats(Predicted,Observed)[1],
+  nu = gauchStats(Predicted,Observed)[2],
+  lc = gauchStats(Predicted,Observed)[3]
+  ) 
+###1=0.82,0.92, 1.02, 1.12, 1.22, 1.32, 1.42, 1.52,1.62, 1.72
+
+```
+```{r}
+BiomassRoot%>%
+  filter(ExperimentID=="E3")%>%
+  filter(RootWt!="NA")%>%
+  filter(Variable=="Proot9.0.25.")%>%
+  ggplot(aes(x=Clock.Today,y=Predicted))+geom_line(size=1)+theme_bw()+
+ facet_wrap(~ID,ncol = 2)+
+ geom_point(aes(x=Clock.Today, y=RootWt),colour="green",size=3)+mytheme3+
+ theme(legend.title=element_blank(),legend.position = "blank")+xlab("Date")+ylab(bquote(bold('Root DM ('*kg~ha^-1*')')))
+  ggsave("D:/R/Pictures/C5/Yield/RootWtpredictedE3.png", width=8, height=6, dpi=500)
+```
+
+####Root predicted for E5
+```{r,width=8, height=6}
+
+BiomassRoot1 <- Biomass %>% 
+  filter(ExperimentID=="E5")%>%
+  filter(RootWt!="NA")%>%
+  #filter(Stage!="Seedling")%>%
+  dplyr::select(ExperimentID,TreatmentID,ID,Clock.Today,Tearth,Trend, Stage,GrowthRotation,RootWt,StS,TotalBiomass,Proot.0.045., Proot1.0.03.,Proot2.0.01.,Proot3.0.005.,Proot4.0.003.,Proot5.0.002.,Proot6.0.0005.,Proot7.0.0005.,Proot8.0.2.,Proot9.0.25.) %>%
+  tidyr::gather("Variable","Predicted",Proot.0.045.:Proot9.0.25.)
+  #filter(Name!="Iversen_91DefoliationLL"|GrowthRotation!="31")
+  #filter(Name!="Iversen_121DefoliationHHFDFD5")
+BiomassRoot $Variable<-factor(BiomassRoot$Variable, levels=c("Proot.0.045.", "Proot1.0.03.","Proot2.0.01.","Proot3.0.005.","Proot4.0.003.","Proot5.0.002.","Proot6.0.0005.","Proot7.0.0005.","Proot8.0.2.","Proot9.0.25."))
+
+BiomassRoot1%>%
+  ggplot(aes(x=RootWt, y= Predicted, colour= factor(ID))) +
+  geom_point(size=2)+theme_bw()+
+  geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="darkgrey") +
+  geom_abline(intercept = 0, slope = 1) +
+  coord_fixed(ratio = 1)+
+  ggtitle("Root biomass (E5)")+
+  facet_wrap(~Variable, ncol = 4)+
+  theme_bw()+mytheme3+
+   scale_x_continuous(breaks = seq(2000,8000, by =3000), limits=c(0,8000))+
+  scale_y_continuous(breaks = seq(2000, 6000, by =2000), limits=c(0,8000))+
+  ylab("Predicted")+xlab("Observed") +
+  theme(legend.title=element_blank(),legend.position = "blank")
+ ggsave("D:/R/Pictures/C5/Yield/RootWtE5.png", width=8, height=6, dpi=500)
+```
+```{r}
+
+BiomassRoot1 %>%
+  mutate(Observed=RootWt)%>%
+   #filter(Name!="Iversen_121DefoliationHHFDFD5")%>%
+  group_by(Variable) %>%
+  summarise(
+    n = n(),
+    r2 = gauchStats(Predicted,Observed)[5],
+  #  rmse = round(rmse(Predicted,Observed),0),
+    r_rmse = round(rmse(Predicted,Observed)/mean(Observed)*100,1),
+    nse = round(NSE(Predicted,Observed),1),
+    sb = gauchStats(Predicted,Observed)[1],
+  nu = gauchStats(Predicted,Observed)[2],
+  lc = gauchStats(Predicted,Observed)[3]
+  ) 
+###1=0.82,0.92, 1.02, 1.12, 1.22, 1.32, 1.42, 1.52,1.62, 1.72
+
+```
+
+```{r}
+BiomassRoot1%>%
+  filter(ExperimentID=="E5")%>%
+  filter(RootWt!="NA")%>%
+  filter(Variable=="Proot9.0.25.")%>%
+  ggplot(aes(x=Clock.Today,y=Predicted))+geom_line(size=1)+theme_bw()+
+ facet_wrap(~ID,ncol = 2)+
+ geom_point(aes(x=Clock.Today, y=RootWt),colour="green",size=3)+mytheme3+
+ theme(legend.title=element_blank(),legend.position = "blank")+xlab("Date")+ylab(bquote(bold('Root DM ('*kg~ha^-1*')')))
+  ggsave("D:/R/Pictures/C5/Yield/RootWtpredictedE5.png", width=8, height=6, dpi=500)
+```
 
 
 
 
 
+#####average of partitioning rate
+####average of cutting treatment
+```{r,height=4, fig.width=8}
 
+Biomass2<-Biomass%>%
+  filter(Partitioning!="NA")%>%
+  group_by(GrowthSeason,Rotation,GrowthRotation,Tmean,Ppm,Stage,Trend,ID,ExperimentID) %>%
+  do(mod1 = lm(Storage2~Tt_broken_sum,data=.)) %>%
+  mutate(PRate1 = summary(mod1)$coeff[2]) %>%
+  dplyr::select(-mod1)
+ 
+
+library(plyr)
+
+lm_eqn1 <- function(Biomass2){
+  m <- lm(PRate1~Ppm ,Biomass2);
+  eq <- substitute(italic(y) == Ppm +PRate1 %.% italic(PRate1)*","~~italic(R)^2~"="~r2, 
+                   list(Ppm = format(coef(m)[1], digits = 2), 
+                        PRate1= format(coef(m)[2], digits = 2), 
+                        r2 = format(summary(m)$r.squared, digits = 3)))
+  as.character(as.expression(eq));                 
+}
+
+
+eqs <- ddply(Biomass2,.(Trend,Stage),lm_eqn1)
+#df2 <- data.frame(eq = unclass(eqns), Collection = as.numeric(names(eqns)))
+#ylab(bquote(bold('LEAR ('*m^2~m^-2~'°Cd'^-1*')')))
+
+
+Biomass2%>%
+  ggplot(aes(x=Ppm, y=PRate1,color=ID))+geom_point(size=1)+theme_bw()+mytheme3+
+  facet_grid(Stage~Trend) +
+   geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="darkgrey") +
+  geom_text(data = eqs, aes(x =13.5, y = 25, label = V1), 
+          color = 'black',  parse = TRUE, size=5)+xlab("Mean photoperiod (h)")+
+  ylab(bquote(bold('Root storage rate ('*'kg'~'ha'^-1~'°Cd'^-1*')')))
+
+
+ ggsave("D:/R/Pictures/C5/Yield/RootGrowthRate1.png", width=8, height=4, dpi=500)
+
+detach(package:plyr)
+```
+
+####Root growth rate for dividual experiment
+```{r,height=6, fig.width=10}
+
+Biomass3<-Biomass%>%
+filter(ID=="E5ILLF5")%>%
+  filter(Partitioning!="NA")%>%
+  mutate(Part.Rate=Partitioning/Tt_broken_sum)%>%
+   filter(Part.Rate>0)%>%
+  ggplot(aes(x=Tt_broken_sum, y=Part.Rate,color=ID))+geom_point(size=1)+
+  facet_grid(GrowthSeason~Rotation) + theme_bw()+mytheme3+
+  geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="darkgrey") 
+  #geom_point(aes(y=RootWt,size=2))+geom_line(aes(y=RootRespiration2)
+
+```
+
+
+
+
+##### interceptulate partioning rate
+###good effort but No!!!!!!
+```{r}
+###fPAR interpolate for each rotation
+
+# UniExp <- unique(Biomass.LL$ExpName)
+# 
+# Biomass.LL.df <- data.frame()
+#   
+# for(i in 1:length(UniExp))
+# {
+#   
+#  Biomass.LL.ex<-Biomass.LL %>%
+#   mutate(PPR=approx(Clock.Today,PartitioningRate2, xout =Clock.Today, 
+#          method="linear", 
+#          rule = 2)$y)    ##interpolate function
+# Biomass.LL.df<- rbind( Biomass.LL.ex, Biomass.LL.df)
+# 
+# }
+# 
+# Biomass.LL.df 
+# write.csv(Biomass.LL.df ,"D:/R/Respiration/Biomass.LL.df .csv", row.names = FALSE)
+```
+####Calculated RUE
+```{r,height=6, fig.width=8}
+RUET<-Biomass%>%
+  filter(RootWt!="NA")%>%
+  filter(TotalBiomass!="NA")
+
+RUEE3<-RUET%>%
+  filter(ExperimentID=="E5")%>%
+  mutate(RootWt=RootWt/0.8)%>%
+  mutate(TotalBiomass=RootWt+shootbiomass)%>%
+  mutate(TotalBiomass1=TotalBiomass*0.1)
+
+RUE5<-RUET%>%
+  filter(ExperimentID=="E3")%>%
+  mutate(TotalBiomass1=TotalBiomass*0.1)
+
+RUE<-rbind(RUEE3,RUE5)
+ 
+
+RUE%>%
+  filter(ID=="E3ILL")%>%
+  ggplot(aes(x=AccPARi,y=TotalBiomass1))+geom_point(size=2)+theme_bw()+
+    xlab(bquote(bold('Accumulated PARi ('*MJ~m^-2*')')))+ylab(bquote(bold('Total DM ('*g~DM~m^-2*')')))+
+    ggtitle("E3ILL")  +
+ geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="blue")+
+ facet_grid(GrowthSeason~Rotation)+mytheme3+
+scale_y_continuous(breaks = seq(0, 1600, by =600), limits=c(0,1600))+
+ scale_x_continuous(breaks = seq(200, 800, by =400), limits=c(0,800))
+
+
+```
+
+```{r,height=6, fig.width=8}
+RUE%>%
+  filter(ID=="E3ILS")%>%
+  ggplot(aes(x=AccPARi,y=TotalBiomass1))+geom_point(size=2)+theme_bw()+
+    xlab(bquote(bold('Accumulated PARi ('*MJ~m^-2*')')))+ylab(bquote(bold('Total DM ('*g~DM~m^-2*')')))+
+    ggtitle("E3ILS")  +
+ geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="blue")+
+ facet_grid(GrowthSeason~Rotation)+mytheme3+
+scale_y_continuous(breaks = seq(0, 1600, by =600), limits=c(0,1600))+
+ scale_x_continuous(breaks = seq(200, 800, by =400), limits=c(0,800))
+
+```
+
+```{r,height=6, fig.width=8}
+RUE%>%
+  filter(ID=="E3ISL")%>%
+  ggplot(aes(x=AccPARi,y=TotalBiomass1))+geom_point(size=2)+theme_bw()+
+    xlab(bquote(bold('Accumulated PARi ('*MJ~m^-2*')')))+ylab(bquote(bold('Total DM ('*g~DM~m^-2*')')))+
+    ggtitle("E3ISL")  +
+ geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="blue")+
+ facet_grid(GrowthSeason~Rotation)+mytheme3+
+scale_y_continuous(breaks = seq(0, 1600, by =600), limits=c(0,1600))+
+ scale_x_continuous(breaks = seq(200, 800, by =400), limits=c(0,800))
+
+```
+```{r,height=6, fig.width=8}
+RUE%>%
+  filter(ID=="E3ISS")%>%
+  ggplot(aes(x=AccPARi,y=TotalBiomass1))+geom_point(size=2)+theme_bw()+
+    xlab(bquote(bold('Accumulated PARi ('*MJ~m^-2*')')))+ylab(bquote(bold('Total DM ('*g~DM~m^-2*')')))+
+    ggtitle("E3ISS")  +
+ geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="blue")+
+ facet_grid(GrowthSeason~Rotation)+mytheme3+
+scale_y_continuous(breaks = seq(0, 800, by =300), limits=c(0,800))+
+ scale_x_continuous(breaks = seq(200, 800, by =400), limits=c(0,800))
+
+```
+
+```{r,height=6, fig.width=8}
+RUE%>%
+  filter(ID=="E5IHHF5")%>%
+  ggplot(aes(x=AccPARi,y=TotalBiomass1))+geom_point(size=2)+theme_bw()+
+    xlab(bquote(bold('Accumulated PARi ('*MJ~m^-2*')')))+ylab(bquote(bold('Total DM ('*g~DM~m^-2*')')))+
+    ggtitle("E5IHHF5")  +
+ geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="blue")+
+ facet_grid(GrowthSeason~Rotation)+mytheme3+
+scale_y_continuous(breaks = seq(0, 1600, by =600), limits=c(0,1600))+
+ scale_x_continuous(breaks = seq(200, 800, by =400), limits=c(0,800))
+
+```
+```{r,height=6, fig.width=8}
+RUE%>%
+  filter(ID=="E5ILLF5")%>%
+  ggplot(aes(x=AccPARi,y=TotalBiomass1))+geom_point(size=2)+theme_bw()+
+    xlab(bquote(bold('Accumulated PARi ('*MJ~m^-2*')')))+ylab(bquote(bold('Total DM ('*g~DM~m^-2*')')))+
+    ggtitle("E5ILLF5")  +
+ geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="blue")+
+ facet_grid(GrowthSeason~Rotation)+mytheme3+
+scale_y_continuous(breaks = seq(0, 1600, by =600), limits=c(0,1600))+
+ scale_x_continuous(breaks = seq(200, 800, by =400), limits=c(0,800))
+
+```
+
+```{r,height=6, fig.width=8}
+RUE%>%
+  filter(ID=="E5ISSF5")%>%
+  ggplot(aes(x=AccPARi,y=TotalBiomass1))+geom_point(size=2)+theme_bw()+
+    xlab(bquote(bold('Accumulated PARi ('*MJ~m^-2*')')))+ylab(bquote(bold('Total DM ('*g~DM~m^-2*')')))+
+    ggtitle("E5ISSF5")  +
+ geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="blue")+
+ facet_grid(GrowthSeason~Rotation)+mytheme3+
+scale_y_continuous(breaks = seq(0, 1600, by =600), limits=c(0,1600))+
+ scale_x_continuous(breaks = seq(200, 800, by =400), limits=c(0,800))
+
+```
+###RUE
+
+```{r}
+RUETotal<-RUE%>%
+group_by(ExpName,GrowthSeason,Rotation,GrowthRotation,Tmean,Ppm,Stage,Trend,ID,ExperimentID,Defoliation) %>%
+  do(mod = lm(TotalBiomass1~AccPARi,data=.)) %>%
+  mutate(RUEt = summary(mod)$coeff[2]) %>%
+  dplyr::select(-mod)
+  
+```
+
+```{r,height=6, fig.width=8}
+RUETotal$Trend<- factor(RUETotal$Trend, levels=c("Inc","Dec"))
+
+RUETotal1<-RUETotal%>%
+  dplyr::filter(RUEt>0)%>%
+  dplyr::filter(RUEt<2)%>%
+  filter(Defoliation=="LL")%>%
+   dplyr::filter(ExpName!="Iversen_91DefoliationLLGs_2Rt_6")%>%
+  dplyr::filter(ExpName!="Iversen_91DefoliationLLGs_2Rt_7")%>%
+  dplyr::filter(ExpName!="Iversen_121DefoliationLLFDFD5Gs_4Rt_2")
+  
+
+library(plyr)
+
+lm_eqn2 <- function(RUETotal1){
+  m <- lm(RUEt~Tmean ,RUETotal1);
+  eq <- substitute(italic(y) == Tmean +RUEt %.% italic(RUEt)*","~~italic(R)^2~"="~r2, 
+                   list(Tmean = format(coef(m)[1], digits = 2), 
+                        RUEt= format(coef(m)[2], digits = 2), 
+                        r2 = format(summary(m)$r.squared, digits = 3)))
+  as.character(as.expression(eq));                 
+}
+
+
+eqsRUE <- ddply(RUETotal1,.(Stage,Trend),lm_eqn2)
+
+RUETotal1%>%
+  filter(Defoliation=="LL")%>%
+  ggplot(aes(x=Tmean,y=RUEt,colour=ID,label=GrowthRotation))+geom_text()+theme_bw()+
+    xlab('Mean temperature (°C)')+ylab(bquote(bold('RUE ('*g~MJ^-1*')')))+
+    ggtitle("E5ISSF5")  +
+ geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="blue")+
+ #facet_grid(Stage~Trend)+
+  facet_grid(Trend~Stage)+
+  mytheme3+
+scale_x_continuous(breaks = seq(10, 18, by =3), limits=c(10,18))+
+  scale_y_continuous(breaks = seq(0, 2, by =1), limits=c(0,2))+
+geom_text(data = eqsRUE, aes(x =13.5, y = 2, label = V1), 
+          color = 'black',  parse = TRUE, size=4)
+
+
+ ggsave("D:/R/Pictures/C5/Yield/RUE.png", width=8, height=4, dpi=500)
+
+detach(package:plyr)
+
+
+```
+
+
+
+###predicted Vs observed for partitiong 
+```{r}
+Biomass.LL%>%
+  ggplot(aes(x=Clock.Today, y=RootP1))+geom_line(size=1)+theme_bw()+mytheme3+
+  geom_point(aes(y=RootWt))+geom_line(aes(y=RootP2))+geom_line(aes(y=RootP3))+geom_line(aes(y=RootP4))+geom_line(aes(y=RootP5))+geom_line(aes(y=RootP6))+geom_line(aes(y=RootP7))+geom_line(aes(y=RootP8))+geom_line(aes(y=RootP9))+geom_line(aes(y=RootP10))+geom_line(aes(y=RootPA))+xlab("Date")+
+  ylab("Root biomass (kg/ha)")
+
+ggsave("D:/R/Pictures/C5/Yield/RootGrowthE3ILL.png", width=8, height=4, dpi=500)
+```
+### Root partitioning rate analysis
+```{r,fig.height=6, fig.width=8}
+Biomass$Trend<-factor(Biomass$Trend, levels=c("Inc", "Dec"))
+
+
+Biomass%>%  
+  filter(RootRespiration1!="NA")%>%
+  filter(PartitioningRer1>0)%>%
+   filter(ExperimentID=="E3")%>%
+  mutate(Rotation=as.factor(Rotation),GrowthSeason=as.factor(GrowthSeason))%>%        ####Root biomass just from respiration 0.03
+  ggplot(aes(x=Pp, y=PartitioningRer1))+geom_point(size=1)+theme_bw()+mytheme3+
+  facet_grid(ID~Trend)+xlab("Photoperiod (h)")+
+  ylab("Proot")+
+  #scale_x_continuous(breaks = seq(10, 17, by =2), limits=c(10,17))+
+  #scale_y_continuous(breaks = seq(0, 0.5, by =0.5), limits=c(0,0.5))+
+  geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="blue")
+
+ggsave("D:/R/Pictures/C5/Yield/E3.Proot.png", width=8, height=6, dpi=500)
+
+```
+### Root partitioning rate analysis
+```{r,fig.height=6, fig.width=8}
+Biomass$Trend<-factor(Biomass$Trend, levels=c("Inc", "Dec"))
+
+
+Biomass%>%  
+  filter(RootRespiration1!="NA")%>%
+  filter(PartitioningRer1>0)%>%
+   filter(ExperimentID=="E5")%>%
+  mutate(Rotation=as.factor(Rotation),GrowthSeason=as.factor(GrowthSeason))%>%        ####Root biomass just from respiration 0.03
+  ggplot(aes(x=Pp, y=PartitioningRer1))+geom_point(size=1)+theme_bw()+mytheme3+
+  facet_grid(ID~Trend)+xlab("Photoperiod (h)")+
+  ylab("Proot")+
+  #scale_x_continuous(breaks = seq(10, 17, by =2), limits=c(10,17))+
+  #scale_y_continuous(breaks = seq(0, 0.5, by =0.5), limits=c(0,0.5))+
+  geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="blue")
+
+ggsave("D:/R/Pictures/C5/Yield/E5.Proot.png", width=8, height=6, dpi=500)
+```
+
+
+###LS Root analysis
+```{r}
+Biomass.LS<-Biomass%>%
+  filter(ID=="E3ILS")%>%
+  filter(RootRespiration1!="NA")
+Biomass.LS%>%
+  ggplot(aes(x=Clock.Today, y=RootRespiration1))+geom_line(size=1)+theme_bw()+mytheme3+
+  geom_point(aes(y=RootWt,size=2))+geom_line(aes(y=RootRespiration2))+ggtitle(paste0("E3ILS"))+
+ xlab("Date")+ylab("Root biomass (kg/ha)")+theme(legend.title=element_blank(),legend.position = "blank")
+```
+
+###predicted Vs observed for partitiong 
+```{r}
+Biomass.LS%>%
+  ggplot(aes(x=Clock.Today, y=RootP1))+geom_line(size=1)+theme_bw()+mytheme3+
+  geom_point(aes(y=RootWt))+geom_line(aes(y=RootP2))+geom_line(aes(y=RootP3))+geom_line(aes(y=RootP4))+geom_line(aes(y=RootP5))+geom_line(aes(y=RootP6))+geom_line(aes(y=RootP7))+geom_line(aes(y=RootP8))+geom_line(aes(y=RootP9))+geom_line(aes(y=RootP10))+xlab("Date")+
+  ylab("Root biomass (kg/ha)")
+
+ggsave("D:/R/Pictures/C5/Yield/RootGrowthE3ILS.png", width=8, height=4, dpi=500)
+```
+
+
+####SL root analysis
+```{r}
+Biomass.SL<-Biomass%>%
+  filter(ID=="E3ISL")%>%
+  filter(RootRespiration1!="NA")
+Biomass.SL%>%
+  ggplot(aes(x=Clock.Today, y=RootRespiration1))+geom_line(size=1)+theme_bw()+mytheme3+
+  geom_point(aes(y=RootWt,size=2))+geom_line(aes(y=RootRespiration2))+ggtitle(paste0("E3ISL"))+
+ xlab("Date")+ylab("Root biomass (kg/ha)")+theme(legend.title=element_blank(),legend.position = "blank")
+```   
+
+###predicted vs observed in SL
+
+```{r}
+Biomass.SL%>%
+  ggplot(aes(x=Clock.Today, y=RootP1))+geom_line(size=1)+theme_bw()+mytheme3+
+  geom_point(aes(y=RootWt))+geom_line(aes(y=RootP2))+geom_line(aes(y=RootP3))+geom_line(aes(y=RootP4))+geom_line(aes(y=RootP5))+geom_line(aes(y=RootP6))+geom_line(aes(y=RootP7))+geom_line(aes(y=RootP8))+geom_line(aes(y=RootP9))+geom_line(aes(y=RootP10))+geom_line(aes(y=RootPA))+xlab("Date")+
+  ylab("Root biomass (kg/ha)")
+
+ggsave("D:/R/Pictures/C5/Yield/RootGrowthE3ISL.png", width=8, height=4, dpi=500)
+```
+
+
+####SS root analysis
+```{r}
+Biomass.SS<-Biomass%>%
+  filter(ID=="E3ISS")%>%
+  filter(RootRespiration1!="NA")
+Biomass.SS%>%
+  ggplot(aes(x=Clock.Today, y=RootRespiration1))+geom_line(size=1)+theme_bw()+mytheme3+
+  geom_point(aes(y=RootWt,size=2))+geom_line(aes(y=RootRespiration2))+ggtitle(paste0("E3ISS"))+
+ xlab("Date")+ylab("Root biomass (kg/ha)")+theme(legend.title=element_blank(),legend.position = "blank")
+```   
+
+###predicted vs obsserved
+
+```{r}
+Biomass.SS%>%
+  ggplot(aes(x=Clock.Today, y=RootP1))+geom_line(size=1)+theme_bw()+mytheme3+
+  geom_point(aes(y=RootWt))+geom_line(aes(y=RootP2))+geom_line(aes(y=RootP3))+geom_line(aes(y=RootP4))+geom_line(aes(y=RootP5))+geom_line(aes(y=RootP6))+geom_line(aes(y=RootP7))+geom_line(aes(y=RootP8))+geom_line(aes(y=RootP9))+geom_line(aes(y=RootP10))+geom_line(aes(y=RootPA))+xlab("Date")+
+  ylab("Root biomass (kg/ha)")
+
+ggsave("D:/R/Pictures/C5/Yield/RootGrowthE3ISS.png", width=8, height=4, dpi=500)
+```
+
+
+
+
+###E5LLF5
+```{r}
+Biomass.LLF5<-Biomass%>%
+  filter(ID=="E5ILLF5")%>%
+  filter(RootRespiration1!="NA")
+Biomass.LLF5%>%
+  ggplot(aes(x=Clock.Today, y=RootRespiration1))+geom_line(size=1)+theme_bw()+mytheme3+
+  geom_point(aes(y=RootWt,size=2,color="blue"))
+```   
+
+###predicted vs obsserved
+
+```{r}
+Biomass.LLF5%>%
+  ggplot(aes(x=Clock.Today, y=RootP1))+geom_line(size=1)+theme_bw()+mytheme3+
+  geom_point(aes(y=RootWt))+geom_line(aes(y=RootP2))+geom_line(aes(y=RootP3))+geom_line(aes(y=RootP4))+geom_line(aes(y=RootP5))+geom_line(aes(y=RootP6))+geom_line(aes(y=RootP7))+geom_line(aes(y=RootP8))+geom_line(aes(y=RootP9))+geom_line(aes(y=RootP10))+geom_line(aes(y=RootPA))+xlab("Date")+
+  ylab("Root biomass (kg/ha)")
+
+ggsave("D:/R/Pictures/C5/Yield/RootGrowthE5ILLF5.png", width=8, height=4, dpi=500)
+```
+
+
+####E5HHF5
+```{r}
+Biomass.HHF5<-Biomass%>%
+  filter(ID=="E5IHHF5")%>%
+  filter(RootRespiration1!="NA")
+Biomass.HHF5%>%
+  ggplot(aes(x=Clock.Today, y=RootRespiration1))+geom_line(size=1)+theme_bw()+mytheme3+
+  geom_point(aes(y=RootWt,size=2))+ggtitle(paste0("E5IHHF5"))+
+ xlab("Date")+ylab("Root biomass (kg/ha)")+theme(legend.title=element_blank(),legend.position = "blank")
+```   
+
+###predicted Vs observed
+```{r}
+Biomass.HHF5%>%
+  ggplot(aes(x=Clock.Today, y=RootP1))+geom_line(size=1)+theme_bw()+mytheme3+
+  geom_point(aes(y=RootWt))+geom_line(aes(y=RootP2))+geom_line(aes(y=RootP3))+geom_line(aes(y=RootP4))+geom_line(aes(y=RootP5))+geom_line(aes(y=RootP6))+geom_line(aes(y=RootP7))+geom_line(aes(y=RootP8))+geom_line(aes(y=RootP9))+geom_line(aes(y=RootP10))+geom_line(aes(y=RootPA))+xlab("Date")+
+  ylab("Root biomass (kg/ha)")
+
+ggsave("D:/R/Pictures/C5/Yield/RootGrowthE5IHHF5.png", width=8, height=4, dpi=500)
+
+```
+
+
+###E5SSF5
+```{r}
+Biomass.SSF5<-Biomass%>%
+  filter(ID=="E5ISSF5")%>%
+  filter(RootRespiration1!="NA")
+Biomass.SSF5%>%
+  ggplot(aes(x=Clock.Today, y=RootRespiration1))+geom_line(size=1)+theme_bw()+mytheme3+
+  geom_point(aes(y=RootWt,size=2,color="blue"))
+```  
+###predicted Vs observed
+```{r}
+Biomass.SSF5%>%
+  ggplot(aes(x=Clock.Today, y=RootP1))+geom_line(size=1)+theme_bw()+mytheme3+
+  geom_point(aes(y=RootWt))+geom_line(aes(y=RootP2))+geom_line(aes(y=RootP3))+geom_line(aes(y=RootP4))+geom_line(aes(y=RootP5))+geom_line(aes(y=RootP6))+geom_line(aes(y=RootP7))+geom_line(aes(y=RootP8))+geom_line(aes(y=RootP9))+geom_line(aes(y=RootP10))+geom_line(aes(y=RootPA))+xlab("Date")+
+  ylab("Root biomass (kg/ha)")
+
+ggsave("D:/R/Pictures/C5/Yield/RootGrowthE5ISSF5.png", width=8, height=4, dpi=500)
+
+```

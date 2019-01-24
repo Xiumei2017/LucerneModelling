@@ -43,10 +43,10 @@ obsAL<- obsADF %>%
 upDir <- "D:/R/"
 obsData <- "D:/R/TtAll/"
 
-Tt<- read.table(paste0(obsData, "df.all1.txt"),
+Tt<- read.table(paste0(obsData, "df.all.txt"),
                header = TRUE)
 TtA <- Tt %>% mutate(Clock.Today=dmy(Clock.Today), ExpUnitCode=as.factor(ExpName))%>%
-  dplyr::filter(Tb==1)
+  dplyr::filter(Tbb==1)
 
 
 obsDL <-merge(obsAL,TtA,by=c("Clock.Today","ExpUnitCode")) %>%
@@ -148,7 +148,7 @@ mytheme3<-theme(
   scale_y_continuous(breaks = seq(0, 5, by =2), limits=c(0,5))+
  geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="blue")+
  facet_grid(GrowthSeason2~Rotation2)+mytheme1
-#ggsave("D:/R/Pictures/C5/LAI/Iversen_121DefoliationSSFD5LAI.png", width=8, height=6, dpi=500)
+ggsave("D:/R/Pictures/C5/LAI/Iversen_121DefoliationSSFD5LAI.png", width=8, height=6, dpi=500)
 
 ```
 
@@ -163,7 +163,7 @@ mytheme3<-theme(
   # scale_y_continuous(breaks = seq(0, 5, by =2), limits=c(0,5))+
  geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="blue")+
  facet_grid(GrowthSeason2~Rotation2)+mytheme1
-#ggsave("D:/R/Pictures/C5/LAI/Iversen_121DefoliationHHFD5Height.png", width=8, height=6, dpi=500)
+ggsave("D:/R/Pictures/C5/LAI/Iversen_121DefoliationHHFD5LAI.png", width=8, height=6, dpi=500)
 
 ```
 
@@ -415,8 +415,8 @@ obsDLAI1<-obsDL%>%
      strip.text.y = element_text(size=14, face="plain"),
      legend.title = element_text(colour="black", size=14, face="bold"),
      axis.text = element_text(face = "bold", vjust = 0.5, size = 14))+
-  annotate("text", x=ymd_hms("2003-07-24 12:00:00"), y=8, size = 5, label ="paste(R_RMSD == 20.9,'%')", parse=T)
- #ggsave("D:/R/Pictures/C5/LAI/Iversen_91DefoliationLSLAI1.png", width=8, height=4, dpi=500)
+  annotate("text", x=ymd_hms("2003-07-24 12:00:00"), y=8, size = 5, label ="paste(R_RMSD == 53.4,'%')", parse=T)
+ ggsave("D:/R/Pictures/C5/LAI/Iversen_91DefoliationLSLAI1.png", width=8, height=4, dpi=500)
 
 ```
 ## SL
@@ -454,7 +454,7 @@ obsDLAI2<-obsDL%>%
      strip.text.y = element_text(size=14, face="plain"),
      legend.title = element_text(colour="black", size=14, face="bold"),
      axis.text = element_text(face = "bold", vjust = 0.5, size = 14))+
-  annotate("text", x=ymd_hms("2003-07-24 12:00:00"), y=6, size = 5, label ="paste(R_RMSD == 20.8,'%')", parse=T)
+  annotate("text", x=ymd_hms("2003-07-24 12:00:00"), y=6, size = 5, label ="paste(R_RMSD == 62.1,'%')", parse=T)
  ggsave("D:/R/Pictures/C5/LAI/Iversen_91DefoliationSLLAI1.png", width=8, height=4, dpi=500)
 
 ```
@@ -493,7 +493,7 @@ obsDLAI3<-obsDL%>%
      strip.text.y = element_text(size=14, face="plain"),
      legend.title = element_text(colour="black", size=14, face="bold"),
      axis.text = element_text(face = "bold", vjust = 0.5, size = 14))+
-  annotate("text", x=ymd_hms("2003-07-24 12:00:00"), y=6, size = 5, label ="paste(R_RMSD == 30.5,'%')", parse=T)
+  annotate("text", x=ymd_hms("2003-07-24 12:00:00"), y=6, size = 5, label ="paste(R_RMSD == 127.6,'%')", parse=T)
  ggsave("D:/R/Pictures/C5/LAI/Iversen_91DefoliationSSLAI1.png", width=8, height=4, dpi=500)
 
 ```
@@ -541,7 +541,7 @@ ggplot(aes(x=Clock.Today,y=Predicted))+geom_line(size=1)+theme_bw()+
      strip.text.y = element_text(size=14, face="plain"),
      legend.title = element_text(colour="black", size=14, face="bold"),
      axis.text = element_text(face = "bold", vjust = 0.5, size = 14))+
-   annotate("text", x=ymd_hms("2016-07-24 12:00:00"), y=6, size = 5, label ="paste(R_RMSD == 41.6,'%')", parse=T)
+   annotate("text", x=ymd_hms("2016-07-24 12:00:00"), y=6, size = 5, label ="paste(R_RMSD == 156.5,'%')", parse=T)
 ggsave("D:/R/Pictures/C5/LAI/Iversen_121DefoliationLLFDFD5LAI1.png", width=8, height=4, dpi=500)
   
 
@@ -588,12 +588,12 @@ ggplot(aes(x=Clock.Today,y=Predicted))+geom_line(size=1)+theme_bw()+
      strip.text.y = element_text(size=14, face="plain"),
      legend.title = element_text(colour="black", size=14, face="bold"),
      axis.text = element_text(face = "bold", vjust = 0.5, size = 14))+
-   annotate("text", x=ymd_hms("2016-07-24 12:00:00"), y=15, size = 5, label ="paste(R_RMSD == 39.7,'%')", parse=T)
+   annotate("text", x=ymd_hms("2016-07-24 12:00:00"), y=15, size = 5, label ="paste(R_RMSD == 83.8,'%')", parse=T)
    ggsave("D:/R/Pictures/C5/LAI/Iversen_121DefoliationHHFDFD5LAI1.png", width=8, height=4, dpi=500)
 
 ```
 # Statistic and Graph
-```{r,fig.height=6, fig.width=8}
+```{r,fig.height=7, fig.width=8}
 
 mergedf1 %>%
     dplyr::filter(Variable== "LAI") %>% 

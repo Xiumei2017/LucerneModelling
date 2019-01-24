@@ -76,6 +76,66 @@ obsA<-rbind(obsA2,obsA3,obsA1,obsA4)
 summary(obsA)
  obsA
 ```
+
+### merge tables for root respiration 
+```{r}
+upDir <- "D:/R/TtAll/"
+obsData <- "D:/R/TtAll/"
+
+RootMet <- read.table(paste0(obsData, "RootMet1.txt"),
+                   header = TRUE)
+RootMet1<-RootMet%>%
+  mutate(ExpUnitCode=ExpName)%>%
+  mutate(Clock.Today=dmy(Clock.Today))%>%
+  dplyr::select(Clock.Today,ExpUnitCode)
+
+obsA1<-obsA%>%
+  dplyr::filter(Variable=="LAI")
+
+mergemet1<-merge(RootMet1,obsA1,by=c("Clock.Today","ExpUnitCode"))
+write.csv(mergemet1,"D:/R/TtAll/mergemet1.CSV", row.names = FALSE)
+  
+```
+
+```{r}
+upDir <- "D:/R/CombinedData/"
+obsData <- "D:/R/CombinedData/"
+
+obsADF <- read.table(paste0(obsData, "Defoliation.txt"),
+                   header = TRUE)
+obADF1<-obsADF%>%
+  dplyr::filter(Variable=="LAI")%>%
+   mutate(StartDate=dmy(StartDate),MidDate=dmy(MidDate),FinishDate=dmy(FinishDate),Clock.Today=dmy(Clock.Today))%>%
+  mutate(GrowthSeason1=as.factor(paste0("Gs_",GrowthSeason))) %>% # creating more intuitive labels here
+  mutate(Rotation1=as.factor(paste0("Rt_",Rotation))) %>%
+  mutate(ExpUnitCode=as.factor(paste0(Name,GrowthSeason1,Rotation1))) %>%
+  mutate(Clock.Today1 = as.POSIXct(paste(Clock.Today,Time),format="%Y-%m-%d %H:%M:%S"))%>%
+  mutate(GrowthSeason2=as.factor(paste0("Y",GrowthSeason,"(",Period,")"))) %>%
+ mutate(Rotation2=as.factor(paste0("R",Rotation)))
+
+mergemet2<-merge(RootMet1,obADF1,by=c("Clock.Today","ExpUnitCode"))
+
+write.csv(mergemet2,"D:/R/TtAll/mergemet2.CSV", row.names = FALSE)
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ##load thermal time data
 ```{r}
 upDir <- "D:/R/"
@@ -114,7 +174,7 @@ mytheme1<-theme(
 
 ```{r,fig.height=8, fig.width=10}
 obsYield<-ObsY%>%
-  dplyr::filter(Tb==1)
+  dplyr::filter(Tbb==1)
   obsYield0<-obsYield%>%
   dplyr::filter(Name=="Iversen_8Waterirr") 
 obsYield0$Rotation2<- factor(obsYield0$Rotation2, levels=c("R1", "R2", "R3", "R4", "R5","R6", "R7"))
@@ -298,7 +358,7 @@ summary(ObsR)
 
 ```{r,fig.height=6, fig.width=10}
 obsRoot<-ObsR%>%
-  dplyr::filter(Tb==1)
+  dplyr::filter(Tbb==1)
 
 obsRoot1<-obsRoot%>%
   dplyr::filter(Name=="Iversen_91DefoliationLL")
