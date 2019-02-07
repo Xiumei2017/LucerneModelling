@@ -1,0 +1,353 @@
+---
+title: "RAR for chapter 5"
+output: html_notebook
+---
+
+###PAR analysis and LAI
+
+```{r Load, warning=FALSE, fig.height=8, fig.width=8}
+# install.packages("zoo")
+library(dplyr)
+library(ggplot2)
+library(lubridate)   
+library(hydroGOF)
+library(xtable)
+library(knitr)
+library(tidyr)
+library(RSQLite)
+library(agricolae)
+library(scales)
+library(zoo)
+library(lme4)
+library(reshape2)
+```
+# ### load obs data
+```{r}
+upDir <- "D:/R/CombinedData/"
+obsData <- "D:/R/CombinedData/"
+
+obsADF <- read.table(paste0(obsData, "Defoliation.txt"),
+                   header = TRUE)
+obsAPL<- obsADF %>%
+  mutate(StartDate=dmy(StartDate),MidDate=dmy(MidDate),FinishDate=dmy(FinishDate),Clock.Today=dmy(Clock.Today))%>%
+  mutate(GrowthSeason1=as.factor(paste0("Gs_",GrowthSeason))) %>% # creating more intuitive labels here
+  mutate(Rotation1=as.factor(paste0("Rt_",Rotation))) %>%
+  mutate(ExpUnitCode=as.factor(paste0(Name,GrowthSeason1,Rotation1))) %>%
+  mutate(Clock.Today1 = as.POSIXct(paste(Clock.Today,Time),format="%Y-%m-%d %H:%M:%S"))%>%
+  mutate(GrowthSeason2=as.factor(paste0("Y",GrowthSeason,"(",Period,")"))) %>%
+ mutate(Rotation2=as.factor(paste0("R",Rotation)))%>%
+  dplyr::filter(Variable=="Fraction"|Variable=="LAI")
+obsAPL
+
+```
+
+#Load Tt and Join Observed data together
+##Select LAI variable
+```{r}
+upDir <- "D:/R/"
+obsData <- "D:/R/TtAll/"
+
+Tt<- read.table(paste0(obsData, "df.all1.txt"),
+               header = TRUE)
+TtA <- Tt %>% mutate(Clock.Today=dmy(Clock.Today), ExpUnitCode=as.factor(ExpName))%>%
+  dplyr::filter(Tb==1)
+
+ObsLP.Raw <-merge(obsAPL,TtA,by=c("Clock.Today","ExpUnitCode"))
+ObsLP<-ObsLP.Raw%>%
+  mutate(GrowthRotation=as.factor(paste0(GrowthSeason.x,Rotation.x)))%>%
+  dplyr::filter(FD.x=="FD5")
+ 
+  
+summary(ObsLP)
+ObsLP
+```
+```{r}
+mytheme1<-theme(
+     panel.spacing=unit(.01, "lines"),
+     panel.border = element_rect(colour = "black",size=1), 
+     panel.grid.major = element_blank(),
+     panel.grid.minor = element_blank(),
+     axis.line = element_line(colour = "black",size = 1),
+     axis.text.x = element_text(face = "plain", color = "black", size = 14,angle=90, vjust=0.5, hjust = 1),
+     axis.text.y = element_text(face = "plain", color = "black", size = 14),
+     axis.title.x=element_text(face="bold",colour="black",size = 14),
+     axis.title.y=element_text(face="bold",colour="black",size = 14),
+     strip.background = element_rect(colour = "black", fill = "white",size=1),
+     strip.text.x = element_text(size=14, angle=0, face = "plain"), 
+     strip.text.y = element_text(size=14, face="plain"),
+     legend.title = element_text(colour="black", size=14, face="bold"),
+     axis.text = element_text(face = "bold", vjust = 0.5, size = 14))
+
+mytheme3<-theme(
+     legend.title = element_text(colour="black", size=14, face="bold"),
+     legend.text = element_text(colour="black", size = 14,face="plain"),
+     panel.spacing=unit(.01, "lines"),
+     panel.border = element_rect(colour = "black",size=1), 
+     panel.grid.major = element_blank(),
+     panel.grid.minor = element_blank(),
+     axis.line = element_line(colour = "black",size = 1),
+     axis.text.x = element_text(face = "plain", color = "black", size = 14, vjust=0.5, hjust = 1),
+     axis.text.y = element_text(face = "plain", color = "black", size = 14),
+     axis.title.x=element_text(face="bold",colour="black",size = 14),
+     axis.title.y=element_text(face="bold",colour="black",size = 14),
+     strip.background = element_rect(colour = "black", fill = "white",size=1),
+     strip.text.x = element_text(size=14, angle=0, face = "plain"), 
+     strip.text.y = element_text(size=14, face="plain"),
+     axis.text = element_text(face = "bold", vjust = 0.5, size = 14),
+    legend.position = "right", legend.box = "vertical")
+```
+###LAI and PAR
+```{r,fig.height=4, fig.width=8}
+ObsLP.data<-ObsLP%>%
+  unique()%>%
+  dplyr::select(Clock.Today,ExpUnitCode,Name,Collection,GrowthSeason.x,Rotation.x,StartDate,MidDate,FinishDate,Interval,Variable,VariableUnits,Time,Observed,StdDEV,GrowthRotation,ID,ExperimentID)
+
+ObsDLAI <- ObsLP.data%>%
+  dplyr::filter(Variable=="LAI")
+ObsDP <- ObsLP.data%>%
+  dplyr::filter(Variable=="Fraction")
+  
+ObsDPL<-merge(ObsDLAI,ObsDP,by=c("Clock.Today","ExpUnitCode","Name","Collection","GrowthSeason.x","Rotation.x","StartDate","MidDate","FinishDate","Interval","Time","GrowthRotation","ID","ExperimentID"))
+
+phyll <- "D:\\R\\"
+StartGrazing <- read.table(paste0(phyll, "ExperimentList.txt"), 
+                      header = TRUE)
+StartGrazing1<-StartGrazing %>%
+  mutate(GrowthRotation= as.factor(paste0(GrowthSeason,Rotation)))
+ObsDPL1<- merge(StartGrazing1,ObsDPL,by=c("Name","Collection","GrowthRotation"))%>%
+   filter(Interval<=50)%>%
+ dplyr::filter(Name!="Iversen_121DefoliationHHFDFD5"|GrowthSeason.x!="4")%>%
+  dplyr::filter(Name!="Iversen_121DefoliationLSFDFD5"|GrowthRotation!="14")%>%
+   dplyr::filter(Name!="Iversen_121DefoliationHHFDFD5"|Rotation.x!="2")%>%
+ dplyr::filter(Name!="Iversen_121DefoliationSSFDFD5"|GrowthSeason.x!="4")%>%
+  dplyr::filter(Name!="Iversen_121DefoliationSSFDFD5"|GrowthRotation!="26")%>%
+  dplyr::filter(Name!="Iversen_121DefoliationSSFDFD5"|GrowthRotation!="22")%>%
+  dplyr::filter(Name!="Iversen_121DefoliationSSFDFD5"|GrowthRotation!="23")%>%
+  dplyr::filter(Name!="Iversen_121DefoliationSSFDFD5"|GrowthRotation!="13")%>%
+   dplyr::filter(Name!="Iversen_121DefoliationSSFDFD5"|GrowthRotation!="38")%>%
+  dplyr::filter(Name!="Iversen_121DefoliationSSFDFD5"|GrowthRotation!="31")
+
+test1 <- function(x) {1-exp(-0.81*x)}
+stat_function(fun = test1)
+ 
+ObsDPL1%>%
+  #filter(ExperimentID=="E3")%>%
+  ggplot(aes(x=Observed.x,y=Observed.y,shape=ID))+theme_bw()+ylab("Franctional radiation interception")+xlab(bquote(bold('LAI ('*m^2~m^-2*')')))+
+  geom_point(size=2)+theme(legend.title = element_blank())+
+   geom_segment(aes(x = 3.6, y = 0, xend = 3.6, yend = 0.95))+
+  #geom_segment(aes(x = 0, y = 0.95, xend = 3.45, yend = 0.95))+
+  geom_segment(aes(x = 4.25, y = 0.2, xend = 3.6, yend = 0),
+                  arrow = arrow(length = unit(0.5, "cm")))+
+  #facet_wrap(~Stage,ncol = 2)+
+  stat_function(fun = test1,color="black",size=1)+
+  theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
+ theme(axis.title.y=element_text(face="bold",colour="black",size = 12))+mytheme3+
+ annotate("text", x=1.5, y=1, size = 5, label ="paste(y == 1-exp(-0.81*x),~~R^2==0.93 )", parse=T)+
+  annotate("text", x=4.5, y=0.25, size = 5, label ="paste(LAIcrit==3.6)", parse=T)
+  ggsave("D:/R/Pictures/C5/PAR/PAR.png", width=8, height=5  , dpi=500) 
+```
+
+#### Extinction_coef evaluation
+```{r,fig.height=4, fig.width=8}
+library(plyr)
+Exc.K<-ObsDPL1%>%
+  mutate(Fra=1-Observed.y)%>%
+  mutate(lnFI=log(Fra))
+  
+  #filter(ExperimentID=="E3")
+
+lm_eqn3 <- function(Exc.K){
+  m <- lm(lnFI~Observed.x, Exc.K);
+  eq <- substitute(italic(y) == Observed.x + lnFI %.% italic(Observed.x)*","~~italic(R)^2~"="~r2, 
+                   list(Observed.x = format(coef(m)[1], digits = 2), 
+                       lnFI = format(coef(m)[2], digits = 2), 
+                        r2 = format(summary(m)$r.squared, digits = 3)))
+  as.character(as.expression(eq));                 
+}
+
+
+eqs2 <- ddply(Exc.K,.(Stage),lm_eqn3)
+
+
+Exc.K%>%
+  ggplot(aes(x=Observed.x,y=lnFI,color=ID,label=GrowthRotation,shape=Stage))+geom_text()+theme_bw()+ylab("ln (I/IO)")+xlab(bquote(bold('LAI ('*m^2~m^-2*')')))+
+  #geom_point(size=2)+
+   geom_smooth(method = "lm", se = TRUE,linetype=1 , colour="black")+
+  #facet_wrap(~Stage,ncol = 2)+
+  mytheme3+
+  geom_text(data = eqs2, aes(y =0, x = 3.5, label = V1), 
+          color = 'black',  parse = TRUE)+
+  theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
+ theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
+  detach(package:plyr)
+```
+####evaluation 
+###linear regression
+```{r}
+Exc.KS<-Exc.K%>%
+  dplyr::filter(Stage=="Seedling")
+Exc.KR<-Exc.K%>%
+  dplyr::filter(Stage=="Regrowth")
+
+##regrowth analysis
+x2=Exc.KR$Observed.x
+y2=Exc.KR$lnFI
+mod2<-lm(y2~x2)
+summary(mod2)
+m.e.r<-nls(Observed.y~1-I(exp(1)^(a*Observed.x)), data=Exc.KR,start=list(a=1), trace=T)
+summary(m.e.r)$coefficients
+plot(m.e.r)
+
+RSS.P<-sum(residuals(m.e.r)^2)
+TSS<-sum((Exc.KR$Observed.y-mean(Exc.KR$Observed.y))^2)
+R2<-1-(RSS.P/TSS)
+
+
+##seedling and regrowth analysis
+x3=Exc.K$Observed.x
+y3=Exc.K$lnFI
+mod3<-lm(y3~x3)
+summary(mod3)
+
+Exc.K
+
+x4=Exc.K$Observed.x
+y4=Exc.K$Observed.y
+m.e<-nls(y4~1-I(exp(1)^(a*x4)), data=Exc.K,start=list(a=1), trace=T)
+summary(m.e)$coefficients
+plot(m.e)
+plot(y4~x4)
+
+RSS.P<-sum(residuals(m.e)^2)
+TSS<-sum((Exc.K$Observed.y-mean(Exc.K$Observed.y))^2)
+R2<-1-(RSS.P/TSS)
+
+
+
+```
+
+###PAR and acculmated PARi
+##PAR
+
+```{r}
+TtA1<-TtA%>%
+  dplyr::filter(Tb==1)%>%
+  dplyr::select(radn,Clock.Today,ExpUnitCode,GrowthSeason,Rotation)
+  
+obsDALP<-ObsLP%>%
+  dplyr::filter(Variable=="Fraction")%>%
+  dplyr::select(Clock.Today, Name, Collection,ID,Variable,VariableUnits, Observed,StdDEV, ExpUnitCode,StartDate,MidDate,FinishDate)
+
+ObsPARD.Raw <-merge(obsDALP,TtA1,by=c("ExpUnitCode"))%>%
+  mutate(fPAR=as.factor(ifelse(Clock.Today.x==Clock.Today.y,Observed,"NA")))%>%
+  mutate(fPAR=as.factor(ifelse(Clock.Today.y==StartDate,0.1,paste0(fPAR))))%>%
+  mutate(StdDEV1=as.factor(ifelse(Clock.Today.x==Clock.Today.y,StdDEV,"NA")))%>%
+  dplyr::select(-Clock.Today.x,-Observed,-StdDEV)%>%
+  unique()
+write.csv(ObsPARD.Raw,"D:/R/ObsPARD.Raw.csv", row.names = FALSE)
+
+```
+###fPAR interpolate for each rotation
+
+```{r}
+upDir <- "D:/R/"
+obsData <- "D:/R/"
+
+ObsPARD.Raw1<- read.table(paste0(obsData, "ObsPARD.Raw.txt"),
+               header = TRUE)%>%
+  unique()
+
+UniExp <- unique(ObsPARD.Raw1$ExpUnitCode)
+
+fPARD.df <- data.frame()
+  
+for(i in 1:length(UniExp))
+{
+  
+  ObsfPARD<-ObsPARD.Raw1%>%
+   filter(ExpUnitCode==UniExp[i])%>%
+  mutate(Clock.Today=dmy(Clock.Today.y))
+  
+ 
+ fPARD.data<-ObsfPARD%>%
+  mutate(fPAR1=approx(Clock.Today, fPAR, xout =Clock.Today, 
+         method="linear", 
+         rule = 2)$y)##interpolate function 
+  
+
+ fPARD.df<- rbind( fPARD.df, fPARD.data)
+
+}
+
+summary(fPARD.df)
+fPARD.df
+write.csv(fPARD.df,"D:/R/fPARD.df.csv", row.names = FALSE)
+```
+
+###Accumlated PAR for every rotation
+```{r}
+
+UniExp <- unique(fPARD.df$ExpUnitCode)
+
+PARiD.df <- data.frame()
+  
+for(i in 1:length(UniExp))
+{
+  
+  ObsPARiD<-fPARD.df%>%
+    
+   filter(ExpUnitCode==UniExp[i])%>%
+     mutate(PARi=radn*fPAR1)%>% 
+   dplyr::select(-fPAR,-StdDEV1)%>%
+    unique()
+  
+ 
+ PARiD.data<-ObsPARiD%>%
+  mutate( PARi.sum = cumsum(PARi))##accmulated function
+  
+
+ PARiD.df<- rbind( PARiD.df, PARiD.data)
+
+}
+
+summary(PARiD.df)
+PARiD.df
+write.csv(PARiD.df,"D:/R/PARiD.df.csv", row.names = FALSE)
+```
+###calculated RUE value
+####Join yield and PARi table together
+```{r}
+PARiD.df1<-PARiD.df%>%
+  mutate(Clock.Today=dmy(Clock.Today.y))%>%
+  dplyr::select(ExpUnitCode,Name,Clock.Today,fPAR1,PARi,PARi.sum,GrowthSeason,Rotation)
+
+# obsTDM<-ObsL.Raw%>%
+#   mutate(GrowthRotation=as.factor(paste0(GrowthSeason.x,Rotation.x)))%>%
+#   dplyr::filter(Water.x=="irr")%>%
+#   dplyr::filter(Defoliation.x=="LL")%>%
+#   dplyr::filter(FD.x=="FD5")%>%
+#   dplyr::filter(Tb==1)%>%
+#   dplyr::filter(Variable=="shootbiomass"|Variable=="RootWt")
+# 
+#   
+# RUE.RAW<-merge(obsTDM,PARi.df1,by=c("Clock.Today","Name","ExpUnitCode"))
+```
+###check the intepolate function
+```{r,fig.height=5, fig.width=8}
+PARiD.df2<-PARiD.df1%>%
+  dplyr::filter(Name=="Iversen_121DefoliationSSFDFD5")
+  
+PARiD.df2%>%
+  ggplot(aes(x=Clock.Today, y=fPAR1))+geom_point(size=2)+theme_bw()+xlab("Date")+ylab("Fractional intercepted radiation")+
+  #geom_smooth(method = "lm", se = TRUE,linetype=1 , colour="black")+
+ facet_grid(GrowthSeason~Rotation)+
+  theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
+ theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
+
+```
+
+
+
+
+
+

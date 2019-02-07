@@ -42,10 +42,10 @@ obsAH<- obsADF %>%
 upDir <- "D:/R/"
 obsData <- "D:/R/TtAll/"
 
-Tt<- read.table(paste0(obsData, "df.all1.txt"),
+Tt<- read.table(paste0(obsData, "df.all.txt"),
                header = TRUE)
 TtA <- Tt %>% mutate(Clock.Today=dmy(Clock.Today), ExpUnitCode=as.factor(ExpName))%>%
-  dplyr::filter(Tb==1)
+  dplyr::filter(Tbb==1)
 
 
 obsDH <-merge(obsAH,TtA,by=c("Clock.Today","ExpUnitCode")) %>%
@@ -166,7 +166,7 @@ obsDH0<-rbind(obsDH1,obsDH2)
   #dplyr::filter(Defoliation.x!="SS")%>%
   mutate(GrowthSeason=as.factor(GrowthSeason.x),Rotation=as.factor(Rotation.x))%>%
   mutate(GrowthRotation=as.factor(paste0(GrowthSeason,Rotation)))%>%
-  group_by(Name,GrowthSeason,Rotation,Tmean,Ppm,Tb,ID,GrowthRotation) %>%
+  group_by(Name,GrowthSeason,Rotation,Tmean,Ppm,Tbb,ID,GrowthRotation) %>%
     do(mod = lm(Tt_broken_sum~Observed,data=.))%>%
   mutate(HeightchronSS= summary(mod)$coeff[2])%>%
   dplyr::select(-mod)
@@ -176,7 +176,7 @@ obsDH0<-rbind(obsDH1,obsDH2)
   dplyr::filter(Defoliation.x=="SS")%>%
   mutate(GrowthSeason=as.factor(GrowthSeason.x),Rotation=as.factor(Rotation.x))%>%
    mutate(GrowthRotation=as.factor(paste0(GrowthSeason,Rotation)))%>%
-  group_by(Name,GrowthSeason,Rotation,Tmean,Ppm,Tb,ID,GrowthRotation) %>%
+  group_by(Name,GrowthSeason,Rotation,Tmean,Ppm,Tbb,ID,GrowthRotation) %>%
     do(mod = lm(Tt_broken_sum~Observed,data=.))%>%
   mutate(HeightchronS= summary(mod)$coeff[2])%>%
   dplyr::select(-mod)
@@ -198,7 +198,7 @@ my.formula  <- function(HchronPp){
   my.formula <- HeightchronSS~ poly(Ppm, 2, raw = TRUE)
   m <- lm(my.formula, HchronPp)
   my.eq <- as.character(signif(as.polynomial(coef(m)), 2))
-  label.text <- paste("y","'='",paste(gsub(y, "~italic(x)",my.eq, fixed = TRUE)),
+  label.text <- paste("y","'='",paste(gsub("y", "~italic(x)",my.eq, fixed = TRUE)),
               paste("italic(R)^2",format(summary(m)$r.squared, digits = 2), 
                     sep = "~`=`~"),
                     sep = "~~~~")
@@ -232,7 +232,7 @@ my.formula  <- function(HchronPpss){
   my.formula <- HeightchronS ~ poly(Ppm, 2, raw = TRUE)
   m <- lm(my.formula, HchronPpss)
   my.eq <- as.character(signif(as.polynomial(coef(m)), 2))
-  label.text <- paste("y","'='",paste(gsub(y, "~italic(x)",my.eq, fixed = TRUE)),
+  label.text <- paste("y","'='",paste(gsub("y", "~italic(x)",my.eq, fixed = TRUE)),
               paste("italic(R)^2",format(summary(m)$r.squared, digits = 2), 
                     sep = "~`=`~"),
                     sep = "~~~~")
@@ -311,6 +311,40 @@ ggsave("D:/R/Pictures/C5/Height/Iversen_121DefoliationHHFD5Height.png", width=8,
 
 ```
 
+####Statistic measurement for linear regression
+```{r}
+obsH4
+unicode <- unique(obsH4$ExpUnitCode)
+
+HeightHH.all <- data.frame()
+ 
+for(i in 1:length(unicode)){
+  
+  obsH41 <- obsH4%>%
+  filter(ExpUnitCode==unicode[i])
+  
+    obsH41.sub <- obsH41 %>%
+  group_by(Name,GrowthSeason.x,Rotation.x,Collection,Tmean,Ppm,ID,ExperimentID) %>%
+    do(mod.broken = lm(Tt_broken_sum~Observed,data=.))%>%
+    #do(mod.fick = lm(Tt_fick_sum~Observed,data=.))%>%
+  mutate(R2Br = summary(mod.broken)$r.squared)%>%
+  mutate(PhylloBr = summary(mod.broken)$coeff[2])%>%
+  mutate(P=anova(mod.broken)$'Pr(>F)'[1])%>% 
+  mutate(intcp= summary(mod.broken)$coeff[1])%>%  
+  dplyr::select(-mod.broken)
+
+  HeightHH.all <- rbind(HeightHH.all, obsH41.sub)
+}
+  
+HeightHH.all 
+write.csv(HeightHH.all ,"D:/R/PhyllochronData/HeightHH.all.all.csv", row.names = FALSE)
+
+
+```
+
+
+
+
 ###Join with the flowering data
 
 ```{r}
@@ -348,10 +382,16 @@ ggsave("D:/R/Pictures/C5/Height/Iversen_121DefoliationHHFD5Height1.png", width=8
 ```{r}
  mergeHHH_V <- mergeHHH_Veg %>%
   mutate(GrowthSeason=as.factor(GrowthSeason.x),Rotation=as.factor(Rotation.x))%>%
-  group_by(Name,GrowthSeason,Rotation,Tmean,Ppm,Tb) %>%
+  group_by(Name,GrowthSeason,Rotation,Tmean,Ppm,Tbb) %>%
     do(mod = lm(Tt_broken_sum~Observed,data=.))%>%
+   mutate(R2Br = summary(mod)$r.squared)%>%
   mutate(Veg = summary(mod)$coeff[2])%>%
+  #mutate(PhylloBr = summary(mod.broken)$coeff[2])%>%
+  mutate(P=anova(mod)$'Pr(>F)'[1])%>% 
+  mutate(intcp= summary(mod)$coeff[1])%>%  
   dplyr::select(-mod)
+write.csv(mergeHHH_V ,"D:/R/PhyllochronData/mergeHHH_V.all.csv", row.names = FALSE)
+ 
 ```
 
 
@@ -375,13 +415,19 @@ ggsave("D:/R/Pictures/C5/Height/Iversen_121DefoliationHHFD5Height2.png", width=8
  mergeHHH_R <- mergeHHH_Repro %>%
   mutate(GrowthSeason=as.factor(GrowthSeason.x),Rotation=as.factor(Rotation.x))%>%
   #dplyr::filter(GrowthSeason!="2"|Rotation!="1") %>%
-  group_by(Name,GrowthSeason,Rotation,Tmean,Ppm,Tb) %>%
+  group_by(Name,GrowthSeason,Rotation,Tmean,Ppm,Tbb) %>%
     do(mod = lm(Tt_broken_sum~Observed,data=.))%>%
-  mutate(Reg= summary(mod)$coeff[2])%>%
+  mutate(R2Br = summary(mod)$r.squared)%>%
+  mutate(Reg = summary(mod)$coeff[2])%>%
+  #mutate(PhylloBr = summary(mod.broken)$coeff[2])%>%
+  mutate(P=anova(mod)$'Pr(>F)'[1])%>% 
+  mutate(intcp= summary(mod)$coeff[1])%>%  
   dplyr::select(-mod)
+write.csv(mergeHHH_R ,"D:/R/PhyllochronData/mergeHHH_R.all.csv", row.names = FALSE)
+ 
   
-mergePhy1<-merge(mergeHHH_V, mergeHHH_R,by=c("Name","GrowthSeason","Rotation","Tmean","Ppm","Tb"))%>%
-  dplyr::select(Name,GrowthSeason,Rotation,Tmean, Ppm,Tb,Veg,Reg) %>%
+mergePhy1<-merge(mergeHHH_V, mergeHHH_R,by=c("Name","GrowthSeason","Rotation","Tmean","Ppm","Tbb"))%>%
+  dplyr::select(Name,GrowthSeason,Rotation,Tmean, Ppm,Tbb,Veg,Reg) %>%
   tidyr::gather("Variable","Heightchron",Veg:Reg)
   
 ```
@@ -586,7 +632,7 @@ obsDHeight1<-obsDH0%>%
      strip.text.y = element_text(size=14, face="plain"),
      legend.title = element_text(colour="black", size=14, face="bold"),
      axis.text = element_text(face = "bold", vjust = 0.5, size = 14))+
-  annotate("text", x=ymd_hms("2003-07-24 12:00:00"), y=700, size = 5, label ="paste(R_RMSD == 21.9,'%')", parse=T)
+  annotate("text", x=ymd_hms("2003-07-24 12:00:00"), y=700, size = 5, label ="paste(R_RMSD == 28.5,'%')", parse=T)
  ggsave("D:/R/Pictures/C5/Height/IIversen_91DefoliationLSHeight1.png", width=8, height=4, dpi=500)
 
 ```
@@ -625,7 +671,7 @@ obsDHeight1<-obsDH0%>%
      strip.text.y = element_text(size=14, face="plain"),
      legend.title = element_text(colour="black", size=14, face="bold"),
      axis.text = element_text(face = "bold", vjust = 0.5, size = 14))+
-  annotate("text", x=ymd_hms("2003-07-24 12:00:00"), y=600, size = 5, label ="paste(R_RMSD == 21.9,'%')", parse=T)
+  annotate("text", x=ymd_hms("2003-07-24 12:00:00"), y=600, size = 5, label ="paste(R_RMSD == 72.7,'%')", parse=T)
  ggsave("D:/R/Pictures/C5/Height/Iversen_91DefoliationSLHeight1.png", width=8, height=4, dpi=500)
 
 ```
@@ -665,7 +711,7 @@ obsDHeight2<-obsDH0%>%
      strip.text.y = element_text(size=14, face="plain"),
      legend.title = element_text(colour="black", size=14, face="bold"),
      axis.text = element_text(face = "bold", vjust = 0.5, size = 14))+
-  annotate("text", x=ymd_hms("2003-07-24 12:00:00"), y=600, size = 5, label ="paste(R_RMSD == 21.9,'%')", parse=T)
+  annotate("text", x=ymd_hms("2003-07-24 12:00:00"), y=600, size = 5, label ="paste(R_RMSD == 171.4,'%')", parse=T)
  ggsave("D:/R/Pictures/C5/Height/Iversen_91DefoliationSSHeight11.png", width=8, height=4, dpi=500)
 
 ```
@@ -713,7 +759,7 @@ ggplot(aes(x=Clock.Today,y=Predicted))+geom_line(size=1)+theme_bw()+
      strip.text.y = element_text(size=14, face="plain"),
      legend.title = element_text(colour="black", size=14, face="bold"),
      axis.text = element_text(face = "bold", vjust = 0.5, size = 14))+
-   annotate("text", x=ymd_hms("2016-07-24 12:00:00"), y=600, size = 5, label ="paste(R_RMSD == 30,'%')", parse=T)
+   annotate("text", x=ymd_hms("2016-07-24 12:00:00"), y=600, size = 5, label ="paste(R_RMSD == 76.6,'%')", parse=T)
    ggsave("D:/R/Pictures/C5/Height/Iversen_121DefoliationSSFDFD5Height1.png", width=8, height=4, dpi=500)
   
   
@@ -762,8 +808,8 @@ ggplot(aes(x=Clock.Today,y=Predicted))+geom_line(size=1)+theme_bw()+
      strip.text.y = element_text(size=14, face="plain"),
      legend.title = element_text(colour="black", size=14, face="bold"),
      axis.text = element_text(face = "bold", vjust = 0.5, size = 14))+
-   annotate("text", x=ymd_hms("2016-07-24 12:00:00"), y=1250, size = 5, label ="paste(R_RMSD == 30,'%')", parse=T)
-   #ggsave("D:/R/Pictures/C5/Height/Iversen_121DefoliationHHFDFD5Height1.png", width=8, height=4, dpi=500)
+   annotate("text", x=ymd_hms("2016-07-24 12:00:00"), y=1250, size = 5, label ="paste(R_RMSD == 23.8,'%')", parse=T)
+   ggsave("D:/R/Pictures/C5/Height/Iversen_121DefoliationHHFDFD5Height1.png", width=8, height=4, dpi=500)
   
   
 
@@ -801,10 +847,82 @@ mergedf %>%
      strip.text.y = element_text(size=14, face="plain"),
      legend.title = element_text(colour="black", size=14, face="bold"),
      axis.text = element_text(face = "bold", vjust = 0.5, size = 14))
-   #ggsave("D:/R/Pictures/C5/Height/height.png", width=8, height=6, dpi=500)
+   ggsave("D:/R/Pictures/C5/Height/height.png", width=8, height=6, dpi=500)
+```
+# Statistic and Graph for treatment
+```{r,fig.height=6, fig.width=8}
+mergedf
+summary(mergedf)
+str(mergedf)
+
+mergedf %>%
+    dplyr::filter(Variable== "Height") %>% 
+  ggplot(aes(x=Observed, y= Predicted, colour= factor(ID))) +
+  geom_point(size=2)+theme_bw()+
+  geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="darkgrey") +
+  geom_abline(intercept = 0, slope = 1) +
+  coord_fixed(ratio = 1)+
+  ggtitle("Height")+
+  facet_wrap(~Cutting, ncol = 3)+
+  theme(legend.title=element_blank())+
+  xlab("Observed")+ylab("Predicted")+
+  theme(
+     panel.spacing=unit(.01, "lines"),
+     panel.border = element_rect(colour = "black",size=1), 
+     panel.grid.major = element_blank(),
+     panel.grid.minor = element_blank(),
+     axis.line = element_line(colour = "black",size = 1),
+     axis.text.x = element_text(face = "plain", color = "black", size = 14, vjust=0.5, hjust = 1),
+     axis.text.y = element_text(face = "plain", color = "black", size = 14),
+     axis.title.x=element_text(face="bold",colour="black",size = 14),
+     axis.title.y=element_text(face="bold",colour="black",size = 14),
+     strip.background = element_rect(colour = "black", fill = "white",size=1),
+     strip.text.x = element_text(size=14, angle=0, face = "plain"), 
+     strip.text.y = element_text(size=14, face="plain"),
+     #legend.title = element_text(colour="black", size=14, face="bold"),
+     axis.text = element_text(face = "bold", vjust = 0.5, size = 14))
+   ggsave("D:/R/Pictures/C5/Height/heightcutting.png", width=8, height=6, dpi=500)
 ```
 
-## RMSE
+# Statistic and Graph for season
+```{r,fig.height=6, fig.width=8}
+mergedf$Season <- factor(mergedf$Season, levels = c("Spring", "Summer", "Autumn", "Winter")) 
+mergedf
+summary(mergedf)
+str(mergedf)
+
+mergedf %>%
+    dplyr::filter(Variable== "Height") %>% 
+  ggplot(aes(x=Observed, y= Predicted, colour= factor(ID))) +
+  geom_point(size=2)+theme_bw()+
+  geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="darkgrey") +
+  geom_abline(intercept = 0, slope = 1) +
+  coord_fixed(ratio = 1)+
+  ggtitle("Height")+
+  facet_wrap(~Season, ncol = 2)+
+  theme(legend.title=element_blank())+
+  xlab("Observed")+ylab("Predicted")+
+  theme(
+     panel.spacing=unit(.01, "lines"),
+     panel.border = element_rect(colour = "black",size=1), 
+     panel.grid.major = element_blank(),
+     panel.grid.minor = element_blank(),
+     axis.line = element_line(colour = "black",size = 1),
+     axis.text.x = element_text(face = "plain", color = "black", size = 14, vjust=0.5, hjust = 1),
+     axis.text.y = element_text(face = "plain", color = "black", size = 14),
+     axis.title.x=element_text(face="bold",colour="black",size = 14),
+     axis.title.y=element_text(face="bold",colour="black",size = 14),
+     strip.background = element_rect(colour = "black", fill = "white",size=1),
+     strip.text.x = element_text(size=14, angle=0, face = "plain"), 
+     strip.text.y = element_text(size=14, face="plain"),
+     #legend.title = element_text(colour="black", size=14, face="bold"),
+     axis.text = element_text(face = "bold", vjust = 0.5, size = 14))
+   ggsave("D:/R/Pictures/C5/Height/heightseason.png", width=8, height=6, dpi=500)
+```
+
+
+
+## RMSE for ID
 
 ```{r}
 str(mergedf)
@@ -826,7 +944,48 @@ mergedf %>%
   
 ```
 
+## RMSE for cutting
 
+```{r}
+str(mergedf)
+
+mergedf %>%
+  dplyr::filter(Variable== "Height") %>% 
+  group_by(Cutting) %>%
+  summarise(
+    n = n(),
+    r2 = gauchStats(Predicted,Observed)[5],
+  #  rmse = round(rmse(Predicted,Observed),0),
+    r_rmse = round(rmse(Predicted,Observed)/mean(Observed)*100,1),
+    nse = round(NSE(Predicted,Observed),2),
+    sb = gauchStats(Predicted,Observed)[1],
+  nu = gauchStats(Predicted,Observed)[2],
+  lc = gauchStats(Predicted,Observed)[3]
+  ) 
+
+  
+```
+## RMSE for Season
+
+```{r}
+str(mergedf)
+
+mergedf %>%
+  dplyr::filter(Variable== "Height") %>% 
+  group_by(Season) %>%
+  summarise(
+    n = n(),
+    r2 = gauchStats(Predicted,Observed)[5],
+  #  rmse = round(rmse(Predicted,Observed),0),
+    r_rmse = round(rmse(Predicted,Observed)/mean(Observed)*100,1),
+    nse = round(NSE(Predicted,Observed),2),
+    sb = gauchStats(Predicted,Observed)[1],
+  nu = gauchStats(Predicted,Observed)[2],
+  lc = gauchStats(Predicted,Observed)[3]
+  ) 
+
+  
+```
 
 
 
