@@ -15,7 +15,8 @@ library(RSQLite)
 library(agricolae)
 library(scales)
 library(zoo)
-
+library(lme4)
+library(polynom)
 ```
 # ### load obs data
 ```{r}
@@ -26,7 +27,7 @@ obsFD <- read.table(paste0(obsData,"FallDtreatment.txt"),
                    header = TRUE)
 obsFDH<- obsFD %>%
   dplyr::filter(Variable=="Height")%>%
-  dplyr::filter(FD!="FD5")%>%
+  #dplyr::filter(FD!="FD5")%>%
   dplyr::filter(Water!="dry")%>%
   mutate(Observed1=Observed*10)%>%
   mutate(StartDate=dmy(StartDate),MidDate=dmy(MidDate),FinishDate=dmy(FinishDate),Clock.Today=dmy(Clock.Today))%>%
@@ -106,7 +107,7 @@ mytheme3<-theme(
   scale_y_continuous(breaks = seq(0, 800, by =200), limits=c(0,700))+
  geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="blue")+
  facet_grid(GrowthSeason2~Rotation2)+mytheme1
-ggsave("D:/R/Pictures/C6/Height/Iversen_121DefoliatioLLF2Height.png", width=8, height=6, dpi=500)
+#ggsave("D:/R/Pictures/C6/Height/Iversen_121DefoliatioLLF2Height.png", width=8, height=6, dpi=500)
 
 ```
 ###F10
@@ -120,7 +121,7 @@ ggsave("D:/R/Pictures/C6/Height/Iversen_121DefoliatioLLF2Height.png", width=8, h
   scale_y_continuous(breaks = seq(0, 800, by =200), limits=c(0,700))+
  geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="blue")+
  facet_grid(GrowthSeason2~Rotation2)+mytheme1
-ggsave("D:/R/Pictures/C6/Height/Iversen_121DefoliatioLLF10Height.png", width=8, height=6, dpi=500)
+#ggsave("D:/R/Pictures/C6/Height/Iversen_121DefoliatioLLF10Height.png", width=8, height=6, dpi=500)
 
 ```
 ###SS
@@ -136,7 +137,7 @@ ggsave("D:/R/Pictures/C6/Height/Iversen_121DefoliatioLLF10Height.png", width=8, 
  geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="blue")+
  facet_grid(GrowthSeason2~Rotation2)+mytheme1
   
-ggsave("D:/R/Pictures/C6/Height/Iversen_121DefoliationSSF2Height.png", width=8, height=6, dpi=500)
+#ggsave("D:/R/Pictures/C6/Height/Iversen_121DefoliationSSF2Height.png", width=8, height=6, dpi=500)
 
 ```
 ###F10
@@ -150,7 +151,7 @@ ggsave("D:/R/Pictures/C6/Height/Iversen_121DefoliationSSF2Height.png", width=8, 
   scale_y_continuous(breaks = seq(0, 800, by =200), limits=c(0,700))+
  geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="blue")+
  facet_grid(GrowthSeason2~Rotation2)+mytheme1
-ggsave("D:/R/Pictures/C6/Height/Iversen_121DefoliationSSF10Height.png", width=8, height=6, dpi=500)
+#ggsave("D:/R/Pictures/C6/Height/Iversen_121DefoliationSSF10Height.png", width=8, height=6, dpi=500)
 
 ```
 ###HH
@@ -166,7 +167,7 @@ ggsave("D:/R/Pictures/C6/Height/Iversen_121DefoliationSSF10Height.png", width=8,
  geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="blue")+
  facet_grid(GrowthSeason2~Rotation2)+mytheme3
   
-ggsave("D:/R/Pictures/C6/Height/Iversen_121DefoliationHHF2Height.png", width=8, height=6, dpi=500)
+#ggsave("D:/R/Pictures/C6/Height/Iversen_121DefoliationHHF2Height.png", width=8, height=6, dpi=500)
 
 ```
 ###HH
@@ -182,7 +183,7 @@ ggsave("D:/R/Pictures/C6/Height/Iversen_121DefoliationHHF2Height.png", width=8, 
  geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="blue")+
  facet_grid(GrowthSeason2~Rotation2)+mytheme3
   
-ggsave("D:/R/Pictures/C6/Height/Iversen_121DefoliationHHF10Height.png", width=8, height=6, dpi=500)
+#ggsave("D:/R/Pictures/C6/Height/Iversen_121DefoliationHHF10Height.png", width=8, height=6, dpi=500)
 
 ```
 
@@ -203,16 +204,20 @@ ggsave("D:/R/Pictures/C6/Height/Iversen_121DefoliationHHF10Height.png", width=8,
 
 ##load Rotation and Growth seasoN
 ###Heightchorn for all experiments
-```{r,fig.height=4, fig.width=8}
+```{r,fig.height=6, fig.width=8}
+detach(package:dplyr)
+library(dplyr)
 library(plyr)
+
 phyll <- "D:\\R\\"
 StartGrazing <- read.table(paste0(phyll, "ExperimentList.txt"), 
                       header = TRUE)
 StartGrazing1<-StartGrazing %>%
   mutate(GrowthRotation= as.factor(paste0(GrowthSeason,Rotation)))
-HchronPpE5<- merge(StartGrazing1, HeightchronE5 ,by=c("Name","GrowthRotation"))
 
-my.formula  <- function(HchronPpE5){
+HchronPpE5<- merge(StartGrazing1, HeightchronE5, by=c("Name","GrowthRotation"))
+
+my.formula1  <- function(HchronPpE5){
   my.formula <- HeightchronE5~ poly(Ppm, 2, raw = TRUE)
   m <- lm(my.formula, HchronPpE5)
   my.eq <- as.character(signif(as.polynomial(coef(m)), 2))
@@ -223,26 +228,28 @@ my.formula  <- function(HchronPpE5){
   as.character(as.expression(label.text));                 
 }
 
-my.eqsE5 <- ddply(HchronPpE5,.(Stage),my.formula)
+my.eqsE5 <- ddply(HchronPpE5,.(FD), my.formula1)
 
 b<-HchronPpE5%>%
   ggplot(aes(x=Ppm, y=HeightchronE5, colour=factor(ID),label=GrowthRotation))+geom_text()+theme_bw()+xlab("Mean photoperiod (h)")+ylab(bquote(bold('Heightchron ('*'°Cd'~'mm'^-1*')')))+
   geom_smooth(method = "lm", se = TRUE, formula=y ~ poly(x, 2, raw=TRUE), colour="darkgrey")+
-  facet_grid(~FD)+mytheme3+theme(legend.title = element_blank())
+  facet_wrap(~FD, ncol=1)+mytheme3+theme(legend.title = element_blank())
 
-b+geom_text(data = my.eqsE5, aes(x = 13.7, y = 6, label = V1), 
+b+geom_text(data = my.eqsE5, aes(x = 13.7, y = 8, label = V1), 
           color = 'black',  parse = TRUE, size=5)
 detach(package:plyr)
-#ggsave("D:/R/Pictures/C5/Height/Heightchornall.png", width=8, height=4, dpi=500)
+#ggsave("D:/R/Pictures/C5/Height/Heightchornall.png", width=8, height=6, dpi=500)
 ```
 
 
 ####base photoperiod
 
 ```{r,fig.height=4, fig.width=8}
+detach(package:dplyr)
+library(dplyr)
 library(plyr)
-Pb<-HchronPp%>%
-   mutate(pb=1/HeightchronSS)
+Pb<-HchronPpE5%>%
+   mutate(pb=1/HeightchronE5)
 
 lm_eqn <- function(Pb){
   m <- lm(pb ~ Ppm, Pb);
@@ -260,11 +267,11 @@ Pb%>%
   geom_smooth(method = "lm", se = TRUE,  colour="darkgrey")+
   facet_wrap(~Stage,ncol = 2)+mytheme3+theme(legend.title = element_blank())+
   scale_x_continuous(breaks = seq(10, 17, by =3), limits=c(10,17))+
-  geom_text(data = eqns, aes(x = 12, y = 2, label = V1), 
-          color = 'black',  parse = TRUE, size=5)
+  geom_text(data = eqns, aes(x = 13, y = 2.5, label = V1), 
+          color = 'black',  parse = TRUE, size=4)
 detach(package:plyr)
 #ggsave("D:/R/Pictures/Height/Heightchorny1.png", width=8, height=4, dpi=500)
-#ggsave("D:/R/Pictures/C5/Height/HeightchornALL.png", width=8, height=4, dpi=500)
+#ggsave("D:/R/Pictures/C6/Height/HeightchornALL.png", width=8, height=4, dpi=500)
 ```
 
 
@@ -395,7 +402,7 @@ summary(myDb)
 
 ```{r}
 simD <- myDb %>%
-  dplyr::select(Name,Clock.Today,LAI,SWC,Height,shootbiomass,RootWt, StemWt, LeafWt,NodeNumber) %>%
+  dplyr::select(Name,Clock.Today,LAI,Height,shootbiomass,RootWt, StemWt, LeafWt,NodeNumber) %>%
   tidyr::gather("Variable","Predicted",LAI:NodeNumber) %>%
   mutate(Name = as.factor(Name)) %>%
   mutate(Variable = as.factor(Variable)) %>%
@@ -721,10 +728,84 @@ mergedf %>%
      strip.text.y = element_text(size=14, face="plain"),
      legend.title = element_text(colour="black", size=14, face="bold"),
      axis.text = element_text(face = "bold", vjust = 0.5, size = 14))
-   ggsave("D:/R/Pictures/C6/Height/Height1.png", width=8, height=6, dpi=500)
+  # ggsave("D:/R/Pictures/C6/Height/Height1.png", width=8, height=6, dpi=500)
 ```
 
 ## RMSE
+
+```{r}
+str(mergedf)
+
+mergedf %>%
+  dplyr::filter(Variable== "Height") %>% 
+  group_by(ID) %>%
+  summarise(
+    n = n(),
+    r2 = gauchStats(Predicted,Observed1)[5],
+  #  rmse = round(rmse(Predicted,Observed),0),
+    r_rmse = round(rmse(Predicted,Observed1)/mean(Observed1)*100,1),
+    nse = round(NSE(Predicted,Observed1),2),
+    sb = gauchStats(Predicted,Observed1)[1],
+  nu = gauchStats(Predicted,Observed1)[2],
+  lc = gauchStats(Predicted,Observed1)[3]
+  ) 
+
+  
+```
+
+```{r}
+
+mergedf
+summary(mergedf)
+str(mergedf)
+mergedf$FD <- factor(mergedf$FD, levels=c("FD2","FD5","FD10"))
+
+Figure<-mergedf %>%
+    dplyr::filter(Defoliation== "HH") %>% 
+  ggplot(aes(x=Observed1, y= Predicted)) +
+  geom_point(size=2)+theme_bw()+
+  geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="darkgrey") +
+  geom_abline(intercept = 0, slope = 1) +
+  coord_fixed(ratio = 1)+
+  ggtitle("Height")+
+  facet_wrap(~FD, ncol = 3)+
+  theme(legend.title=element_blank(),legend.position = "blank")+xlab("Observed")+ylab("Predicted")+
+  theme(
+     panel.spacing=unit(.01, "lines"),
+     panel.border = element_rect(colour = "black",size=1), 
+     panel.grid.major = element_blank(),
+     panel.grid.minor = element_blank(),
+     axis.line = element_line(colour = "black",size = 1),
+     axis.text.x = element_text(face = "plain", color = "black", size = 14, vjust=0.5, hjust = 1),
+     axis.text.y = element_text(face = "plain", color = "black", size = 14),
+     axis.title.x=element_text(face="bold",colour="black",size = 14),
+     axis.title.y=element_text(face="bold",colour="black",size = 14),
+     strip.background = element_rect(colour = "black", fill = "white",size=1),
+     strip.text.x = element_text(size=14, angle=0, face = "plain"), 
+     strip.text.y = element_text(size=14, face="plain"),
+     legend.title = element_text(colour="black", size=14, face="bold"),
+     axis.text = element_text(face = "bold", vjust = 0.5, size = 14))
+
+
+dat_text1 <- data.frame(
+  #label =c(a,b,c),
+  labela=c("R_RMSE=30.7%","R_RMSE=21.9%","R_RMSE=20.9%"),
+  labelb =c("NSE=0.87", "NSE=0.92", "NSE=0.93"),
+  FD= c("FD2", "FD5", "FD10"),
+  x= c(0,  0,  0),
+  y=c(1100, 1100, 1100),
+  y1=c(1000, 1000, 1000),
+  y2=c(900, 900, 900))
+
+ Figure+
+  # geom_text(data=dat_text1, mapping = aes(x=x,y=y, label = "a"),hjust   = -0.1,vjust   = -1,size=4)+
+ geom_text(data=dat_text1, mapping = aes(x=x,y=y1, label = labela),hjust   = -0.1,vjust   = -1,size=4)+
+geom_text(data=dat_text1, mapping = aes(x=x,y=y2, label = labelb),hjust   = -0.1,vjust   = -1,size=4)
+
+
+#ggsave("D:/R/Pictures/C6/Height/HeightHH.png", width=8, height=6, dpi=500)
+       
+```
 
 ```{r}
 str(mergedf)

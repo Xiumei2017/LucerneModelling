@@ -93,7 +93,7 @@ ObsH <-merge(obsA,TtA,by=c("Clock.Today","ExpUnitCode")) %>%
   dplyr::filter(Water.x=="irr")%>%
   dplyr::filter(Defoliation.x=="LL")%>%
   dplyr::filter(Variable=="Height")%>%
-  dplyr::filter(Tb==1)
+  dplyr::filter(Tbb==1)
   
 
 summary(ObsH)
@@ -143,7 +143,7 @@ obsheight<-ObsH%>%
 obsheight$Rotation2<- factor(obsheight$Rotation2, levels=c("R1", "R2", "R3", "R4", "R5","R6", "R7"))
 
 obsheight%>%
-  ggplot(aes(x=Tt_broken_sum, y=Observed), colour=factor(Name))+geom_point(size=2)+theme_bw()+xlab("Mean temperature (°C)")+ylab("Plant height (mm)")+ facet_grid(GrowthSeason2~Rotation2)+
+  ggplot(aes(x=Tt_broken_sum, y=Observed), colour=factor(Name))+geom_point(size=2)+theme_bw()+xlab("Mean temperature (°C)")+ylab("Height (mm)")+ facet_grid(GrowthSeason2~Rotation2)+
   geom_smooth(method = "lm", se = TRUE,linetype=1 , colour="black")+ 
   ggtitle("E1ILL(Iversen_8Waterirr)")+mytheme1+
  geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="blue")
@@ -155,7 +155,7 @@ obsheight<-ObsH%>%
   dplyr::filter(Name=="Iversen_8Waterirr")
 obsheight$Rotation2<- factor(obsheight$Rotation2, levels=c("R1", "R2", "R3", "R4", "R5","R6", "R7"))
 obsheight%>%
-  ggplot(aes(x=Tt_broken_sum, y=Observed), colour=factor(Name))+geom_point(size=2)+theme_bw()+xlab("Thermal time (°Cd)")+ylab("Plant height (mm)")+ facet_grid(GrowthSeason2~Rotation2)+
+  ggplot(aes(x=Tt_broken_sum, y=Observed), colour=factor(Name))+geom_point(size=2)+theme_bw()+xlab("Thermal time (°Cd)")+ylab("Height (mm)")+ facet_grid(GrowthSeason2~Rotation2)+
   geom_smooth(method = "lm", se = TRUE,linetype=1 , colour="black")+
   ggtitle("E1ILL(Iversen_8Waterirr)")+mytheme1+
   scale_x_continuous(breaks = seq(0, 600, by =200), limits=c(0,500))+
@@ -173,7 +173,7 @@ obsheight1<-ObsH%>%
 obsheight1$Rotation2<- factor(obsheight1$Rotation2, levels=c("R1", "R2", "R3", "R4", "R5","R6", "R7"))
 
 obsheight1%>%
-  ggplot(aes(x=Tt_broken_sum, y=Observed), colour=factor(Name))+geom_point(size=2)+theme_bw()+xlab("Thermal time (°Cd)")+ylab("Plant height (mm)")+ggtitle("E3ILL(Iversen_91DefoliationLL)")+
+  ggplot(aes(x=Tt_broken_sum, y=Observed), colour=factor(Name))+geom_point(size=2)+theme_bw()+xlab("Thermal time (°Cd)")+ylab("Height (mm)")+ggtitle("E3ILL(Iversen_91DefoliationLL)")+
  facet_grid(GrowthSeason2~Rotation2)+
   geom_smooth(method = "lm", se = TRUE,linetype=1 , colour="black")+
   mytheme1+
@@ -206,7 +206,7 @@ obsheight3<-ObsH%>%
   mutate(Observed=Observed*10)
  obsheight3$Rotation2<- factor(obsheight3$Rotation2, levels=c("S1", "R2", "R3", "R4", "R5","R6", "R7"))
 obsheight3%>%
-  ggplot(aes(x=Tt_broken_sum, y=Observed), colour=factor(Name))+geom_point(size=2)+theme_bw()+xlab("Thermal time (°Cd)")+ylab("Plant height (mm)")+ggtitle("E2ILLS1(Iversen_9SowingDateSD1Waterirr)")+
+  ggplot(aes(x=Tt_broken_sum, y=Observed), colour=factor(Name))+geom_point(size=2)+theme_bw()+xlab("Thermal time (°Cd)")+ylab("Height (mm)")+ggtitle("E2ILLS1(Iversen_9SowingDateSD1Waterirr)")+
  facet_grid(GrowthSeason2~Rotation2)+
   geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="black")+
  mytheme1+
@@ -224,7 +224,7 @@ obsheight1<-ObsH%>%
 obsheight1$Rotation2<- factor(obsheight1$Rotation2, levels=c("S1", "R2", "R3", "R4", "R5","R6", "R7"))
  
 obsheight1%>%
-  ggplot(aes(x=Tt_broken_sum, y=Observed), colour=factor(Name))+geom_point(size=2)+theme_bw()+xlab("Thermal time (°Cd)")+ylab("Plant height (mm)")+ggtitle("E2ILLS2(Iversen_9SowingDateSD2Waterirr)")+
+  ggplot(aes(x=Tt_broken_sum, y=Observed), colour=factor(Name))+geom_point(size=2)+theme_bw()+xlab("Thermal time (°Cd)")+ylab("Height (mm)")+ggtitle("E2ILLS2(Iversen_9SowingDateSD2Waterirr)")+
  facet_grid(GrowthSeason2~Rotation2)+
   geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="blue")+
   scale_x_continuous(breaks = seq(0, 800, by =200), limits=c(0,900))+
@@ -258,7 +258,7 @@ obsheight1$Rotation2<- factor(obsheight1$Rotation2, levels=c("S1", "R2", "R3", "
  
 obsheight1
 obsheight1%>%
-  ggplot(aes(x=Tt_broken_sum, y=Observed), colour=factor(Name))+geom_point(size=2)+theme_bw()+xlab("Thermal time (°Cd)")+ylab("Plant height (mm)")+ggtitle("E2ILLS3(Iversen_9SowingDateSD3Waterirr)")+
+  ggplot(aes(x=Tt_broken_sum, y=Observed), colour=factor(Name))+geom_point(size=2)+theme_bw()+xlab("Thermal time (°Cd)")+ylab("Height (mm)")+ggtitle("E2ILLS3(Iversen_9SowingDateSD3Waterirr)")+
  facet_grid(GrowthSeason2~Rotation2)+
   geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="blue")+
   scale_x_continuous(breaks = seq(0, 1000, by =200), limits=c(0,1100))+
@@ -293,7 +293,7 @@ obsheight1$Rotation2<- factor(obsheight1$Rotation2, levels=c("S1", "R2", "R3", "
  
 obsheight1
 obsheight1%>%
-  ggplot(aes(x=Tt_broken_sum, y=Observed), colour=factor(Name))+geom_point(size=2)+theme_bw()+xlab("Thermal time(°Cd)")+ylab("Plant height (mm)")+ggtitle("E2ILLS4(Iversen_9SowingDateSD4Waterirr)")+
+  ggplot(aes(x=Tt_broken_sum, y=Observed), colour=factor(Name))+geom_point(size=2)+theme_bw()+xlab("Thermal time(°Cd)")+ylab("Height (mm)")+ggtitle("E2ILLS4(Iversen_9SowingDateSD4Waterirr)")+
  facet_grid(GrowthSeason2~Rotation2)+
   geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="blue")+
   scale_x_continuous(breaks = seq(0, 1000, by =200), limits=c(0,1100))+
@@ -328,13 +328,13 @@ obsheight1<-ObsH%>%
  obsheight1$Rotation2<- factor(obsheight1$Rotation2, levels=c("S1", "R2", "R3", "R4", "R5","R6", "R7"))
 
 obsheight1%>%
-  ggplot(aes(x=Tt_broken_sum, y=Observed), colour=factor(Name))+geom_point(size=2)+theme_bw()+xlab("Thermal time(°Cd)")+ylab("Plant height (mm)")+ggtitle("E5ILLF5(Iversen_121DefoliationLLFDFD5)")+
+  ggplot(aes(x=Tt_broken_sum, y=Observed), colour=factor(Name))+geom_point(size=2)+theme_bw()+xlab("Thermal time(°Cd)")+ylab("Height (mm)")+ggtitle("E5ILLF5(Iversen_121DefoliationLLFDFD5)")+
  facet_grid(GrowthSeason2~Rotation2)+
   geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="blue")+
   scale_y_continuous(breaks = seq(0, 1000, by =600), limits=c(0,900))+
   scale_x_continuous(breaks = seq(0, 600, by =200), limits=c(0,500))+
    mytheme1
- # ggsave("D:/R/Pictures/Height/Iversen_121DefoliationLLFDFD5.png", width=8, height=6, dpi=500)
+ #ggsave("D:/R/Pictures/Height/Iversen_121DefoliationLLFDFD5.png", width=8, height=6, dpi=500)
  
 ```
 
@@ -374,15 +374,14 @@ obsHanalysis<- obsHN%>%
 obsHanalysis
 write.csv(obsHanalysis,"D:/R/obsHanalysis.csv", row.names = FALSE)
 
-
-
-
-
 ```
 ##load Rotation and Growth season
 
 ```{r,fig.height=4, fig.width=10}
+detach(package:dplyr)
+library(dplyr)
 library(plyr)
+
 phyll <- "D:\\R\\"
 StartGrazing <- read.table(paste0(phyll, "ExperimentList.txt"), 
                       header = TRUE)
@@ -391,43 +390,30 @@ StartGrazing1<-StartGrazing %>%
 HchronPp<- merge(StartGrazing1,obsSlope,by=c("Name","Collection","GrowthRotation"))
 
 HchronPp1<-HchronPp%>%
-dplyr::filter(Name!="Iversen_8Waterirr"|GrowthRotation!="57")%>%
-dplyr::filter(Name!="Iversen_121DefoliationLLFDFD5"|GrowthRotation!="36")%>%
- dplyr::filter(Name!="Iversen_121DefoliationLLFDFD5"|GrowthRotation!="14")%>%
- dplyr::filter(Name!="Iversen_121DefoliationLLFDFD5"|GrowthRotation!="37")%>%
- dplyr::filter(Name!="Iversen_121DefoliationLLFDFD5"|GrowthRotation!="12")%>%
- dplyr::filter(Name!="Iversen_121DefoliationLLFDFD5"|GrowthRotation!="41")%>%
- dplyr::filter(Name!="Iversen_8Waterirr"|GrowthRotation!="26")%>%
- dplyr::filter(Name!="Iversen_8Waterirr"|GrowthRotation!="32")%>%
- dplyr::filter(Name!="Iversen_91DefoliationLL"|GrowthRotation!="27")%>%
- dplyr::filter(Name!="Iversen_91DefoliationLL"|GrowthRotation!="17")%>%
- dplyr::filter(Name!="Iversen_91DefoliationLL"|GrowthRotation!="11")%>%
- #   # dplyr::filter(Name!="Iversen_91DefoliationLL"|GrowthRotation!="17")%>%
- dplyr::filter(Name!="Iversen_9SowingDateSD1Waterirr"|GrowthRotation!="14")%>%
- dplyr::filter(Name!="Iversen_9SowingDateSD1Waterirr"|GrowthRotation!="21")%>%
- #   # dplyr::filter(Name!="Iversen_9SowingDateSD1Waterirr"|GrowthRotation!="26")%>%
- dplyr::filter(Name!="Iversen_9SowingDateSD2Waterirr"|GrowthRotation!="13")
+#dplyr::filter(Name!="Iversen_8Waterirr"|GrowthRotation!="57")%>%
+# dplyr::filter(Name!="Iversen_121DefoliationLLFDFD5"|GrowthRotation!="36")%>%
+#  dplyr::filter(Name!="Iversen_121DefoliationLLFDFD5"|GrowthRotation!="14")%>%
+#  dplyr::filter(Name!="Iversen_121DefoliationLLFDFD5"|GrowthRotation!="37")%>%
+#  dplyr::filter(Name!="Iversen_121DefoliationLLFDFD5"|GrowthRotation!="12")%>%
+#  dplyr::filter(Name!="Iversen_121DefoliationLLFDFD5"|GrowthRotation!="41")%>%
+#  dplyr::filter(Name!="Iversen_8Waterirr"|GrowthRotation!="26")%>%
+#  dplyr::filter(Name!="Iversen_8Waterirr"|GrowthRotation!="32")%>%
+#  dplyr::filter(Name!="Iversen_91DefoliationLL"|GrowthRotation!="27")%>%
+#  dplyr::filter(Name!="Iversen_91DefoliationLL"|GrowthRotation!="17")%>%
+#  dplyr::filter(Name!="Iversen_91DefoliationLL"|GrowthRotation!="11")%>%
+#  dplyr::filter(Name!="Iversen_91DefoliationLL"|GrowthRotation!="17")%>%
+#  dplyr::filter(Name!="Iversen_9SowingDateSD1Waterirr"|GrowthRotation!="14")%>%
+#  dplyr::filter(Name!="Iversen_9SowingDateSD1Waterirr"|GrowthRotation!="21")%>%
+#  dplyr::filter(Name!="Iversen_9SowingDateSD1Waterirr"|GrowthRotation!="26")%>%
+dplyr::filter(Name!="Iversen_9SowingDateSD2Waterirr"|GrowthRotation!="13")
  ##dplyr::filter(Name!="Iversen_9SowingDateSD4Waterirr"|GrowthRotation!="13")%>%
  #dplyr::filter(Stage!="Seedling")
-
-# my.formula <- slope ~ poly(Ppm, 2, raw = TRUE)
-# m <- lm(my.formula, HchronPp1)
-# my.eq <- as.character(signif(as.polynomial(coef(m)), 2))
-# 
-# 
-# label.text <- paste(gsub("italic(y)=x", "~italic(x)", my.eq, fixed = TRUE),
-#               paste("italic(R)^2",  
-#                     format(summary(m)$r.squared, digits = 2), 
-#                     sep = "~`=`~"),
-#                     sep = "~~~~")
-
-
 
 my.formula  <- function(HchronPp1){
   my.formula <- slope ~ poly(Ppm, 2, raw = TRUE)
   m <- lm(my.formula, HchronPp1)
   my.eq <- as.character(signif(as.polynomial(coef(m)), 2))
-  label.text <- paste("y","'='",paste(gsub(y, "~italic(x)",my.eq, fixed = TRUE)),
+  label.text <- paste("y","'='",paste(gsub("y", "~italic(x)",my.eq, fixed = TRUE)),
               paste("italic(R)^2",format(summary(m)$r.squared, digits = 2), 
                     sep = "~`=`~"),
                     sep = "~~~~")
@@ -437,8 +423,6 @@ my.formula  <- function(HchronPp1){
 my.eqs <- ddply(HchronPp1,.(Stage),my.formula)
 
 
-
-
 b<-HchronPp1%>%
   ggplot(aes(x=Ppm, y=slope, colour=factor(ID),label=GrowthRotation))+geom_text()+theme_bw()+xlab("Mean photoperiod (h)")+ylab(bquote(bold('Heightchron ('*'°Cd'~'mm'^-1*')')))+
   geom_smooth(method = "lm", se = TRUE, formula=y ~ poly(x, 2, raw=TRUE), colour="darkgrey")+
@@ -446,7 +430,7 @@ b<-HchronPp1%>%
 
 #b + annotate(geom = "text", x = 11.5, y = 2, label = label.text, 
              #family = "serif", hjust = 0, parse = TRUE, size = 4)m
-b+geom_text(data = my.eqs, aes(x = 13.7, y = 2.5, label = V1), 
+b+geom_text(data = my.eqs, aes(x = 13.7, y = 5, label = V1), 
           color = 'black',  parse = TRUE, size=4)
 detach(package:plyr)
 #ggsave("D:/R/Pictures/Height/Heightchorn.png", width=8, height=4, dpi=500)
@@ -661,7 +645,7 @@ summary(myDb)
 
 ```{r}
 simD <- myDb %>%
-  dplyr::select(Name,Clock.Today,LAI,SWC,Height,shootbiomass,RootWt, StemWt, LeafWt,NodeNumber) %>%
+  dplyr::select(Name,Clock.Today,LAI,Height,shootbiomass,RootWt, StemWt, LeafWt,NodeNumber) %>%
   tidyr::gather("Variable","Predicted",LAI:NodeNumber) %>%
   mutate(Name = as.factor(Name)) %>%
   mutate(Variable = as.factor(Variable)) %>%
@@ -718,7 +702,7 @@ obsheight1<-ObsH%>%dplyr::filter(Name=="Iversen_8Waterirr")
  annotate("text", x=ymd_hms("1999-10-24 12:00:00"), y=750, size = 5, label ="paste(R_RMSD == 37.6,'%')", parse=T)
    #geom_text(aes(x=ymd_hms("1999-10-24 12:00:00"), y=750, label="R_RMSD = 37.6%",size=5))
  
- #ggsave("D:/R/Pictures/Height/Iversen_8Waterirrheight1.png", width=8, height=4, dpi=500)
+# ggsave("D:/R/Pictures/Height/Iversen_8Waterirrheight1.png", width=8, height=4, dpi=500)
 ```
 ##2002-2004
 ```{r,  fig.height=4, fig.width=8}
@@ -839,8 +823,7 @@ mergedf %>%
 mergedf2<-mergedf%>%
    dplyr::filter(Variable== "Height") %>% 
   dplyr::filter(ID==c("E3ILL","E5ILLF5"))
-summary(mergedf1)
-str(mergedf1)
+
 m <- lm(Predicted ~ Observed, data = mergedf2)
 mp <- predict(m, interval = 'conf')
 d2 <- cbind(mergedf2, mp)
@@ -873,9 +856,9 @@ geom_point(size=2,colour="blue")+theme_bw()+ geom_smooth(method = 'lm', se = FAL
      strip.text.y = element_text(size=14, face="plain"),
      legend.title = element_text(colour="black", size=14, face="bold"),
      axis.text = element_text(face = "bold", vjust = 0.5, size = 14))
-   ggsave("D:/R/Pictures/Poster/Height.png", width=8, height=4, dpi=500)
+   #ggsave("D:/R/Pictures/Poster/Height.png", width=8, height=4, dpi=500)
 ```
-```
+
 
 
 
@@ -978,7 +961,7 @@ mergedf %>%
 #   summarise_each(funs(mean))
   
 ```
-#####Height ag
+
 
 
 

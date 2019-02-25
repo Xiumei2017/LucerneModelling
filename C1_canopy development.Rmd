@@ -95,7 +95,7 @@ ObsL<-ObsL.Raw%>%
   dplyr::filter(Defoliation.x=="LL")%>%
   dplyr::filter(FD.x=="FD5")%>%
   dplyr::filter(Variable=="LAI"|Variable=="NodeNumber")%>%
-  dplyr::filter(Tb==1)
+  dplyr::filter(Tbb==1)
   
 
 summary(ObsL)
@@ -235,7 +235,7 @@ ObsL<-ObsL.Raw%>%
   dplyr::filter(Defoliation.x=="LL")%>%
   dplyr::filter(FD.x=="FD5")%>%
   dplyr::filter(Variable=="LAI"|Variable=="Height")%>%
-  dplyr::filter(Tb==1)
+  dplyr::filter(Tbb==1)
   
 
 summary(ObsL)
@@ -583,6 +583,24 @@ mytheme1<-theme(
      strip.text.y = element_text(size=14, face="plain"),
      legend.title = element_text(colour="black", size=14, face="bold"),
      axis.text = element_text(face = "bold", vjust = 0.5, size = 14))
+
+mytheme3<-theme(
+     legend.title = element_text(colour="black", size=14, face="bold"),
+     legend.text = element_text(colour="black", size = 14,face="plain"),
+     panel.spacing=unit(.01, "lines"),
+     panel.border = element_rect(colour = "black",size=1), 
+     panel.grid.major = element_blank(),
+     panel.grid.minor = element_blank(),
+     axis.line = element_line(colour = "black",size = 1),
+     axis.text.x = element_text(face = "plain", color = "black", size = 14, vjust=0.5, hjust = 1),
+     axis.text.y = element_text(face = "plain", color = "black", size = 14),
+     axis.title.x=element_text(face="bold",colour="black",size = 14),
+     axis.title.y=element_text(face="bold",colour="black",size = 14),
+     strip.background = element_rect(colour = "black", fill = "white",size=1),
+     strip.text.x = element_text(size=14, angle=0, face = "plain"), 
+     strip.text.y = element_text(size=14, face="plain"),
+     axis.text = element_text(face = "bold", vjust = 0.5, size = 14),
+    legend.position = "right", legend.box = "vertical")
 ```
 ###leaf and node appearance in the same Tt before interpolate
 ```{r,fig.height=6, fig.width=8}
@@ -600,7 +618,7 @@ obsLAI%>%
  #geom_point(data=obsNode, aes(x=Tt_broken_sum, y=Observed),colour="green",size=3)+
   geom_smooth(method = "lm", se = TRUE,linetype=1 , colour="black")+
  facet_grid(GrowthSeason2~Rotation2)+ggtitle("E1ILL(Iversen_8Waterirr)")+mytheme1
- ggsave("D:/R/Pictures/LAI/Iversen_8WaterirrLAI.png", width=8, height=6, dpi=500) 
+ #ggsave("D:/R/Pictures/LAI/Iversen_8WaterirrLAI.png", width=8, height=6, dpi=500) 
 ```
 
 ```{r}
@@ -635,7 +653,7 @@ obsLAI1%>%
   #geom_point(data=obsNode1, aes(x=Tt_broken_sum, y=Observed),colour="green",size=3)+
  facet_grid(GrowthSeason2~Rotation2)+
   geom_smooth(method = "lm", se = TRUE,linetype=1 , colour="black")+mytheme1
-  ggsave("D:/R/Pictures/LAI/Iversen_91DefoliationLLLAI.png", width=8, height=6, dpi=500) 
+ # ggsave("D:/R/Pictures/LAI/Iversen_91DefoliationLLLAI.png", width=8, height=6, dpi=500) 
 ```
 ##Iversen_9SowingDateSD1Waterirr
 ```{r,fig.height=4, fig.width=8}
@@ -653,7 +671,7 @@ obsLAI2%>%
   #geom_smooth(method = "glm",family = gaussian(link="log"), aes(colour = "Exponential"))+
  facet_grid(GrowthSeason2~Rotation2)+
   geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="black")+mytheme1
-  ggsave("D:/R/Pictures/LAI/Iversen_9SowingDateSD1WaterirrLAI.png", width=8, height=5, dpi=500) 
+  #ggsave("D:/R/Pictures/LAI/Iversen_9SowingDateSD1WaterirrLAI.png", width=8, height=5, dpi=500) 
  
 ```
 ##Iversen_9SowingDateSD2Waterirr
@@ -671,7 +689,7 @@ obsLAI3%>%
   #geom_point(data=obsNode3, aes(x=Tt_broken_sum, y=Observed),colour="green",size=3)+
  facet_grid(GrowthSeason2~Rotation2)+
   #geom_smooth(method = "glm",family = gaussian(link="log"), aes(colour = "Exponential"))+
-  geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="black")+mytheme2
+  geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="black")+mytheme3
   #ggsave("D:/R/Pictures/LAI/Iversen_9SowingDateSD2WaterirrLAI.png", width=8, height=3, dpi=500) 
  
 ```
@@ -691,7 +709,7 @@ obsLAI4%>%
   #geom_smooth(method = "glm",family = gaussian(link="log"), aes(colour = "Exponential"))+ 
   #geom_point(data=obsNode4, aes(x=Tt_broken_sum, y=Observed),colour="green",size=3)+
  facet_grid(GrowthSeason2~Rotation2)+
- geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="black")+mytheme2
+ geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="black")+mytheme3
  #ggsave("D:/R/Pictures/LAI/Iversen_9SowingDateSD3WaterirrLAI.png", width=8, height=3, dpi=500) 
  
  
@@ -711,8 +729,8 @@ obsLAI5%>%
   #geom_point(data=obsNode5, aes(x=Tt_broken_sum, y=Observed),colour="green",size=3)+
   facet_grid(GrowthSeason2~Rotation2)+
   #geom_smooth(method = "glm",family = gaussian(link="log"), aes(colour = "Exponential"))+  
-  geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="black")+mytheme2
-ggsave("D:/R/Pictures/LAI/Iversen_9SowingDateSD4WaterirrLAI.png", width=8, height=3, dpi=500) 
+  geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="black")+mytheme3
+#ggsave("D:/R/Pictures/LAI/Iversen_9SowingDateSD4WaterirrLAI.png", width=8, height=3, dpi=500) 
  
 ```
 ##Iverson12DefoliationFD5
@@ -733,12 +751,12 @@ obsLAI6%>%
   geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="black")+
   theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
  theme(axis.title.y=element_text(face="bold",colour="black",size = 12))+mytheme1
-ggsave("D:/R/Pictures/LAI/Iversen_121DefoliationLLFDFD5LAI.png", width=8, height=6, dpi=500) 
+#ggsave("D:/R/Pictures/LAI/Iversen_121DefoliationLLFDFD5LAI.png", width=8, height=6, dpi=500) 
 ```
 ###LEAR per height
 
 ```{r}
-detach(package:plyr)
+
 LeafH1<-LeafH%>%
   group_by(Name,GrowthSeason.x,Rotation.x,Tmean,Ppm,Collection,GrowthRotation,ID,ExperimentID)%>%
   do(mod = lm(LAI~Ps,data=.)) %>%
@@ -791,7 +809,7 @@ summary(M.mode2)
 
 ###LEAR
 ```{r}
-detach(package:plyr)
+
 LEAR<-ObsL%>%
   dplyr::filter(Variable=="LAI")%>%
   group_by(Name,GrowthSeason.x,Rotation.x,Tmean,Ppm,Collection,GrowthRotation,ID,ExperimentID)%>%
@@ -806,7 +824,59 @@ LEAR%>%
   geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="darkgrey")+xlab("Photoperiod (h)")+ylab("LEAR (m^2/m^2/°Cd)")+
   theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
  theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
+
+LAIE3ILLa<-ObsL%>%
+  filter(Variable=="LAI")%>%
+  filter(Rotation.x=="1")%>%
+  filter(ID=="E3ILL")%>%
+  filter(Tt_broken_sum<400)
+
+LAIE3ILLa%>%
+ggplot(aes(x=Pp, y=Observed, colour=factor(ID)))+geom_point(size=2)+theme_bw()+
+  geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="darkgrey")+xlab("Tt (Cd)")+ylab("LAI (m^2/m^2)")+
   
+  theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
+ theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
+
+LAIE3ILLb<-ObsL%>%
+  filter(Variable=="LAI")%>%
+  filter(Rotation.x=="1")%>%
+  filter(ID=="E3ILL")%>%
+  filter(Tt_broken_sum>400)
+
+LAIE3ILLb%>%
+ggplot(aes(x=Pp, y=Observed, colour=factor(ID)))+geom_point(size=2)+theme_bw()+
+  geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="darkgrey")+xlab("Tt (Cd)")+ylab("LAI (m^2/m^2)")+
+  
+  theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
+ theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
+  
+modE3ILLa<-lm(LAIE3ILLa$Observed~LAIE3ILLa$Tt_broken_sum)
+summary(modE3ILLa)
+
+modE3ILLb<-lm(LAIE3ILLb$Observed~LAIE3ILLb$Tt_broken_sum)
+summary(modE3ILLb)
+####E2 LAER in the first rotation
+LAIE2<-ObsL%>%
+  filter(Variable=="LAI")%>%
+  filter(ExperimentID=="E2")%>%
+  filter(Rotation.x=="1")%>%
+  filter(GrowthSeason.x=="2")
+
+LAIE2%>%
+ggplot(aes(x=Tt_broken_sum, y=Observed, colour=factor(ID)))+geom_point(size=2)+theme_bw()+mytheme3+
+  geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="darkgrey")+xlab("Tt (h)")+ylab("LAI (m^2/m^2)")+
+  
+  theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
+ theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
+  
+modE2<-lm(LAIE2$Observed~LAIE2$Tt_broken_sum)
+summary(modE2)
+
+
+
+
+
 ```
 #load Rotation and Growth season
 ```{r,fig.height=5, fig.width=10}
@@ -851,7 +921,7 @@ LEARPp1%>%
  theme(axis.title.y=element_text(face="bold",colour="black",size = 12))+
   theme(legend.title=element_blank())+mytheme3
  detach(package:plyr)
-  ggsave("D:/R/Pictures/LAI/LEARPP.png", width=8.5, height=6, dpi=500) 
+  #ggsave("D:/R/Pictures/LAI/LEARPP.png", width=8.5, height=6, dpi=500) 
 ```
 
 ```{r}
@@ -902,7 +972,7 @@ ObsLSen<-ObsL.Raw%>%
   dplyr::filter(Water.x=="irr")%>%
   dplyr::filter(Defoliation.x=="LL")%>%
   dplyr::filter(Variable=="Senescence"|Variable=="NodeNumber")%>%
-  dplyr::filter(Tb==1)
+  dplyr::filter(Tbb==1)
 ObsSen<-ObsLSen%>%
   dplyr::filter(Variable=="Senescence")%>%
   dplyr::select(Clock.Today,Name,Collection,GrowthSeason.x,Rotation.x,Variable,Observed,StdDEV,Tt_broken_sum,Ppm,Tmean,GrowthRotation)

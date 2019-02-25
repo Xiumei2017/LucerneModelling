@@ -149,7 +149,7 @@ x[order(match(x, y))]
 
 ```{r,fig.height=6, fig.width=8}
 obsNode<-ObsH%>%
-  dplyr::filter(Tb==1)
+  dplyr::filter(Tbb==1)
 
   obsNode0<-obsNode%>%
   dplyr::filter(Name=="Iversen_8Waterirr")
@@ -325,17 +325,17 @@ obsNodeLL%>%
  #  mutate(GrowthSeason=factor(GrowthSeason))%>%
  #  group_by(GrowthSeason,Collection) %>%
 
-uniTb <- unique(ObsH$Tb)
+uniTb <- unique(ObsH$Tbb)
 
 PhyBeta.all <- data.frame()
  
 for(i in 1:length(uniTb)){
   
   ObsH1 <- ObsH %>%
-  filter(Tb==uniTb[i])
+  filter(Tbb==uniTb[i])
   
    ObsH.sub <- ObsH1 %>%
-  group_by(Name,GrowthSeason.x,Rotation.x,Collection,Tmean,Ppm,Tb,ID,ExperimentID) %>%
+  group_by(Name,GrowthSeason.x,Rotation.x,Collection,Tmean,Ppm,Tbb,ID,ExperimentID) %>%
     do(mod.beta = lm(Tt_beta_sum~Observed,data=.))%>%
   mutate(R2WE = summary(mod.beta)$r.squared)%>%
   mutate(PhylloWE = summary(mod.beta)$coeff[2])%>%
@@ -349,17 +349,17 @@ write.csv(PhyBeta.all,"D:/R/PhyllochronData/PhyBeta.all.csv", row.names = FALSE)
 
 ```
 ```{r}
-uniTb <- unique(ObsH$Tb)
+uniTb <- unique(ObsH$Tbb)
 
 Phybroken.all <- data.frame()
  
 for(i in 1:length(uniTb)){
   
   ObsH1 <- ObsH %>%
-  filter(Tb==uniTb[i])
+  filter(Tbb==uniTb[i])
   
    ObsH.sub <- ObsH1 %>%
-  group_by(Name,GrowthSeason.x,Rotation.x,Collection,Tmean,Ppm,Tb,ID,ExperimentID) %>%
+  group_by(Name,GrowthSeason.x,Rotation.x,Collection,Tmean,Ppm,Tbb,ID,ExperimentID) %>%
     do(mod.broken = lm(Tt_broken_sum~Observed,data=.))%>%
     #do(mod.fick = lm(Tt_fick_sum~Observed,data=.))%>%
   mutate(R2Br = summary(mod.broken)$r.squared)%>%
@@ -376,17 +376,17 @@ write.csv(Phybroken.all,"D:/R/PhyllochronData/Phybroken.all.csv", row.names = FA
 ```
 
 ```{r}
-uniTb <- unique(ObsH$Tb)
+uniTb <- unique(ObsH$Tbb)
 
 Phyfick.all <- data.frame()
  
 for(i in 1:length(uniTb)){
   
   ObsH1 <- ObsH %>%
-  filter(Tb==uniTb[i])
+  filter(Tbb==uniTb[i])
   
    ObsH.sub <- ObsH1 %>%
-  group_by(Name,GrowthSeason.x,Rotation.x,Collection,Tmean,Ppm,Tb,ID,ExperimentID) %>%
+  group_by(Name,GrowthSeason.x,Rotation.x,Collection,Tmean,Ppm,Tbb,ID,ExperimentID) %>%
     do(mod.fick = lm(Tt_fick_sum~Observed,data=.))%>%
   mutate(R2fi = summary(mod.fick)$r.squared)%>%
   mutate(Phyllofick = summary(mod.fick)$coeff[2])%>%
@@ -440,9 +440,9 @@ mergephy
 ```{r}
 
 mergeP<-mergephy%>%
-   dplyr::select(Name,GrowthSeason.x,Rotation.x,Collection,Tmean, Ppm,Tb, PhylloWE,PhylloBr,Phyllofick,ID,ExperimentID) %>%
+   dplyr::select(Name,GrowthSeason.x,Rotation.x,Collection,Tmean, Ppm,Tbb, PhylloWE,PhylloBr,Phyllofick,ID,ExperimentID) %>%
   tidyr::gather("Variable","Phyllo",PhylloWE:Phyllofick)%>%
-  mutate(PhylloTb=as.factor(paste0(Variable,Tb)))%>%
+  mutate(PhylloTb=as.factor(paste0(Variable,Tbb)))%>%
   mutate(GrowthRotation=as.factor(paste0(GrowthSeason.x,Rotation.x)))
 unique(mergeP)
 
@@ -851,7 +851,7 @@ summary(myDb)
 
 ```{r}
 simD <- myDb %>%
-  dplyr::select(Name,Clock.Today,LAI,SWC,Height,shootbiomass,RootWt, StemWt, LeafWt,NodeNumber) %>%
+  dplyr::select(Name,Clock.Today,LAI,Height,shootbiomass,RootWt, StemWt, LeafWt,NodeNumber) %>%
   tidyr::gather("Variable","Predicted",LAI:NodeNumber) %>%
   mutate(Name = as.factor(Name)) %>%
   mutate(Variable = as.factor(Variable)) %>%
@@ -913,7 +913,7 @@ obsNode1<-obsA%>%
      strip.text.y = element_text(size=14, face="plain"),
      legend.title = element_text(colour="black", size=14, face="bold"),
      axis.text = element_text(face = "bold", vjust = 0.5, size = 14))+
-   annotate("text", x=ymd_hms("1999-10-24 12:00:00"), y=17, size = 5, label ="paste(R_RMSD == 21.8,'%')", parse=T)
+   annotate("text", x=ymd_hms("1999-10-24 12:00:00"), y=17, size = 5, label ="paste(R_RMSD == 23,'%')", parse=T)
  #ggsave("D:/R/Pictures/Node/Iversen_8Waterirrnodenumber.png", width=8, height=4, dpi=500)
 
 ```
@@ -935,7 +935,7 @@ str(simD2)
 simD2%>%
 ggplot(aes(x=Clock.Today,y=Predicted))+geom_line(size=1)+theme_bw()+
   #facet_wrap(~ID,ncol = 1)+
-  geom_point(data=obsNode2, aes(x=Clock.Today1, y=Observed),colour="blue",size=3)+
+  geom_point(data=obsNode2, aes(x=Clock.Today1, y=Observed),colour="green",size=3)+
   theme(legend.title=element_blank(),legend.position = "blank")+xlab("Date")+ylab("Node number")+
   #remove grid lines 
   theme(
@@ -953,9 +953,9 @@ ggplot(aes(x=Clock.Today,y=Predicted))+geom_line(size=1)+theme_bw()+
      strip.text.y = element_text(size=14, face="plain"),
      legend.title = element_text(colour="black", size=14, face="bold"),
      axis.text = element_text(face = "bold", vjust = 0.5, size = 14))+
-  annotate("text", x=ymd_hms("2003-07-24 12:00:00"), y=17, size = 5, label ="paste(R_RMSD == 21.9,'%')", parse=T)
-   #ggsave("D:/R/Pictures/Node/Iversen_91DefoliationLLnodenumber.png", width=8, height=4, dpi=500)
-  ggsave("D:/R/Pictures/Poster/E3.png", width=8, height=4, dpi=500)
+  annotate("text", x=ymd_hms("2003-07-24 12:00:00"), y=17, size = 5, label ="paste(R_RMSD == 22.1,'%')", parse=T)
+   ggsave("D:/R/Pictures/Node/Iversen_91DefoliationLLnodenumber.png", width=8, height=4, dpi=500)
+  #ggsave("D:/R/Pictures/Poster/E3.png", width=8, height=4, dpi=500)
   
 
 
@@ -1002,10 +1002,10 @@ ggplot(aes(x=Clock.Today,y=Predicted))+geom_line(size=1)+theme_bw()+
 
 
 dat_text1 <- data.frame(
-  label = c("R_RMSE=27.7%", "R_RMSE=28%", "R_RMSE=21.8%","R_RMSE=24.5%"),
+  label = c("R_RMSE=22%", "R_RMSE=24.9%", "R_RMSE=23.1%","R_RMSE=18.7%"),
   ID= c("E2ILLS1","E2ILLS2","E2ILLS3","E2ILLS4"),
   x= ymd_hms("2001-03-24 12:00:00", "2001-03-24 12:00:00","2001-03-24 12:00:00","2001-03-24 12:00:00"),
-  y=c(17,17,17,17))
+  y=c(18,18,18,18))
 
  G+geom_text(data=dat_text1, mapping = aes(x=x,y=y, label = label),hjust   = -0.1,vjust   = -1,size=5)
 
@@ -1055,7 +1055,7 @@ ggplot(aes(x=Clock.Today,y=Predicted))+geom_line(size=1)+theme_bw()+
      strip.text.y = element_text(size=14, face="plain"),
      legend.title = element_text(colour="black", size=14, face="bold"),
      axis.text = element_text(face = "bold", vjust = 0.5, size = 14))+
-   annotate("text", x=ymd_hms("2016-07-24 12:00:00"), y=18, size = 5, label ="paste(R_RMSD == 30,'%')", parse=T)
+   annotate("text", x=ymd_hms("2016-07-24 12:00:00"), y=18, size = 5, label ="paste(R_RMSD == 26.3,'%')", parse=T)
    #ggsave("D:/R/Pictures/Node/Iversen_121DefoliationLLFDFD5nodenumber.png", width=8, height=4, dpi=500)
   
   
@@ -1069,7 +1069,7 @@ mergedf
 summary(mergedf)
 str(mergedf)
 
-d<-mergedf %>%
+ d<-mergedf %>%
     dplyr::filter(Variable== "NodeNumber") %>% 
    dplyr::filter(Water== "irr")%>%
   dplyr::filter(Defoliation== "LL")%>%
@@ -1097,6 +1097,7 @@ d<-mergedf %>%
      strip.text.y = element_text(size=14, face="plain"),
      legend.title = element_text(colour="black", size=14, face="bold"),
      axis.text = element_text(face = "bold", vjust = 0.5, size = 14))
+ d
    #ggsave("D:/R/Pictures/Node/nodenumber.png", width=8, height=6, dpi=500)
 ```
 
