@@ -52,8 +52,8 @@ TtA <- Tt %>% mutate(Clock.Today=dmy(Clock.Today), ExpUnitCode=as.factor(ExpName
 obsDL <-merge(obsAL,TtA,by=c("Clock.Today","ExpUnitCode")) %>%
   mutate(GrowthRotation=as.factor(paste0(GrowthSeason.x,Rotation.x)))%>%
   dplyr::filter(Variable=="LAI")
-  summary(obsDH)
-  obsDH
+  summary(obsDL)
+  obsDL
   
 ```
 
@@ -97,7 +97,7 @@ mytheme3<-theme(
 ```{r,fig.height=6, fig.width=8}
   obsDL0<-obsDL%>%
   dplyr::filter(ID=="E3ILS")
-  obsH0$Rotation2<- factor(obsH0$Rotation2,
+  obsDL0$Rotation2<- factor(obsDL0$Rotation2,
                           levels=c("R1", "R2", "R3", "R4","R5","R6","R7","R8","R9","R10"))
  obsDL0%>%  
   ggplot(aes(x=Tt_broken_sum, y=Observed))+geom_point(size=2)+theme_bw()+xlab("Thermal time (°Cd) ")+ylab(bquote(bold('LAI ('*m^2~m^-2*')')))+ggtitle(paste0("E3ILS","(Iversen_91DefoliationLS)"))  +
@@ -360,7 +360,8 @@ summary(myDb)
 
 ```{r}
 simD <- myDb %>%
-  dplyr::select(Name,Clock.Today,LAI,SWC,Height,shootbiomass,RootWt, StemWt, LeafWt,NodeNumber) %>%
+  dplyr::select(Name,Clock.Today,LAI
+                ,Height,shootbiomass,RootWt, StemWt, LeafWt,NodeNumber) %>%
   tidyr::gather("Variable","Predicted",LAI:NodeNumber) %>%
   mutate(Name = as.factor(Name)) %>%
   mutate(Variable = as.factor(Variable)) %>%

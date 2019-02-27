@@ -1,0 +1,1053 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+```{r}
+#library(plyr)
+library(dplyr)
+library(ggplot2)
+library(lubridate)   
+library(hydroGOF)
+library(xtable)
+library(knitr)
+library(tidyr)
+library(RSQLite)
+library(agricolae)
+library(scales)
+library(zoo)
+library(lme4)
+library(polynom)
+```
+# ### load obs data
+###filter out FD5 and seedling crop 
+```{r}
+upDir <- "D:/R/CombinedData/"
+obsData <- "D:/R/CombinedData/"
+
+obsFDH <- read.table(paste0(obsData, "FallDtreatment.txt"),
+                   header = TRUE)
+obsFDH<- obsFDH %>%
+  #dplyr::filter(Variable=="NodeNumber")%>%
+  dplyr::filter(Defoliation=="HH")%>%
+  dplyr::filter(Water!="dry")%>%
+  mutate(StartDate=dmy(StartDate),MidDate=dmy(MidDate),FinishDate=dmy(FinishDate),Clock.Today=dmy(Clock.Today))%>%
+  mutate(GrowthSeason1=as.factor(paste0("Gs_",GrowthSeason))) %>% # creating more intuitive labels here
+  mutate(Rotation1=as.factor(paste0("Rt_",Rotation))) %>%
+  mutate(ExpUnitCode=as.factor(paste0(Name,GrowthSeason1,Rotation1))) %>%
+  mutate(Clock.Today1 = as.POSIXct(paste(Clock.Today,Time),format="%Y-%m-%d %H:%M:%S"))%>%
+  mutate(GrowthSeason2=as.factor(paste0("Y",GrowthSeason,"(",Period,")"))) %>%
+ mutate(Rotation2=as.factor(paste0("R",Rotation)))
+obsFDH
+```
+
+###load in E5HHFD5Rep data
+```{r}
+upDir <- "D:/R/CombinedData/"
+obsData <- "D:/R/CombinedData/"
+
+obsFDHRep <- read.table(paste0(obsData, "HHRep.txt"),
+                   header = TRUE)
+obsFDHRep1<- obsFDHRep %>%
+  #dplyr::filter(Variable=="NodeNumber")%>%
+  dplyr::filter(Defoliation=="HH")%>%
+  dplyr::filter(Water!="dry")%>%
+  mutate(StartDate=dmy(StartDate),MidDate=dmy(MidDate),FinishDate=dmy(FinishDate),Clock.Today=dmy(Clock.Today))%>%
+  mutate(GrowthSeason1=as.factor(paste0("Gs_",GrowthSeason))) %>% # creating more intuitive labels here
+  mutate(Rotation1=as.factor(paste0("Rt_",Rotation))) %>%
+  mutate(ExpUnitCode=as.factor(paste0(Name,GrowthSeason1,Rotation1))) %>%
+  mutate(Clock.Today1 = as.POSIXct(paste(Clock.Today,Time),format="%Y-%m-%d %H:%M:%S"))%>%
+  mutate(GrowthSeason2=as.factor(paste0("Y",GrowthSeason,"(",Period,")"))) %>%
+ mutate(Rotation2=as.factor(paste0("R",Rotation)))
+obsFDHRep1
+```
+###load in E5HHFD5Veg data
+```{r}
+upDir <- "D:/R/CombinedData/"
+obsData <- "D:/R/CombinedData/"
+
+obsFDHVeg <- read.table(paste0(obsData, "HHVeg.txt"),
+                   header = TRUE)
+obsFDHVeg1<- obsFDHVeg %>%
+  #dplyr::filter(Variable=="NodeNumber")%>%
+  dplyr::filter(Defoliation=="HH")%>%
+  dplyr::filter(Water!="dry")%>%
+  mutate(StartDate=dmy(StartDate),MidDate=dmy(MidDate),FinishDate=dmy(FinishDate),Clock.Today=dmy(Clock.Today))%>%
+  mutate(GrowthSeason1=as.factor(paste0("Gs_",GrowthSeason))) %>% # creating more intuitive labels here
+  mutate(Rotation1=as.factor(paste0("Rt_",Rotation))) %>%
+  mutate(ExpUnitCode=as.factor(paste0(Name,GrowthSeason1,Rotation1))) %>%
+  mutate(Clock.Today1 = as.POSIXct(paste(Clock.Today,Time),format="%Y-%m-%d %H:%M:%S"))%>%
+  mutate(GrowthSeason2=as.factor(paste0("Y",GrowthSeason,"(",Period,")"))) %>%
+ mutate(Rotation2=as.factor(paste0("R",Rotation)))
+obsFDHVeg1
+```
+
+###Combine with Tt
+```{r}
+upDir <- "D:/R/"
+obsData <- "D:/R/TtAll/"
+
+Tt<- read.table(paste0(obsData, "df.all.txt"),
+               header = TRUE)
+TtA <- Tt %>% mutate(Clock.Today=dmy(Clock.Today), ExpUnitCode=as.factor(ExpName))%>%
+  dplyr::filter(Tbb==1)
+
+###merge Node number with Tt
+obsFDHTN <-merge(obsFDH,TtA,by=c("Clock.Today","ExpUnitCode")) %>%
+  mutate(GrowthRotation=as.factor(paste0(GrowthSeason.x,Rotation.x)))%>%
+  dplyr::filter(Variable=="NodeNumber")
+  summary(obsFDHTN)
+  obsFDHTN
+###merge Height with Tt
+obsFDHTH <-merge(obsFDH,TtA,by=c("Clock.Today","ExpUnitCode")) %>%
+  mutate(GrowthRotation=as.factor(paste0(GrowthSeason.x,Rotation.x)))%>%
+  dplyr::filter(Variable=="Height")%>%
+  mutate(Observed1= Observed*10)
+  summary(obsFDHTH)
+  obsFDHTH
+###merge veg data with Tt for Node
+obsFDHTNVeg <-merge(obsFDHVeg1,TtA,by=c("Clock.Today","ExpUnitCode")) %>%
+  mutate(GrowthRotation=as.factor(paste0(GrowthSeason.x,Rotation.x)))%>%
+  dplyr::filter(Variable=="NodeNumber")
+  summary(obsFDHTNVeg)
+  obsFDHTNVeg
+###merge rep data with Tt for node 
+obsFDHTNRep <-merge(obsFDHRep1,TtA,by=c("Clock.Today","ExpUnitCode")) %>%
+  mutate(GrowthRotation=as.factor(paste0(GrowthSeason.x,Rotation.x)))%>%
+  dplyr::filter(Variable=="NodeNumber")
+  summary(obsFDHTNRep)
+  obsFDHTNRep
+###merge veg data with Tt for Height 
+obsFDHTHVeg <-merge(obsFDHVeg1,TtA,by=c("Clock.Today","ExpUnitCode")) %>%
+  mutate(GrowthRotation=as.factor(paste0(GrowthSeason.x,Rotation.x)))%>%
+  dplyr::filter(Variable=="Height")%>%
+  mutate(Observed1= Observed*10)
+  summary(obsFDHTNVeg)
+  obsFDHTHVeg
+###merge veg data with Tt for Height  
+obsFDHTHRep <-merge(obsFDHRep1,TtA,by=c("Clock.Today","ExpUnitCode")) %>%
+  mutate(GrowthRotation=as.factor(paste0(GrowthSeason.x,Rotation.x)))%>%
+  dplyr::filter(Variable=="Height")%>%
+  mutate(Observed1= Observed*10)
+  summary(obsFDHTHRep)
+ obsFDHTHRep
+```
+###mytheme
+```{r}
+mytheme1<-theme(
+     panel.spacing=unit(.01, "lines"),
+     panel.border = element_rect(colour = "black",size=1), 
+     panel.grid.major = element_blank(),
+     panel.grid.minor = element_blank(),
+     axis.line = element_line(colour = "black",size = 1),
+     axis.text.x = element_text(face = "plain", color = "black", size = 14,angle=90, vjust=0.5, hjust = 1),
+     axis.text.y = element_text(face = "plain", color = "black", size = 14),
+     axis.title.x=element_text(face="bold",colour="black",size = 14),
+     axis.title.y=element_text(face="bold",colour="black",size = 14),
+     strip.background = element_rect(colour = "black", fill = "white",size=1),
+     strip.text.x = element_text(size=14, angle=0, face = "plain"), 
+     strip.text.y = element_text(size=14, face="plain"),
+     legend.title = element_text(colour="black", size=14, face="bold"),
+     axis.text = element_text(face = "bold", vjust = 0.5, size = 14))
+
+mytheme3<-theme(
+     legend.title = element_text(colour="black", size=14, face="bold"),
+     legend.text = element_text(colour="black", size = 14,face="plain"),
+     panel.spacing=unit(.01, "lines"),
+     panel.border = element_rect(colour = "black",size=1), 
+     panel.grid.major = element_blank(),
+     panel.grid.minor = element_blank(),
+     axis.line = element_line(colour = "black",size = 1),
+     axis.text.x = element_text(face = "plain", color = "black", size = 14, vjust=0.5, hjust = 1),
+     axis.text.y = element_text(face = "plain", color = "black", size = 14),
+     axis.title.x=element_text(face="bold",colour="black",size = 14),
+     axis.title.y=element_text(face="bold",colour="black",size = 14),
+     strip.background = element_rect(colour = "black", fill = "white",size=1),
+     strip.text.x = element_text(size=14, angle=0, face = "plain"), 
+     strip.text.y = element_text(size=14, face="plain"),
+     axis.text = element_text(face = "bold", vjust = 0.5, size = 14),
+    legend.position = "right", legend.box = "vertical")
+```
+###HH
+##FD5
+```{r,fig.height=6, fig.width=8}
+  obsFDHTNFD5<-obsFDHTN%>%
+  dplyr::filter(ID=="E5IHHF5")
+  obsFDHTNFD5$Rotation2<- factor(obsFDHTNFD5$Rotation2, levels=c("R1", "R2", "R3", "R4", "R5","R6", "R7","R8","R9","R10"))
+ obsFDHTNFD5%>%  
+  ggplot(aes(x=Tt_broken_sum, y=Observed))+geom_point(size=2)+theme_bw()+xlab("Thermal time (°Cd) ")+ylab("Node number")+ggtitle(paste0("E5IHHF5","(Iversen_121DefoliationHHFDFD5)"))  +
+  scale_x_continuous(breaks = seq(0, 1000, by =400), limits=c(0,1000))+
+  scale_y_continuous(breaks = seq(0, 20, by =6), limits=c(0,25))+
+ geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="blue")+
+ facet_grid(GrowthSeason2~Rotation2)+mytheme1
+#ggsave("D:/R/Pictures/C5/Node/Iversen_121DefoliationHHFD5node11.png", width=8, height=6, dpi=500)
+
+```
+
+
+###Join with the flowering data
+
+```{r}
+# upDir <- "D:/R/"
+# obsData <- "D:/R/"
+# 
+# flowering <- read.table(paste0(obsData, "Flowering.txt"),
+#                    header = TRUE)
+# flower <- flowering%>%
+#   mutate(StartDate=dmy(StartDate),BVDate=dmy(BVDate),FloDate=dmy(FloDate))
+#   
+# 
+# mergeHH<-merge(obsFDHTNFD5,flower,by=c("Name","ID","StartDate"))%>%
+#    mutate(Dev=ifelse(Clock.Today<=BVDate,"Veg","Repro"))
+#    
+
+```
+###Nodenumber and Tt for veg
+```{r,fig.height=6, fig.width=10}
+obsFDHTNVeg%>%  
+  ggplot(aes(x=Tt_broken_sum, y=Observed), colour=factor(Name))+geom_point(size=2)+theme_bw()+xlab("Thermal time(°Cd)")+ylab("Node number")+ggtitle(paste0("E5IHHF5","(Iversen_121DefoliationHHFD5)"))+
+ geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="blue")+
+ facet_grid(GrowthSeason.x~Rotation.x)+
+  scale_x_continuous(breaks = seq(0, 1000, by =400), limits=c(0,1000))+
+  scale_y_continuous(breaks = seq(0, 20, by =6), limits=c(0,25))+
+ geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="blue")+
+ facet_grid(GrowthSeason2~Rotation2)+mytheme1
+#ggsave("D:/R/Pictures/C5/Node/Iversen_121DefoliationHHFD5node.png", width=8, height=6, dpi=500)
+  
+```
+###Nodenumber and Tt for veg
+
+```{r}
+Buds<-data.frame(x=c(13.5, 14.3, 15.9, 12.3, 15.9, 13.7, 15.9),y=c(338.39, 355, 343.8, 412.9, 389, 414, 350))
+
+Buds%>%  
+  ggplot(aes(x=x,y=y))+geom_point(size=2)+theme_bw()+
+ geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="blue")
+ 
+```
+
+
+
+
+
+
+
+
+
+
+###Nodenumber and Tt for reproduction
+```{r,fig.height=6, fig.width=10}
+
+obsFDHTNRep%>%  
+  ggplot(aes(x=Tt_broken_sum, y=Observed), colour=factor(Name))+geom_point(size=2)+theme_bw()+xlab("Thermal time(°Cd)")+ylab("Node number")+ggtitle(paste0("E5IHHF5","(Iversen_121DefoliationHHFD5)"))+
+ geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="blue")+
+ facet_grid(GrowthSeason.x~Rotation.x)+
+  scale_x_continuous(breaks = seq(0, 1000, by =400), limits=c(0,1000))+
+  scale_y_continuous(breaks = seq(0, 20, by =6), limits=c(0,25))+
+ geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="blue")+
+ facet_grid(GrowthSeason2~Rotation2)+mytheme1
+#ggsave("D:/R/Pictures/C5/Node/Iversen_121DefoliationHHFD5node.png", width=8, height=6, dpi=500)
+  
+```
+
+
+
+###Stats for veg
+```{r}
+ VegPhy <- obsFDHTNVeg %>%
+  mutate(GrowthSeason=as.factor(GrowthSeason.x),Rotation=as.factor(Rotation.x))%>%
+  group_by(Name,GrowthSeason,Rotation,Tmean,Ppm,Tbb) %>%
+    do(mod = lm(Tt_broken_sum~Observed,data=.))%>%
+  mutate(R2Br = summary(mod)$r.squared)%>%
+  mutate(Veg = summary(mod)$coeff[2])%>%
+  #mutate(PhylloBr = summary(mod.broken)$coeff[2])%>%
+  mutate(P=anova(mod)$'Pr(>F)'[1])%>% 
+  mutate(intcp= summary(mod)$coeff[1])%>%  
+  dplyr::select(-mod)
+#write.csv(mergeHH_V ,"D:/R/PhyllochronData/mergeHH_V.all.csv", row.names = FALSE)
+```
+
+###stats for reproduction
+```{r}
+ RepPhy <- obsFDHTNRep  %>%
+  mutate(GrowthSeason=as.factor(GrowthSeason.x),Rotation=as.factor(Rotation.x))%>%
+  #dplyr::filter(GrowthSeason!="2"|Rotation!="1") %>%
+  group_by(Name,GrowthSeason,Rotation,Tmean,Ppm,Tbb) %>%
+    do(mod = lm(Tt_broken_sum~Observed,data=.))%>%
+   mutate(R2Br = summary(mod)$r.squared)%>%
+  mutate(Rep= summary(mod)$coeff[2])%>%
+  #mutate(PhylloBr = summary(mod.broken)$coeff[2])%>%
+  mutate(P=anova(mod)$'Pr(>F)'[1])%>% 
+  mutate(intcp= summary(mod)$coeff[1])%>% 
+  dplyr::select(-mod)
+#write.csv(mergeHH_R ,"D:/R/PhyllochronData/mergeHH_R.all.csv", row.names = FALSE)
+  
+mergePhy1<-merge(VegPhy, RepPhy,by=c("Name","GrowthSeason","Rotation","Tmean","Ppm","Tbb"))%>%
+  dplyr::select(Name,GrowthSeason,Rotation,Tmean, Ppm,Tbb, Veg,Rep) %>%
+  tidyr::gather("Variable","Phyllo",Veg:Rep)
+  
+```
+###phyllo for FD5
+```{r,fig.height=4, fig.width=8}
+detach(package:dplyr)
+library(dplyr)
+library(plyr)
+mergePhy1$Variable<-factor(mergePhy1$Variable, levels = c("Veg","Rep"))
+
+lm_eqnq <- function( mergePhy1){
+  m <- lm(Phyllo~Ppm ,mergePhy1);
+  eq <- substitute(italic(y) == Ppm +Phyllo %.% italic(Ppm)*","~~italic(R)^2~"="~r2, 
+                   list(Ppm = format(coef(m)[1], digits = 2), 
+                        Phyllo= format(coef(m)[2], digits = 2), 
+                        r2 = format(summary(m)$r.squared, digits = 3)))
+  as.character(as.expression(eq));                 
+}
+
+
+eqs <- ddply(mergePhy1,.(Variable),lm_eqnq)
+
+mergePhy1%>%
+  filter(Name=="Iversen_121DefoliationHHFDFD5")%>%
+  mutate(GrowthRotation=as.factor(paste0(GrowthSeason,Rotation)))%>%
+  filter(GrowthRotation!="21")%>%
+  filter(GrowthRotation!="33")%>%
+  ggplot(aes(x=Ppm, y=Phyllo,label=GrowthRotation))+
+  geom_point(size=2)+
+  theme_bw()+xlab("Photoperiod (h)")+ylab(bquote(bold('Phyllochron ('*'°Cd/primary leaf'*')')))+
+  #ggtitle("E5IHHF5(Iverson_121DefoliationHHFDFD5)")+
+ #geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="blue")+
+ facet_wrap(~Variable,ncol = 2)+mytheme3+
+   theme(legend.title=element_blank(),legend.position = "blank")
+ #geom_text(data = eqs, aes(x =14, y = 50, label = V1), 
+          #color = 'black',  parse = TRUE, size=5)
+
+#ggsave("D:/R/Pictures/C5/Node/Iversen_121DefoliationHHFD5phyllochron.png", width=8, height=4, dpi=500)
+ggsave("D:/R/Pictures/C6/NodeNumber/NodeLL.png", width=8, height=3.5, dpi=500)
+  detach(package:plyr)
+```
+
+
+
+## Define stats function
+
+* Using Gauch et al. 2003 (Model evaluation by comparison of model-based predictions and measured values. Agron. J. 95, 1442-1446) 
+```{r Stats, include = TRUE, echo=FALSE, warning=FALSE, fig.height=8, fig.width=8}
+
+# # R2
+# testDF <- data.frame(a=c(1,2,3,4,5), b=c(10,20,10,40,50))
+# 
+# myR2 <- function(p,o) {
+#  return(summary(lm(p~o, na.action=na.exclude))$r.squared) 
+# }
+# 
+# testDF %>%
+#   summarise(thisR2 = myR2(a,b))
+
+# gauch MSE components
+gauchStats <- function(sim, meas) {
+
+  n_s <- length(sim)
+  n_m <- length(meas)
+  model <- lm(meas~sim)
+  sim_sq <- sum((sim - mean(sim))^2)
+  mes_sq <- sum((meas - mean(meas))^2)
+  r2 <- summary(model)$r.squared
+  slope <- model$coefficients[[2]]
+
+  sb <- (sum(mean(meas)) - sum(mean(sim)))^2
+  nu <- (1-slope)^2 * (sim_sq/n_s)
+  lc <- (1-r2) * (mes_sq/n_m)
+  msd <- sb+nu+lc
+
+  sb_r <- round((sb/msd)*100,1)
+  nu_r <- round((nu/msd)*100,1)
+  lc_r <- round((lc/msd)*100,1)
+
+  msd_r <- sb_r+nu_r+lc_r
+
+  # select which variables to output
+  out <- c(sb_r,nu_r,lc_r, msd_r, round(r2*100,1))
+
+  return(out)
+
+}
+```
+
+## Test stats functions used
+
+```{r}
+s <- c(4231.972,3935.604,3779.652,3627.687,3363.499,3230.566,2868.114,2868.827)
+m <- c(4987.66,5636.09,4754.06,4114.53,4141.72,3704.06,5142.19,4762.03)
+
+x <- gauchStats(s,m)
+
+tempDf <- data.frame(statName=c("SB","NU","LC","r_MSD","R2"), statValue=x)
+# kable(tempDf, digits= 2)
+tempDf2 <- data.frame(Predicted=s, Observed=m)
+
+x <- tempDf2 %>%
+  summarise(
+    n = n(),
+    r2 = gauchStats(Predicted,Observed)[5],
+  #  rmse = round(rmse(Predicted,Observed),0),
+    r_rmse = round(rmse(Predicted,Observed)/mean(Observed)*100,1),
+    nse = round(NSE(Predicted,Observed),1),
+    sb = gauchStats(Predicted,Observed)[1],
+  nu = gauchStats(Predicted,Observed)[2],
+  lc = gauchStats(Predicted,Observed)[3]
+  ) %>% 
+  t() 
+
+df <- data.frame(stat = row.names(x),statvalue = x[,1])
+
+df %>%
+  kable(format = "markdown")
+```
+## Load simulated database
+## create function to read data (Justin's script)
+```{r LoadSim, include = FALSE, echo=FALSE, warning=FALSE, fig.height=8, fig.width=8}
+GetApsimNGTable <- function(dbLoc, table) 
+{
+  connection <- dbConnect(SQLite(), dbname = dbLoc, flags = SQLITE_RW)
+  table <- dbReadTable(connection, table, row.names=NULL)
+  dbDisconnect(connection)
+  return(table)
+}
+
+```
+# load address of db
+# set table to be enquierd
+# load table into an object
+# make it a dataframe
+# change date to corerct format 
+# explore the df
+```{r}
+db.address <- "D:\\APSIMX2\\Prototypes\\Lucerne\\LucerneValidation.db"
+tableName<-"Report"
+DbTable <- GetApsimNGTable(db.address,tableName)
+df <- as.data.frame(DbTable)
+df$Clock.Today <- ymd_hms(df$Clock.Today)
+str(df)
+summary(df)
+head(df) # simulation results
+```
+# get sim names (different table)
+# merge names 
+# remove unecessary variables
+```{r}
+simNameDf <- as.data.frame (GetApsimNGTable(db.address,"_Simulations"))
+myDb <- merge(df, simNameDf, by.x= c("SimulationID"), by.y= c("ID"))
+
+
+#str(myDb)
+head(myDb)
+summary(myDb)
+
+# myDb %>%
+#   dplyr::select(Name) %>%
+#   unique()
+
+```
+## Prepare merge
+## Add info for merging
+## select variables that are for comparing with observed data
+
+```{r}
+simD <- myDb %>%
+  dplyr::select(Name,Clock.Today,LAI,Height,shootbiomass,RootWt, StemWt, LeafWt,NodeNumber) %>%
+  tidyr::gather("Variable","Predicted",LAI:NodeNumber) %>%
+  mutate(Name = as.factor(Name)) %>%
+  mutate(Variable = as.factor(Variable)) %>%
+  mutate(Clock.Today = ymd_hms(Clock.Today))
+
+head(simD)
+summary(simD)
+
+
+
+mergedfAAC<-merge(obsFDH,simD,by=c("Clock.Today","Name","Variable"))
+summary(mergedfAAC)
+str(mergedfAAC)
+mergedfAAC
+
+```
+##2014-2018
+##F5
+```{r,  fig.height=4, fig.width=8}
+obsFDHNF5<-obsFDH%>% 
+  dplyr::filter(Collection=="2014_2018")%>%
+  dplyr::filter(Variable=="NodeNumber")%>%
+  dplyr::filter(Name=="Iversen_121DefoliationHHFDFD5")
+
+simD4a<-simD%>%
+  mutate(Clock.Today = ymd_hms(Clock.Today))%>%
+  dplyr::filter(Variable=="NodeNumber")%>%
+  dplyr::filter(Name=="Iversen_121DefoliationHHFDFD5")%>%
+  dplyr::filter(Clock.Today<"2015-01-06")
+
+simD4b<-simD%>%
+  mutate(Clock.Today = ymd_hms(Clock.Today))%>%
+  dplyr::filter(Variable=="NodeNumber")%>%
+  dplyr::filter(Name=="Iversen_121DefoliationHHFDFD5")%>%
+  dplyr::filter(Clock.Today>"2015-01-30")
+simD4<-rbind(simD4a,simD4b)
+  
+str(simD4)
+simD4%>%
+ggplot(aes(x=Clock.Today,y=Predicted))+geom_line(size=1)+theme_bw()+
+  facet_wrap(~ID,ncol = 1)+
+  geom_point(data=obsFDHNF5, aes(x=Clock.Today1, y=Observed),colour="green",size=3)+
+  theme(legend.title=element_blank(),legend.position = "blank")+xlab("Date")+ylab("Node number")+
+  #remove grid lines 
+   theme(
+     panel.spacing=unit(.01, "lines"),
+     panel.border = element_rect(colour = "black",size=1), 
+     panel.grid.major = element_blank(),
+     panel.grid.minor = element_blank(),
+     axis.line = element_line(colour = "black",size = 1),
+     axis.text.x = element_text(face = "plain", color = "black", size = 14, vjust=0.5, hjust = 1),
+     axis.text.y = element_text(face = "plain", color = "black", size = 14),
+     axis.title.x=element_text(face="bold",colour="black",size = 14),
+     axis.title.y=element_text(face="bold",colour="black",size = 14),
+     strip.background = element_rect(colour = "black", fill = "white",size=1),
+     strip.text.x = element_text(size=14, angle=0, face = "plain"), 
+     strip.text.y = element_text(size=14, face="plain"),
+     legend.title = element_text(colour="black", size=14, face="bold"),
+     axis.text = element_text(face = "bold", vjust = 0.5, size = 14))
+   #annotate("text", x=ymd_hms("2016-07-24 12:00:00"), y=25, size = 5, label ="paste(R_RMSD == 30.6,'%')", parse=T)
+   #ggsave("D:/R/Pictures/AAC/Iversen_121DefoliationHHFDFD5nodenumber1.png", width=8, height=4, dpi=500)
+  
+
+```
+
+
+##F2
+```{r,  fig.height=4, fig.width=8}
+obsFDHNF2<-obsFDH%>% 
+  dplyr::filter(Collection=="2014_2018")%>%
+  dplyr::filter(Variable=="NodeNumber")%>%
+  dplyr::filter(Name=="Iversen_121DefoliationHHFDFD2")
+
+simD4a<-simD%>%
+  mutate(Clock.Today = ymd_hms(Clock.Today))%>%
+  dplyr::filter(Variable=="NodeNumber")%>%
+  dplyr::filter(Name=="Iversen_121DefoliationHHFDFD2")%>%
+  dplyr::filter(Clock.Today<"2015-01-06")
+
+simD4b<-simD%>%
+  mutate(Clock.Today = ymd_hms(Clock.Today))%>%
+  dplyr::filter(Variable=="NodeNumber")%>%
+  dplyr::filter(Name=="Iversen_121DefoliationHHFDFD2")%>%
+  dplyr::filter(Clock.Today>"2015-01-30")
+simD4<-rbind(simD4a,simD4b)
+  
+str(simD4)
+simD4%>%
+ggplot(aes(x=Clock.Today,y=Predicted))+geom_line(size=1)+theme_bw()+
+  facet_wrap(~ID,ncol = 1)+
+  geom_point(data=obsFDHNF2, aes(x=Clock.Today1, y=Observed),colour="green",size=3)+
+  theme(legend.title=element_blank(),legend.position = "blank")+xlab("Date")+ylab("Node number")+
+  #remove grid lines 
+   theme(
+     panel.spacing=unit(.01, "lines"),
+     panel.border = element_rect(colour = "black",size=1), 
+     panel.grid.major = element_blank(),
+     panel.grid.minor = element_blank(),
+     axis.line = element_line(colour = "black",size = 1),
+     axis.text.x = element_text(face = "plain", color = "black", size = 14, vjust=0.5, hjust = 1),
+     axis.text.y = element_text(face = "plain", color = "black", size = 14),
+     axis.title.x=element_text(face="bold",colour="black",size = 14),
+     axis.title.y=element_text(face="bold",colour="black",size = 14),
+     strip.background = element_rect(colour = "black", fill = "white",size=1),
+     strip.text.x = element_text(size=14, angle=0, face = "plain"), 
+     strip.text.y = element_text(size=14, face="plain"),
+     legend.title = element_text(colour="black", size=14, face="bold"),
+     axis.text = element_text(face = "bold", vjust = 0.5, size = 14))+
+   annotate("text", x=ymd_hms("2016-07-24 12:00:00"), y=25, size = 5, label ="paste(R_RMSD == 30.6,'%')", parse=T)
+   #ggsave("D:/R/Pictures/C5/Node/Iversen_121DefoliationHHFDFD5nodenumber1.png", width=8, height=4, dpi=500)
+ # ggsave("D:/R/Pictures/AAC/Iversen_121DefoliationHHFDFD2nodenumber1.png", width=8, height=4, dpi=500)
+
+```
+##F10
+```{r,  fig.height=4, fig.width=8}
+obsFDHNF10<-obsFDH%>% 
+  dplyr::filter(Collection=="2014_2018")%>%
+  dplyr::filter(Variable=="NodeNumber")%>%
+  dplyr::filter(Name=="Iversen_121DefoliationHHFDFD10")
+
+simD4a<-simD%>%
+  mutate(Clock.Today = ymd_hms(Clock.Today))%>%
+  dplyr::filter(Variable=="NodeNumber")%>%
+  dplyr::filter(Name=="Iversen_121DefoliationHHFDFD10")%>%
+  dplyr::filter(Clock.Today<"2015-01-06")
+
+simD4b<-simD%>%
+  mutate(Clock.Today = ymd_hms(Clock.Today))%>%
+  dplyr::filter(Variable=="NodeNumber")%>%
+  dplyr::filter(Name=="Iversen_121DefoliationHHFDFD10")%>%
+  dplyr::filter(Clock.Today>"2015-01-30")
+simD4<-rbind(simD4a,simD4b)
+  
+str(simD4)
+simD4%>%
+ggplot(aes(x=Clock.Today,y=Predicted))+geom_line(size=1)+theme_bw()+
+  facet_wrap(~ID,ncol = 1)+
+  geom_point(data=obsFDHNF10, aes(x=Clock.Today1, y=Observed),colour="green",size=3)+
+  theme(legend.title=element_blank(),legend.position = "blank")+xlab("Date")+ylab("Node number")+
+  #remove grid lines 
+   theme(
+     panel.spacing=unit(.01, "lines"),
+     panel.border = element_rect(colour = "black",size=1), 
+     panel.grid.major = element_blank(),
+     panel.grid.minor = element_blank(),
+     axis.line = element_line(colour = "black",size = 1),
+     axis.text.x = element_text(face = "plain", color = "black", size = 14, vjust=0.5, hjust = 1),
+     axis.text.y = element_text(face = "plain", color = "black", size = 14),
+     axis.title.x=element_text(face="bold",colour="black",size = 14),
+     axis.title.y=element_text(face="bold",colour="black",size = 14),
+     strip.background = element_rect(colour = "black", fill = "white",size=1),
+     strip.text.x = element_text(size=14, angle=0, face = "plain"), 
+     strip.text.y = element_text(size=14, face="plain"),
+     legend.title = element_text(colour="black", size=14, face="bold"),
+     axis.text = element_text(face = "bold", vjust = 0.5, size = 14))
+   #annotate("text", x=ymd_hms("2016-07-24 12:00:00"), y=25, size = 5, label ="paste(R_RMSD == 30.6,'%')", parse=T)
+   #ggsave("D:/R/Pictures/AAC/Iversen_121DefoliationHHFDFD10nodenumber1.png", width=8, height=4, dpi=500)
+  
+
+```
+## RMSE
+
+```{r}
+str(mergedfAAC)
+
+mergedfAAC %>%
+  dplyr::filter(Variable== "NodeNumber") %>% 
+  group_by(ID) %>%
+  summarise(
+    n = n(),
+    r2 = gauchStats(Predicted,Observed)[5],
+  #  rmse = round(rmse(Predicted,Observed),0),
+    r_rmse = round(rmse(Predicted,Observed)/mean(Observed)*100,1),
+    nse = round(NSE(Predicted,Observed),2),
+    sb = gauchStats(Predicted,Observed)[1],
+  nu = gauchStats(Predicted,Observed)[2],
+  lc = gauchStats(Predicted,Observed)[3]
+  ) 
+
+```
+
+#Statistic and Graph
+```{r,fig.height=6, fig.width=8}
+mergedfAAC
+summary(mergedfAAC)
+str(mergedfAAC)
+mergedfAAC$FD <- factor(mergedfAAC$FD, levels=c("FD2","FD5","FD10"))
+
+Figure2<-mergedfAAC %>%
+    dplyr::filter(Variable== "NodeNumber") %>% 
+    dplyr::filter(Defoliation=="HH")%>%
+  ggplot(aes(x=Observed, y= Predicted)) +
+  geom_point(size=2)+theme_bw()+
+  geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="darkgrey") +
+  geom_abline(intercept = 0, slope = 1) +
+  coord_fixed(ratio = 1)+
+  ggtitle("Node Number")+
+  facet_wrap(~FD, ncol = 3)+
+  scale_x_continuous(breaks = seq(0, 25, by =10), limits=c(0,25))+
+  scale_y_continuous(breaks = seq(0, 25, by =10), limits=c(0,25))+
+  theme(legend.title=element_blank(),legend.position = "blank")+xlab("Observed")+ylab("Predicted")+
+  theme(
+     panel.spacing=unit(.01, "lines"),
+     panel.border = element_rect(colour = "black",size=1), 
+     panel.grid.major = element_blank(),
+     panel.grid.minor = element_blank(),
+     axis.line = element_line(colour = "black",size = 1),
+     axis.text.x = element_text(face = "plain", color = "black", size = 14, vjust=0.5, hjust = 1),
+     axis.text.y = element_text(face = "plain", color = "black", size = 14),
+     axis.title.x=element_text(face="bold",colour="black",size = 14),
+     axis.title.y=element_text(face="bold",colour="black",size = 14),
+     strip.background = element_rect(colour = "black", fill = "white",size=1),
+     strip.text.x = element_text(size=14, angle=0, face = "plain"), 
+     strip.text.y = element_text(size=14, face="plain"),
+     legend.title = element_text(colour="black", size=14, face="bold"),
+     axis.text = element_text(face = "bold", vjust = 0.5, size = 14))
+
+dat_texta <- data.frame(
+  #label =c(a,b,c),
+  labela=c("R_RMSE=27.3%","R_RMSE=25.9%","R_RMSE=26%"),
+  labelb =c("NSE=0.79", "NSE=0.80", "NSE=0.82"),
+  FD= c("FD2", "FD5", "FD10"),
+  x= c(0,  0,  0),
+  y1=c(19, 19, 19),
+  y2=c(17, 17, 17))
+
+ Figure2+
+  geom_text(data=dat_texta, mapping = aes(x=x,y=y1, label = labela),hjust   = -0.1,vjust   = -1,size=4)+
+geom_text(data=dat_texta, mapping = aes(x=x,y=y2, label = labelb),hjust   = -0.1,vjust   = -1,size=4)
+
+
+ggsave("D:/R/Pictures/AAC/NodeHH.png", width=8, height=6, dpi=500)
+```
+###Heightchron
+```{r,fig.height=6, fig.width=10}
+obsFDHTHVeg%>%  
+  ggplot(aes(x=Tt_broken_sum, y=Observed1), colour=factor(Name))+geom_point(size=2)+theme_bw()+xlab("Thermal time(°Cd)")+ylab("Height (mm)")+ggtitle(paste0("E5IHHF5","(Iversen_121DefoliationHHFD5)"))+
+ geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="blue")+
+ facet_grid(GrowthSeason.x~Rotation.x)+
+  scale_x_continuous(breaks = seq(0, 1000, by =400), limits=c(0,1000))+
+  scale_y_continuous(breaks = seq(0, 800, by =300), limits=c(0,800))+
+ geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="blue")+
+ facet_grid(GrowthSeason2~Rotation2)+mytheme3
+#ggsave("D:/R/Pictures/C5/Height/Iversen_121DefoliationHHFD5Height1.png", width=8, height=6, dpi=500)
+  
+```
+
+```{r}
+ obsFDHTH_V <- obsFDHTHVeg %>%
+  mutate(GrowthSeason=as.factor(GrowthSeason.x),Rotation=as.factor(Rotation.x))%>%
+  group_by(Name,GrowthSeason,Rotation,Tmean,Ppm,Tbb) %>%
+    do(mod = lm(Tt_broken_sum~Observed1,data=.))%>%
+   mutate(R2Br = summary(mod)$r.squared)%>%
+  mutate(Veg = summary(mod)$coeff[2])%>%
+  #mutate(PhylloBr = summary(mod.broken)$coeff[2])%>%
+  mutate(P=anova(mod)$'Pr(>F)'[1])%>% 
+  mutate(intcp= summary(mod)$coeff[1])%>%  
+  dplyr::select(-mod)
+#write.csv(mergeHHH_V ,"D:/R/PhyllochronData/mergeHHH_V.all.csv", row.names = FALSE)
+ 
+```
+
+
+```{r,fig.height=6, fig.width=10}
+obsFDHTHRep%>%
+    ggplot(aes(x=Tt_broken_sum, y=Observed1), colour=factor(Name))+geom_point(size=2)+theme_bw()+xlab("Thermal time (°Cd)")+ylab("Height (mm)")+ggtitle(paste0("E5IHHF5","(Iversen_121DefoliationHHFD5)"))+
+ geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="blue")+
+ facet_grid(GrowthSeason2~Rotation2)+
+  scale_x_continuous(breaks = seq(0, 1000, by =400), limits=c(0,1000))+
+  scale_y_continuous(breaks = seq(400, 1000, by =400), limits=c(400,1000))+
+ mytheme3+
+   theme(legend.title=element_blank(),legend.position = "blank")
+
+#ggsave("D:/R/Pictures/C5/Height/Iversen_121DefoliationHHFD5Height2.png", width=8, height=6, dpi=500)
+```
+
+```{r}
+ obsFDHTH_R <- obsFDHTHRep %>%
+  mutate(GrowthSeason=as.factor(GrowthSeason.x),Rotation=as.factor(Rotation.x))%>%
+  #dplyr::filter(GrowthSeason!="2"|Rotation!="1") %>%
+  group_by(Name,GrowthSeason,Rotation,Tmean,Ppm,Tbb) %>%
+    do(mod = lm(Tt_broken_sum~Observed1,data=.))%>%
+  mutate(R2Br = summary(mod)$r.squared)%>%
+  mutate(Rep = summary(mod)$coeff[2])%>%
+  #mutate(PhylloBr = summary(mod.broken)$coeff[2])%>%
+  mutate(P=anova(mod)$'Pr(>F)'[1])%>% 
+  mutate(intcp= summary(mod)$coeff[1])%>%  
+  dplyr::select(-mod)
+#write.csv(mergeHHH_R ,"D:/R/PhyllochronData/mergeHHH_R.all.csv", row.names = FALSE)
+ 
+  
+mergePhy1<-merge( obsFDHTH_V, obsFDHTH_R,by=c("Name","GrowthSeason","Rotation","Tmean","Ppm","Tbb"))%>%
+  dplyr::select(Name, GrowthSeason,Rotation,Tmean, Ppm,Tbb,Veg,Rep) %>%
+  tidyr::gather("Variable","Heightchron",Veg:Rep)
+  
+mergePhy1%>%
+  mutate(GrowthRotation=as.factor(paste0(GrowthSeason,Rotation)))%>%
+  #filter(GrowthRotation!="33")%>%
+  #filter(GrowthRotation!="42")%>%
+  ggplot(aes(x=Ppm, y=Heightchron,colour=factor(Name),label=GrowthRotation))+geom_text()+
+  theme_bw()+xlab("Photoperiod (h)")+ylab(bquote(bold('Heightchron ('*'°Cd'~'mm'^-1*')')))+ggtitle("E5IHHF5(Iverson_121DefoliationHHFDFD5)")+
+ geom_smooth(method = "lm", se = TRUE, formula=y ~ poly(x, 2, raw=TRUE), colour="darkgrey")+
+ facet_grid(Name~Variable)+mytheme3+theme(legend.title=element_blank(),legend.position = "blank")
+
+```
+
+```{r,fig.height=4, fig.width=6}
+mergePhy1$Variable<-factor(mergePhy1$Variable, levels = c("Veg","Rep"))
+detach(package:dplyr)
+library(dplyr)
+library(plyr)
+
+my.formula  <- function(mergePhy1){
+  my.formula <- Heightchron ~ poly(Ppm, 2, raw = TRUE)
+  m <- lm(my.formula,mergePhy1)
+  my.eq <- as.character(signif(as.polynomial(coef(m)), 2))
+  label.text <- paste("y","'='",paste(gsub(y, "~italic(x)",my.eq, fixed = TRUE)),
+              paste("italic(R)^2",format(summary(m)$r.squared, digits = 2), 
+                    sep = "~`=`~"),
+                    sep = "~~~~")
+  as.character(as.expression(label.text));                 
+}
+
+my.eqs <- ddply(mergePhy1,.(Name,Variable), my.formula)
+
+
+f<-mergePhy1%>%
+  mutate(GrowthRotation=as.factor(paste0(GrowthSeason,Rotation)))%>%
+  #filter(GrowthRotation!="33")%>%
+  #filter(GrowthRotation!="42")%>%
+  ggplot(aes(x=Ppm, y=Heightchron,colour=factor(Name),label=GrowthRotation))+geom_text()+
+  theme_bw()+xlab("Photoperiod (h)")+ylab(bquote(bold('Heightchron ('*'°Cd'~'mm'^-1*')')))+ggtitle("E5IHHF5(Iverson_121DefoliationHHFDFD5)")+
+ geom_smooth(method = "lm", se = TRUE, formula=y ~ poly(x, 2, raw=TRUE), colour="darkgrey")+
+ facet_grid(Name~Variable)+mytheme3+theme(legend.title=element_blank(),legend.position = "blank")
+
+ f+geom_text(data = my.eqs, aes(x = 14, y = 7, label = V1), 
+          color = 'black',  parse = TRUE, size=3.8)
+detach(package:plyr) 
+
+ggsave("D:/R/Pictures/AAC/HeightCHRON.png", width=8, height=4, dpi=500)
+```
+
+
+#####mergephy1
+```{r}
+mergePhy1V<-mergePhy1%>%
+  mutate(GrowthRotation=as.factor(paste0(GrowthSeason,Rotation)))%>%
+  filter(Variable=="Veg")%>%
+  #filter(GrowthRotation!="33")
+  filter(GrowthRotation!="42")
+
+mergePhy1R<-mergePhy1%>%
+  mutate(GrowthRotation=as.factor(paste0(GrowthSeason,Rotation)))%>%
+  filter(Variable=="Rep")%>%
+  #filter(GrowthRotation!="33")
+  filter(GrowthRotation!="42")
+  
+X<-mergePhy1V$Ppm
+Y<-mergePhy1V$Heightchron
+Xsq<-X^2
+Xcub<-X^3
+plot(X,Y, pch=19)
+model1<-lm(Y~X)
+model2<-lm(Y~X+Xsq)
+model3<-lm(Y~X+Xsq+Xcub)
+#mod_lm <-lm(Y~X*(X<14.2)+X*(X>=14.2),data=HchronPp)
+anova(model1)
+summary(model1)
+anova(model2)
+summary(model2)
+anova(model3)
+summary(model3)
+abline(model1, col="red")
+XV<-seq(min(X),max(X),0.01)
+yv<-predict(model2,list(X=XV,Xsq=XV^2))
+lines(XV,yv,col="blue")
+```  
+
+#####Height
+##HH
+###F2
+```{r,  fig.height=4, fig.width=8}
+obsFDHTHHF2<-obsFDHTH %>%
+  dplyr::filter(Variable=="Height")%>%
+  dplyr::filter(Name=="Iversen_121DefoliationHHFDFD2")
+
+simD5a<-simD%>%
+  mutate(Clock.Today = ymd_hms(Clock.Today))%>%
+  dplyr::filter(Variable=="Height")%>%
+  dplyr::filter(Name=="Iversen_121DefoliationHHFDFD2")%>%
+  dplyr::filter(Clock.Today<"2015-01-06")
+
+simD5b<-simD%>%
+  mutate(Clock.Today = ymd_hms(Clock.Today))%>%
+  dplyr::filter(Variable=="Height")%>%
+  dplyr::filter(Name=="Iversen_121DefoliationHHFDFD2")%>%
+  dplyr::filter(Clock.Today>"2015-01-30")
+simD5<-rbind(simD5a,simD5b)
+  
+str(simD5)
+simD5%>%
+ggplot(aes(x=Clock.Today,y=Predicted))+geom_line(size=1)+theme_bw()+
+  #facet_wrap(~ID,ncol = 1)+
+  geom_point(data=obsFDHTHHF2, aes(x=Clock.Today1, y=Observed1),colour="green",size=3)+
+  theme(legend.title=element_blank(),legend.position = "blank")+xlab("Date")+ylab("Height (mm)")+
+  #remove grid lines 
+   theme(
+     panel.spacing=unit(.01, "lines"),
+     panel.border = element_rect(colour = "black",size=1), 
+     panel.grid.major = element_blank(),
+     panel.grid.minor = element_blank(),
+     axis.line = element_line(colour = "black",size = 1),
+     axis.text.x = element_text(face = "plain", color = "black", size = 14, vjust=0.5, hjust = 1),
+     axis.text.y = element_text(face = "plain", color = "black", size = 14),
+     axis.title.x=element_text(face="bold",colour="black",size = 14),
+     axis.title.y=element_text(face="bold",colour="black",size = 14),
+     strip.background = element_rect(colour = "black", fill = "white",size=1),
+     strip.text.x = element_text(size=14, angle=0, face = "plain"), 
+     strip.text.y = element_text(size=14, face="plain"),
+     legend.title = element_text(colour="black", size=14, face="bold"),
+     axis.text = element_text(face = "bold", vjust = 0.5, size = 14))+
+   annotate("text", x=ymd_hms("2016-07-24 12:00:00"), y=1250, size = 5, label ="paste(R_RMSD == 30.7,'%')", parse=T)
+   #ggsave("D:/R/Pictures/AAC/Iversen_121DefoliationHHFDFD2Height1.png", width=8, height=4, dpi=500)
+```
+#####Height
+##HH
+###F5
+```{r,  fig.height=4, fig.width=8}
+obsFDHTHHF5<-obsFDHTH %>%
+  dplyr::filter(Variable=="Height")%>%
+  dplyr::filter(Name=="Iversen_121DefoliationHHFDFD5")
+
+simD5a<-simD%>%
+  mutate(Clock.Today = ymd_hms(Clock.Today))%>%
+  dplyr::filter(Variable=="Height")%>%
+  dplyr::filter(Name=="Iversen_121DefoliationHHFDFD5")%>%
+  dplyr::filter(Clock.Today<"2015-01-06")
+
+simD5b<-simD%>%
+  mutate(Clock.Today = ymd_hms(Clock.Today))%>%
+  dplyr::filter(Variable=="Height")%>%
+  dplyr::filter(Name=="Iversen_121DefoliationHHFDFD5")%>%
+  dplyr::filter(Clock.Today>"2015-01-30")
+simD5<-rbind(simD5a,simD5b)
+  
+str(simD5)
+simD5%>%
+ggplot(aes(x=Clock.Today,y=Predicted))+geom_line(size=1)+theme_bw()+
+  #facet_wrap(~ID,ncol = 1)+
+  geom_point(data=obsFDHTHHF2, aes(x=Clock.Today1, y=Observed1),colour="blue",size=3)+
+  theme(legend.title=element_blank(),legend.position = "blank")+xlab("Date")+ylab("Height (mm)")+
+  #remove grid lines 
+   theme(
+     panel.spacing=unit(.01, "lines"),
+     panel.border = element_rect(colour = "black",size=1), 
+     panel.grid.major = element_blank(),
+     panel.grid.minor = element_blank(),
+     axis.line = element_line(colour = "black",size = 1),
+     axis.text.x = element_text(face = "plain", color = "black", size = 14, vjust=0.5, hjust = 1),
+     axis.text.y = element_text(face = "plain", color = "black", size = 14),
+     axis.title.x=element_text(face="bold",colour="black",size = 14),
+     axis.title.y=element_text(face="bold",colour="black",size = 14),
+     strip.background = element_rect(colour = "black", fill = "white",size=1),
+     strip.text.x = element_text(size=14, angle=0, face = "plain"), 
+     strip.text.y = element_text(size=14, face="plain"),
+     legend.title = element_text(colour="black", size=14, face="bold"),
+     axis.text = element_text(face = "bold", vjust = 0.5, size = 14))
+   #annotate("text", x=ymd_hms("2016-07-24 12:00:00"), y=1250, size = 5, label ="paste(R_RMSD == 30.7,'%')", parse=T)
+   ggsave("D:/R/Pictures/AAC/Iversen_121DefoliationHHFDFD2Height1.png", width=8, height=4, dpi=500)
+```
+
+#####Height
+##HH
+###F10
+```{r,  fig.height=4, fig.width=8}
+obsFDHTHHF10<-obsFDHTH %>%
+  dplyr::filter(Variable=="Height")%>%
+  dplyr::filter(Name=="Iversen_121DefoliationHHFDFD10")
+
+simD5a<-simD%>%
+  mutate(Clock.Today = ymd_hms(Clock.Today))%>%
+  dplyr::filter(Variable=="Height")%>%
+  dplyr::filter(Name=="Iversen_121DefoliationHHFDFD10")%>%
+  dplyr::filter(Clock.Today<"2015-01-06")
+
+simD5b<-simD%>%
+  mutate(Clock.Today = ymd_hms(Clock.Today))%>%
+  dplyr::filter(Variable=="Height")%>%
+  dplyr::filter(Name=="Iversen_121DefoliationHHFDFD10")%>%
+  dplyr::filter(Clock.Today>"2015-01-30")
+simD5<-rbind(simD5a,simD5b)
+  
+str(simD5)
+simD5%>%
+ggplot(aes(x=Clock.Today,y=Predicted))+geom_line(size=1)+theme_bw()+
+  #facet_wrap(~ID,ncol = 1)+
+  geom_point(data=obsFDHTHHF2, aes(x=Clock.Today1, y=Observed1),colour="blue",size=3)+
+  theme(legend.title=element_blank(),legend.position = "blank")+xlab("Date")+ylab("Height (mm)")+
+  #remove grid lines 
+   theme(
+     panel.spacing=unit(.01, "lines"),
+     panel.border = element_rect(colour = "black",size=1), 
+     panel.grid.major = element_blank(),
+     panel.grid.minor = element_blank(),
+     axis.line = element_line(colour = "black",size = 1),
+     axis.text.x = element_text(face = "plain", color = "black", size = 14, vjust=0.5, hjust = 1),
+     axis.text.y = element_text(face = "plain", color = "black", size = 14),
+     axis.title.x=element_text(face="bold",colour="black",size = 14),
+     axis.title.y=element_text(face="bold",colour="black",size = 14),
+     strip.background = element_rect(colour = "black", fill = "white",size=1),
+     strip.text.x = element_text(size=14, angle=0, face = "plain"), 
+     strip.text.y = element_text(size=14, face="plain"),
+     legend.title = element_text(colour="black", size=14, face="bold"),
+     axis.text = element_text(face = "bold", vjust = 0.5, size = 14))
+   #annotate("text", x=ymd_hms("2016-07-24 12:00:00"), y=1250, size = 5, label ="paste(R_RMSD == 30.7,'%')", parse=T)
+   ggsave("D:/R/Pictures/AAC/Iversen_121DefoliationHHFDFD10Height1.png", width=8, height=4, dpi=500)
+```
+## RMSE
+
+```{r}
+str(mergedfAAC)
+
+mergedfAAC %>%
+  dplyr::filter(Variable== "Height") %>% 
+  mutate(Observed1=Observed*10)%>%
+  group_by(ID) %>%
+  summarise(
+    n = n(),
+    r2 = gauchStats(Predicted,Observed1)[5],
+  #  rmse = round(rmse(Predicted,Observed),0),
+    r_rmse = round(rmse(Predicted,Observed1)/mean(Observed1)*100,1),
+    nse = round(NSE(Predicted,Observed1),2),
+    sb = gauchStats(Predicted,Observed1)[1],
+  nu = gauchStats(Predicted,Observed1)[2],
+  lc = gauchStats(Predicted,Observed1)[3]
+  ) 
+
+  
+```
+
+```{r}
+
+mergedfAAC$FD<- factor(mergedfAAC$FD, levels=c("FD2","FD5","FD10"))
+
+Figure<-mergedfAAC %>%
+  dplyr::filter(Variable== "Height") %>% 
+    dplyr::filter(Defoliation== "HH") %>% 
+  mutate(Observed1=Observed *10)%>%
+  ggplot(aes(x=Observed1, y= Predicted)) +
+  geom_point(size=2)+theme_bw()+
+  geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="darkgrey") +
+  geom_abline(intercept = 0, slope = 1) +
+  coord_fixed(ratio = 1)+
+  ggtitle("Height")+
+  facet_wrap(~FD, ncol = 3)+
+  theme(legend.title=element_blank(),legend.position = "blank")+xlab("Observed")+ylab("Predicted")+
+  theme(
+     panel.spacing=unit(.01, "lines"),
+     panel.border = element_rect(colour = "black",size=1), 
+     panel.grid.major = element_blank(),
+     panel.grid.minor = element_blank(),
+     axis.line = element_line(colour = "black",size = 1),
+     axis.text.x = element_text(face = "plain", color = "black", size = 14, vjust=0.5, hjust = 1),
+     axis.text.y = element_text(face = "plain", color = "black", size = 14),
+     axis.title.x=element_text(face="bold",colour="black",size = 14),
+     axis.title.y=element_text(face="bold",colour="black",size = 14),
+     strip.background = element_rect(colour = "black", fill = "white",size=1),
+     strip.text.x = element_text(size=14, angle=0, face = "plain"), 
+     strip.text.y = element_text(size=14, face="plain"),
+     legend.title = element_text(colour="black", size=14, face="bold"),
+     axis.text = element_text(face = "bold", vjust = 0.5, size = 14))
+
+
+dat_text1 <- data.frame(
+  #label =c(a,b,c),
+  labela=c("R_RMSE=30.7%","R_RMSE=21.9%","R_RMSE=20.9%"),
+  labelb =c("NSE=0.87", "NSE=0.92", "NSE=0.93"),
+  FD= c("FD2", "FD5", "FD10"),
+  x= c(0,  0,  0),
+  y=c(1000, 1000, 1000),
+  y1=c(950, 950, 950),
+  y2=c(850, 850, 850))
+
+ Figure+
+  # geom_text(data=dat_text1, mapping = aes(x=x,y=y, label = "a"),hjust   = -0.1,vjust   = -1,size=4)+
+ geom_text(data=dat_text1, mapping = aes(x=x,y=y1, label = labela),hjust   = -0.1,vjust   = -1,size=4)+
+geom_text(data=dat_text1, mapping = aes(x=x,y=y2, label = labelb),hjust   = -0.1,vjust   = -1,size=4)
+
+
+ggsave("D:/R/Pictures/AAC/HeightHH.png", width=8, height=6, dpi=500)
+       
+```
+
+
+
+
+

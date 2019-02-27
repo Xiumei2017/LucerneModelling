@@ -911,7 +911,7 @@ eqs1 <- ddply(LEARPp1,.(Trend,Stage),lm_eqn2)
 LEARPp1%>%
   #dplyr::filter(Stage!="Seedling")%>%
   ggplot(aes(x=Ppm, y=LEAR,label=GrowthRotation,color=ID))+geom_text()+theme_bw()+
-  xlab("Mean photoperiod (h) ")+ylab(bquote(bold('LEAR ('*m^2~m^-2~'°Cd'^-1*')')))+ 
+  xlab("Mean photoperiod (h) ")+ylab(bquote(bold('LAER ('*m^2~m^-2~'°Cd'^-1*')')))+ 
   geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="darkgrey")+
   #geom_smooth(method = "lm", se = TRUE, formula=y ~ poly(x, 2, raw=TRUE), colour="darkgrey")+
   facet_grid(Trend~Stage)+
@@ -921,7 +921,7 @@ LEARPp1%>%
  theme(axis.title.y=element_text(face="bold",colour="black",size = 12))+
   theme(legend.title=element_blank())+mytheme3
  detach(package:plyr)
-  #ggsave("D:/R/Pictures/LAI/LEARPP.png", width=8.5, height=6, dpi=500) 
+  ggsave("D:/R/Pictures/LAI/LEARPP.png", width=8.5, height=6, dpi=500) 
 ```
 
 ```{r}
@@ -1088,7 +1088,7 @@ ObsLbranch<-ObsL.Raw%>%
   dplyr::filter(Water.x=="irr")%>%
   dplyr::filter(Defoliation.x=="LL")%>%
   dplyr::filter(Variable=="Branch"|Variable=="NodeNumber")%>%
-  dplyr::filter(Tb==1)
+  dplyr::filter(Tbb==1)
 Obsbranch<-ObsLbranch%>%
   dplyr::filter(Variable=="Branch")%>%
   dplyr::select(Clock.Today,Name,Collection,GrowthSeason.x,Rotation.x,Variable,Observed,StdDEV,Tt_broken_sum,Ppm,Tmean,GrowthRotation)
@@ -1116,7 +1116,7 @@ ObsLBL<-ObsL.Raw%>%
   dplyr::filter(Water.x=="irr")%>%
   dplyr::filter(Defoliation.x=="LL")%>%
   dplyr::filter(Variable=="Branch"|Variable=="LAI")%>%
-  dplyr::filter(Tb==1)%>%
+  dplyr::filter(Tbb==1)%>%
   dplyr::filter(Name=="Iversen_121DefoliationLLFDFD5")%>%
   dplyr::filter(Clock.Today<"2016-07-01")%>%
   dplyr::filter(GrowthRotation!="14")
@@ -1211,7 +1211,7 @@ ObsSP<-ObsL.Raw %>%
   dplyr::filter(Water.x=="irr")%>%
   dplyr::filter(Defoliation.x=="LL")%>%
   dplyr::filter(FD.x=="FD5")%>%
-  dplyr::filter(Tb==1)%>%
+  dplyr::filter(Tbb==1)%>%
   dplyr::filter(Variable=="ShootPopulation"|Variable=="LAI")%>%
   dplyr::filter(Name!="Iversen_8Waterirr")%>%
   dplyr::filter(Collection=="2002_2004")%>%
@@ -1270,7 +1270,7 @@ ObsSP<-ObsL.Raw %>%
   dplyr::filter(Water.x=="irr")%>%
   dplyr::filter(Defoliation.x=="LL")%>%
   dplyr::filter(FD.x=="FD5")%>%
-  dplyr::filter(Tb==1)%>%
+  dplyr::filter(Tbb==1)%>%
   dplyr::filter(Variable=="PlantPopulation")%>%
   dplyr::filter(Name=="Iversen_121DefoliationLLFDFD5")
 ObsSP%>%
@@ -1536,7 +1536,7 @@ summary(myDb)
 
 ```{r}
 simD <- myDb %>%
-  dplyr::select(Name,Clock.Today,LAI,SWC,Height,shootbiomass,RootWt, StemWt, LeafWt,NodeNumber) %>%
+  dplyr::select(Name,Clock.Today,LAI,Height,shootbiomass,RootWt, StemWt, LeafWt,NodeNumber) %>%
   tidyr::gather("Variable","Predicted",LAI:NodeNumber) %>%
   mutate(Name = as.factor(Name)) %>%
   mutate(Variable = as.factor(Variable)) %>%
@@ -1576,7 +1576,7 @@ obsLAI1<-ObsL%>%
  simD1%>%
  ggplot(aes(x=Clock.Today,y=Predicted))+geom_line(size=1)+theme_bw()+
  facet_wrap(~ID,ncol = 2)+
-   mytheme2+
+   mytheme3+
  annotate("text", x=ymd_hms("1999-10-24 12:00:00"), y=8, size = 5, label ="paste(R_RMSD == 52.5,'%')", parse=T)+
    #geom_text(aes(x=ymd_hms("1999-10-24 12:00:00"), y=750, label="R_RMSD = 37.6%",size=5))
  geom_point(data=obsLAI1, aes(x=Clock.Today1, y=Observed),colour="green",size=3)+
@@ -1604,7 +1604,7 @@ ggplot(aes(x=Clock.Today,y=Predicted))+geom_line(size=1)+theme_bw()+
   facet_wrap(~ID,ncol = 1)+
   geom_point(data=obsLAI2, aes(x=Clock.Today1, y=Observed),colour="green",size=3)+
   theme(legend.title=element_blank(),legend.position = "blank")+xlab("Date")+ylab(bquote(bold('LAI ('*m^2~m^-2*')')))+
-   mytheme2+
+   mytheme3+
  annotate("text", x=ymd_hms("2003-07-24 12:00:00"), y=8, size = 5, label ="paste(R_RMSD == 43.2,'%')", parse=T)
 ggsave("D:/R/Pictures/LAI/Iversen_91DefoliationLLLAI1.png", width=8, height=4, dpi=500)
 ```
@@ -1613,7 +1613,7 @@ ggsave("D:/R/Pictures/LAI/Iversen_91DefoliationLLLAI1.png", width=8, height=4, d
 obsLAI3<-ObsL%>%
   dplyr::filter(Collection=="2000_2002")%>%
   dplyr::filter(Variable=="LAI")
- obsNode3 
+ 
 
 simD3b<-simD%>%
   mutate(Clock.Today = ymd_hms(Clock.Today))%>%
@@ -1629,7 +1629,7 @@ ggplot(aes(x=Clock.Today,y=Predicted))+geom_line(size=1)+theme_bw()+
   facet_wrap(~ID,ncol = 2)+
   geom_point(data=obsLAI3, aes(x=Clock.Today1, y=Observed),colour="green",size=3)+
   theme(legend.title=element_blank(),legend.position = "blank")+xlab("Date")+ylab(bquote(bold('LAI ('*m^2~m^-2*')')))+
-  mytheme2
+  mytheme3
 
 p1
 
@@ -1672,7 +1672,7 @@ ggplot(aes(x=Clock.Today,y=Predicted))+geom_line(size=1)+theme_bw()+
   facet_wrap(~ID,ncol = 1)+
   geom_point(data=obsLAI4, aes(x=Clock.Today1, y=Observed),colour="green",size=3)+
   theme(legend.title=element_blank(),legend.position = "blank")+xlab("Date")+ylab(bquote(bold('LAI ('*m^2~m^-2*')')))+
-   mytheme2+
+   mytheme3+
 annotate("text", x=ymd_hms("2016-07-24 12:00:00"), y=9.5, size = 5, label ="paste(R_RMSD == 52.4,'%')", parse=T)
 
 ggsave("D:/R/Pictures/LAI/Iversen_121DefoliationLLFDFD5LAI1.png", width=8, height=4, dpi=500)
@@ -1696,7 +1696,7 @@ mergedf %>%
   geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="darkgrey") +
   geom_abline(intercept = 0, slope = 1) +
   coord_fixed(ratio = 1)+
-  ggtitle("LAI")+mytheme2+
+  ggtitle("LAI")+mytheme3+
   facet_wrap(~ID, ncol = 4)+
   theme(legend.title=element_blank(),legend.position = "blank")+xlab("Observed")+ylab("Predicted")
 ggsave("D:/R/Pictures/LAI/predicted1.png", width=8, height=6, dpi=500)

@@ -26,7 +26,7 @@ metTt.address <- "D:\\R\\TtAll\\"
 met <- read.table(paste0(metTt.address, "TtAll.txt"), 
                       header = TRUE)
 metTtData <- met %>% mutate(Clock.Today = dmy(Clock.Today))%>%
-  dplyr::filter(Tb==1)%>%
+  dplyr::filter(Tbb==1)%>%
   mutate()
 metTtData
 str(metTtData)
@@ -118,7 +118,7 @@ Buds<-flower%>%
 Buds.all
 merge.BV<-merge(Buds.all,Buds,by=c("Clock.Today","ExpUnitCode","Water","GrowthSeason","Rotation"))
 metPp<-metTtData%>%
-  dplyr::select(-year,-day,-rain,-maxt,-mint,-mean,-radn,-wind,-vp,-Tb,-Tbb,-TTbroken,-TbF,-TTfick,-TTbeta)%>%
+  dplyr::select(-year,-day,-rain,-maxt,-mint,-mean,-radn,-wind,-vp,-Tbb,-TTbroken,-TTfick,-TTbeta)%>%
   mutate(StartDate=Clock.Today)%>%
   dplyr::select(-Clock.Today)
 merge.BVs<-merge(merge.BV, metPp, by="StartDate")%>%
@@ -181,7 +181,7 @@ flowering<-flower1%>%
 flower.all
 merge.fl<-merge(flower.all,flowering,by=c("Clock.Today","ExpUnitCode","Water","GrowthSeason","Rotation"))
 metPp1<-metTtData%>%
-  dplyr::select(-year,-day,-rain,-maxt,-mint,-mean,-radn,-wind,-vp,-Tb,-Tbb,-TTbroken,-TbF,-TTfick,-TTbeta)%>%
+  dplyr::select(-year,-day,-rain,-maxt,-mint,-mean,-radn,-wind,-vp,-Tbb,-TTbroken,-TTfick,-TTbeta)%>%
   mutate(StartDate=Clock.Today)%>%
   dplyr::select(-Clock.Today)
   
@@ -342,7 +342,6 @@ mergeBF%>%
 ggsave("D:/R/Pictures/Buds/budsflo.png", width=8, height=4, dpi=500)
 ```
 
-
 ## Load simulated database
 ## create function to read data (Justin's script)
 ```{r LoadSim, include = FALSE, echo=FALSE, warning=FALSE, fig.height=8, fig.width=8}
@@ -494,7 +493,7 @@ mergedf %>%
   dplyr::filter(Name!="Iversen_91F1SSGR21")%>%
   dplyr::filter(Name!="Iversen_91FLLGR11")%>%
   dplyr::filter(Name!="Iversen_9SowingDateSD6Waterirr")%>%
-  mutate(Observed= as.numeric(Days))%>%
+  mutate(Observed= as.numeric(FloDays))%>%
   mutate(Predicted=as.numeric(Floweringdays))%>%
 #dplyr::filter(Collection=="2014_2018")%>%
 group_by(Name1) %>%
