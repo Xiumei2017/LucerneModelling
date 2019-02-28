@@ -57,11 +57,12 @@ ObsPAR<-ObsL.Raw%>%
   dplyr::filter(Defoliation.x=="LL")%>%
   dplyr::filter(FD.x=="FD5")%>%
   dplyr::filter(Variable=="LAI"|Variable=="Fraction")%>%
-  dplyr::filter(Tb==1)
+  dplyr::filter(Tbb==1)
   
 summary(ObsPAR)
 ObsPAR
 ```
+##my theme
 ```{r}
 mytheme3<-theme(
      #legend.title = element_text(), 
@@ -124,7 +125,7 @@ ObsPL1%>%
  theme(axis.title.y=element_text(face="bold",colour="black",size = 12))+mytheme3+
  annotate("text", x=1.4, y=1, size = 5, label ="paste(y == 1-exp(-0.81*x),~~R^2==0.96 )", parse=T)+
 annotate("text", x=4.5, y=0.25, size = 5, label ="paste(LAIcrit==3.6)", parse=T)
-  #ggsave("D:/R/Pictures/PAR/Regrowth.png", width=8, height=5  , dpi=500) 
+  ggsave("D:/R/Pictures/PAR/Regrowth.png", width=8, height=5  , dpi=500) 
 ```
 ###seedling crop
 ```{r,fig.height=5, fig.width=10}
@@ -138,7 +139,7 @@ ObsPL1%>%
   facet_wrap(~Stage,ncol = 2)+
   stat_function(fun = test1,color="black",size=1)+mytheme3+theme(legend.title = element_blank())+
  annotate("text", x=1.5, y=1, size = 5, label ="paste(y == 1-exp(-0.76*x),~~R^2==0.90 )", parse=T)
-  #ggsave("D:/R/Pictures/PAR/Seedling.png", width=8, height=5  , dpi=500) 
+  ggsave("D:/R/Pictures/PAR/Seedling.png", width=8, height=5  , dpi=500) 
 ```
 
 
@@ -335,7 +336,7 @@ ggplot(result, aes(x = x, y = fitted)) +
 
 ```{r}
 TtA1<-TtA%>%
-  dplyr::filter(Tb==1)%>%
+  dplyr::filter(Tbb==1)%>%
   dplyr::select(radn,Clock.Today,ExpUnitCode,GrowthSeason,Rotation)
   
 obsA1<-obsA%>%
@@ -437,7 +438,7 @@ obsTDM<-ObsL.Raw%>%
   dplyr::filter(Water.x=="irr")%>%
   dplyr::filter(Defoliation.x=="LL")%>%
   dplyr::filter(FD.x=="FD5")%>%
-  dplyr::filter(Tb==1)%>%
+  dplyr::filter(Tbb==1)%>%
   dplyr::filter(Variable=="shootbiomass"|Variable=="RootWt")
 
   

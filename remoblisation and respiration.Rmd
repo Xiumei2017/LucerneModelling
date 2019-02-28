@@ -1676,7 +1676,7 @@ write.csv(P.E3ILL,"D:/R/Respiration/P.E3ILL.csv", row.names = FALSE)
 ```{r}
 fPAR.df%>%
   dplyr::filter(ID=="E3ILL")%>%
-ggplot(aes(x=Clock.Today,y=production.sum2))+geom_line(size=1)+theme_bw()+
+ggplot(aes(x=Clock.Today,y=production.sum1))+geom_line(size=1)+theme_bw()+
  geom_point(data=E3ILLS1,aes(x=Clock.Today,y=shootbiomass,color="red",size=2))+
  ##facet_grid(Variable~ID)+ggtitle(paste0("E5ILLF5"))+
  xlab("Date")+ylab("Biomass (kg/ha)")+mytheme3+ theme(legend.title=element_blank(),legend.position = "blank")
