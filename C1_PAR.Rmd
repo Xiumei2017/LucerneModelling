@@ -125,7 +125,7 @@ ObsPL1%>%
  theme(axis.title.y=element_text(face="bold",colour="black",size = 12))+mytheme3+
  annotate("text", x=1.4, y=1, size = 5, label ="paste(y == 1-exp(-0.81*x),~~R^2==0.96 )", parse=T)+
 annotate("text", x=4.5, y=0.25, size = 5, label ="paste(LAIcrit==3.6)", parse=T)
-  ggsave("D:/R/Pictures/PAR/Regrowth.png", width=8, height=5  , dpi=500) 
+  #ggsave("D:/R/Pictures/PAR/Regrowth.png", width=8, height=5  , dpi=500) 
 ```
 ###seedling crop
 ```{r,fig.height=5, fig.width=10}
@@ -334,23 +334,24 @@ ggplot(result, aes(x = x, y = fitted)) +
 ##PAR
 ###dataframe format
 
+
 ```{r}
 TtA1<-TtA%>%
   dplyr::filter(Tbb==1)%>%
-  dplyr::select(radn,Clock.Today,ExpUnitCode,GrowthSeason,Rotation)
+  dplyr::select(year,day,rain,maxt,mint,mean,radn,wind,vp,Pp,Tbb,TTbroken,TTfick,TTbeta,GrowthSeason,Rotation, Clock.Today,ExpUnitCode,Tt_beta_sum,Tt_fick_sum,Tt_broken_sum,Ppm,Tmean)
   
 obsA1<-obsA%>%
-  dplyr::filter(Variable=="Fraction")%>%
-  dplyr::select(Clock.Today, Name, Collection, Experiment,Variable,VariableUnits,Observed,StdDEV,ExpUnitCode,StartDate,MidDate,FinishDate)
+  dplyr::filter(Variable=="LAI")%>%
+  dplyr::select(Clock.Today, Name, Collection,Water,Defoliation,SowingDate,FD, Experiment,Variable,VariableUnits,Observed,StdDEV,ExpUnitCode,StartDate,MidDate,FinishDate,ExperimentID,TreatmentID,ID)
 
-ObsPAR.Raw <-merge(obsA1,TtA1,by=c("ExpUnitCode"))%>%
-  mutate(fPAR=as.factor(ifelse(Clock.Today.x==Clock.Today.y,Observed,"NA")))%>%
-  mutate(fPAR=as.factor(ifelse(Clock.Today.y==StartDate,0.1,paste0(fPAR))))%>%
-  mutate(StdDEV1=as.factor(ifelse(Clock.Today.x==Clock.Today.y,StdDEV,"NA")))%>%
+ObsLAI.Raw <-merge(obsA1,TtA1,by=c("ExpUnitCode"))%>%
+  #mutate(fPAR=as.factor(ifelse(Clock.Today.x==Clock.Today.y,Observed,"NA")))%>%
+ # mutate(fPAR=as.factor(ifelse(Clock.Today.y==StartDate,0.1,paste0(fPAR))))%>%
+  #mutate(StdDEV1=as.factor(ifelse(Clock.Today.x==Clock.Today.y,StdDEV,"NA")))%>%
   dplyr::select(-Clock.Today.x,-Observed,-StdDEV)%>%
   unique()
-write.csv(ObsPAR.Raw,"D:/R/ObsPAR.Raw.csv", row.names = FALSE)
-
+#write.csv(ObsPAR.Raw,"D:/R/ObsPAR.Raw.csv", row.names = FALSE)
+write.csv(ObsLAI.Raw,"D:/R/ObsLAI.Raw.csv", row.names = FALSE)
 ```
 ###fPAR interpolate for each rotation
 

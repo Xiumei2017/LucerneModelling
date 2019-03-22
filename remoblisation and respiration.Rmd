@@ -54,6 +54,65 @@ summary(obsAR)
 
 
 ```
+
+## lode all shoot observed data
+```{r}
+upDir <- "D:/R/CombinedData/"
+obsData <- "D:/R/CombinedData/"
+
+obsAll <- read.table(paste0(obsData, "ObsAll1.txt"),
+                   header = TRUE)
+obsA1<- obsAll %>%
+  dplyr::filter(Collection=="2000_2002")%>%
+  mutate(StartDate=dmy(StartDate),MidDate=dmy(MidDate),FinishDate=dmy(FinishDate),Clock.Today=dmy(Clock.Today)) %>%
+  #mutate(SowingDate=as.factor(ifelse(SowingDate=="no","Sd_No",paste0("Sd_",SowingDate)))) %>% # assume this is typo to be fixed?
+  mutate(GrowthSeason1=as.factor(paste0("Gs_",GrowthSeason))) %>% # creating more intuitive labels here
+  mutate(Rotation1=as.factor(paste0("Rt_",Rotation))) %>%
+  mutate(ExpUnitCode=as.factor(paste0(Name,GrowthSeason1,Rotation1))) %>%
+  mutate(Clock.Today1 = as.POSIXct(paste(Clock.Today,Time),format="%Y-%m-%d %H:%M:%S"))%>%
+  mutate(GrowthSeason2=as.factor(paste0("Y",GrowthSeason,"(",Period,")"))) %>%
+ mutate(Rotation2=as.factor(ifelse(Rotation=="1",paste0("S",Rotation),paste0("R",Rotation))))
+
+obsA4<- obsAll %>%
+  dplyr::filter(Collection=="2014_2018")%>%
+  mutate(StartDate=dmy(StartDate),MidDate=dmy(MidDate),FinishDate=dmy(FinishDate),Clock.Today=dmy(Clock.Today)) %>%
+  #mutate(SowingDate=as.factor(ifelse(SowingDate=="no","Sd_No",paste0("Sd_",SowingDate)))) %>% # assume this is typo to be fixed?
+  mutate(GrowthSeason1=as.factor(paste0("Gs_",GrowthSeason))) %>% # creating more intuitive labels here
+  mutate(Rotation1=as.factor(paste0("Rt_",Rotation))) %>%
+  mutate(ExpUnitCode=as.factor(paste0(Name,GrowthSeason1,Rotation1))) %>%
+  mutate(Clock.Today1 = as.POSIXct(paste(Clock.Today,Time),format="%Y-%m-%d %H:%M:%S"))%>%
+  mutate(GrowthSeason2=as.factor(paste0("Y",GrowthSeason,"(",Period,")"))) %>%
+  mutate(Rotation2=as.factor(ifelse(Rotation=="1",paste0("S",Rotation),paste0("R",Rotation))))
+ 
+
+  obsA2<- obsAll %>%
+  dplyr::filter(Collection=="1997_2001")%>%
+  mutate(StartDate=dmy(StartDate),MidDate=dmy(MidDate),FinishDate=dmy(FinishDate),Clock.Today=dmy(Clock.Today)) %>%
+  #mutate(SowingDate=as.factor(ifelse(SowingDate=="no","Sd_No",paste0("Sd_",SowingDate)))) %>% # assume this is typo to be fixed?
+  mutate(GrowthSeason1=as.factor(paste0("Gs_",GrowthSeason))) %>% # creating more intuitive labels here
+  mutate(Rotation1=as.factor(paste0("Rt_",Rotation))) %>%
+  mutate(ExpUnitCode=as.factor(paste0(Name,GrowthSeason1,Rotation1))) %>%
+  mutate(Clock.Today1 = as.POSIXct(paste(Clock.Today,Time),format="%Y-%m-%d %H:%M:%S"))%>%
+  mutate(GrowthSeason2=as.factor(paste0("Y",GrowthSeason,"(",Period,")"))) %>%
+  mutate(Rotation2=as.factor(paste0("R",Rotation)))
+  
+
+  obsA3<- obsAll %>%
+  dplyr::filter(Collection=="2002_2004")%>%
+  mutate(StartDate=dmy(StartDate),MidDate=dmy(MidDate),FinishDate=dmy(FinishDate),Clock.Today=dmy(Clock.Today)) %>%
+  #mutate(SowingDate=as.factor(ifelse(SowingDate=="no","Sd_No",paste0("Sd_",SowingDate)))) %>% # assume this is typo to be fixed?
+  mutate(GrowthSeason1=as.factor(paste0("Gs_",GrowthSeason))) %>% # creating more intuitive labels here
+  mutate(Rotation1=as.factor(paste0("Rt_",Rotation))) %>%
+  mutate(ExpUnitCode=as.factor(paste0(Name,GrowthSeason1,Rotation1))) %>%
+  mutate(Clock.Today1 = as.POSIXct(paste(Clock.Today,Time),format="%Y-%m-%d %H:%M:%S"))%>%
+  mutate(GrowthSeason2=as.factor(paste0("Y",GrowthSeason,"(",Period,")"))) %>%
+  mutate(Rotation2=as.factor(paste0("R",Rotation)))
+  
+obsA<-rbind(obsA2,obsA3,obsA1,obsA4)
+summary(obsA)
+ obsA
+```
+###load Defoliation data
 ```{r}
 upDir <- "D:/R/CombinedData/"
 obsData <- "D:/R/CombinedData/"
@@ -465,34 +524,6 @@ ggplot(aes(x=Clock.Today,y=Observed,color=Variable))+geom_line(size=1)+theme_bw(
      legend.title = element_text(colour="black", size=14, face="bold"),
      axis.text = element_text(face = "bold", vjust = 0.5, size = 14))
 ggsave("D:/R/Pictures/C5/Yield/E5IHHF5.png", width=8, height=6, dpi=500)
-```
-```{r,fig.height=6, fig.width=8}
-obsDSR$Variable<- factor(obsDSR$Variable, levels=c("shootbiomass","RootWt"))
-E5IHHFD2<-obsDSR%>%
-  filter(ID=="E5IHHF2")%>%
-  mutate(GrowthRotation=paste0(GrowthSeason,Rotation))
-E5IHHFD2%>%
-ggplot(aes(x=Clock.Today,y=Observed,color=Variable))+geom_line(size=1)+theme_bw()+
-  geom_point(aes(x=Clock.Today,y=Observed))+geom_point(size=3)+
-  facet_grid(Variable~ID)+ggtitle(paste0("E5IHHF5"))+
-  theme(legend.title=element_blank(),legend.position = "blank")+xlab("Date")+ylab("Biomass (kg/ha)")+
-  #remove grid lines 
-   theme(
-     panel.spacing=unit(.01, "lines"),
-     panel.border = element_rect(colour = "black",size=1), 
-     panel.grid.major = element_blank(),
-     panel.grid.minor = element_blank(),
-     axis.line = element_line(colour = "black",size = 1),
-     axis.text.x = element_text(face = "plain", color = "black", size = 14, vjust=0.5, hjust = 1),
-     axis.text.y = element_text(face = "plain", color = "black", size = 14),
-     axis.title.x=element_text(face="bold",colour="black",size = 14),
-     axis.title.y=element_text(face="bold",colour="black",size = 14),
-     strip.background = element_rect(colour = "black", fill = "white",size=1),
-     strip.text.x = element_text(size=14, angle=0, face = "plain"), 
-     strip.text.y = element_text(size=14, face="plain"),
-     legend.title = element_text(colour="black", size=14, face="bold"),
-     axis.text = element_text(face = "bold", vjust = 0.5, size = 14))
-ggsave("D:/R/Pictures/C5/Yield//E5IHHF2.png", width=8, height=6, dpi=500)
 ```
 
 
@@ -1452,6 +1483,7 @@ Rootmet <- read.table(paste0(obsData, "RootMet.txt"),
                    header = TRUE) %>%
   dplyr::filter(ExpName!="Iversen_91DefoliationLSGs_1Rt_8")%>%
   dplyr::filter(ExpName!="Iversen_121DefoliationLLFDFD5Gs_3Rt_6")
+  #dplyr::filter(ExpName!="Iversen_8WaterirrGs_5Rt_3")
 
 ```
 ###Interpoluate
@@ -1644,6 +1676,440 @@ summary(fPAR.df)
 fPAR.df
 write.csv(fPAR.df,"D:/R/fPARoot1.df.csv", row.names = FALSE)
 ```
+###shoot RUE for increasing and decreasing potoperiod
+```{r}
+UniExp <- unique(Tem.factor$ExpName)
+
+fPAR.df.Inc <- data.frame()
+  
+for(i in 1:length(UniExp))
+{
+  
+ RootmetfPAR<-Tem.factor %>%
+   #filter(Trend=="Inc")%>%
+   filter(ExpName==UniExp[i])%>%
+  mutate(Tt_broken_sum=as.numeric(Tt_broken_sum))
+  
+ fPAR.data.Inc<-RootmetfPAR%>%
+  mutate(fPAR=approx(Tt_broken_sum, Franction, xout =Tt_broken_sum, 
+         method="linear", 
+         rule = 2)$y)%>%     ##interpolate function 
+ mutate(PARi=radn*fPAR)%>% 
+    unique()%>%
+     ##accmulated function
+ mutate(Production.day0 = PARi*5.0*T.factor)%>%               ###RUE is 0.50g/MJ
+ mutate(Production.sum0 = cumsum(Production.day0))%>%
+ mutate(Production.day1 = PARi*5.5*T.factor)%>%               ###RUE is 0.55g/MJ
+ mutate(Production.sum1 = cumsum(Production.day1))%>%
+ mutate(Production.day2 = PARi*6.0*T.factor)%>%               ###RUE is 0.6g/MJ
+ mutate(Production.sum2 = cumsum(Production.day2))%>%
+ mutate(Production.day3 = PARi*6.5*T.factor)%>%               ###RUE is 0.65g/MJ
+ mutate(Production.sum3 = cumsum(Production.day3))%>%
+ mutate(Production.day4 = PARi*7*T.factor)%>%               ###RUE is 0.7 g/MJ
+ mutate(Production.sum4 = cumsum(Production.day4))%>% 
+ mutate(Production.day5 = PARi*7.5*T.factor)%>%               ###RUE is 0.75g/MJ
+ mutate(Production.sum5 = cumsum(Production.day5))%>%  
+ mutate(Production.day6 = PARi*8*T.factor)%>%               ###RUE is 0.8 g/MJ
+ mutate(Production.sum6 = cumsum(Production.day6))%>%    
+ mutate(Production.day7 = PARi*8.5*T.factor)%>%               ###RUE is 0.85g/MJ
+ mutate(Production.sum7 = cumsum(Production.day7))%>% 
+ mutate(Production.day8 = PARi*9*T.factor)%>%               ###RUE is 0.9g/MJ
+ mutate(Production.sum8 = cumsum(Production.day8))%>%
+ mutate(Production.day9 = PARi*9.5*T.factor)%>%               ###RUE is 0.95g/MJ
+ mutate(Production.sum9 = cumsum(Production.day9))%>% 
+ mutate(Production.day10 = PARi*10*T.factor)%>%               ###RUE is 1 g/MJ
+ mutate(Production.sum10 = cumsum(Production.day10))%>%  
+ mutate(Production.day11 = PARi*10.5*T.factor)%>%               ###RUE is 1.05g/MJ
+ mutate(Production.sum11 = cumsum(Production.day11))%>%  
+ mutate(Production.day12 = PARi*11*T.factor)%>%               ###RUE is 1.1 g/MJ
+ mutate(Production.sum12 = cumsum(Production.day12))%>%  
+ mutate(Production.day13 = PARi*11.5*T.factor)%>%               ###RUE is1.15 g/MJ
+ mutate(Production.sum13 = cumsum(Production.day13))%>%
+ mutate(Production.day14 = PARi*12*T.factor)%>%               ###RUE is 1.2 g/MJ
+ mutate(Production.sum14 = cumsum(Production.day14))%>% 
+ mutate(Production.day15 = PARi*12.5*T.factor)%>%               ###RUE is 1.25g/MJ
+ mutate(Production.sum15 = cumsum(Production.day15))%>%  
+ mutate(Production.day16 = PARi*13*T.factor)%>%               ###RUE is 1.3g/MJ
+ mutate(Production.sum16 = cumsum(Production.day16))%>%  
+ mutate(Production.day17 = PARi*13.5*T.factor)%>%               ###RUE is 1.35g/MJ
+ mutate(Production.sum17 = cumsum(Production.day17))%>% 
+ mutate(Production.day18 = PARi*14.0*T.factor)%>%               ###RUE is 1.4g/MJ
+ mutate(Production.sum18 = cumsum(Production.day18))%>% 
+ mutate(Production.day19 = PARi*14.5*T.factor)%>%               ###RUE is 1.45g/MJ
+ mutate(Production.sum19 = cumsum(Production.day19))%>% 
+ mutate(Production.day20 = PARi*15*T.factor)%>%                ###RUE is 1.5g/MJ
+ mutate(Production.sum20 = cumsum(Production.day20))%>%
+ mutate(Production.dayA = PARi*5)%>%                         ###RUE is 0.5 g/MJ
+ mutate(Production.sumA = cumsum(Production.dayA))%>%  
+ mutate(Production.dayB = PARi*5.5)%>%                       ###RUE is 0.55 g/MJ
+ mutate(Production.sumB = cumsum(Production.dayB))%>% 
+ mutate(Production.dayC = PARi*6)%>%                          ###RUE is 0.6 g/MJ
+ mutate(Production.sumC = cumsum(Production.dayC))%>% 
+ mutate(Production.dayD = PARi*6.5)%>%                        ###RUE is 0.65 g/MJ
+ mutate(Production.sumD = cumsum(Production.dayD))%>% 
+ mutate(Production.dayE  = PARi*7)%>%                          ###RUE is 0.7 g/MJ
+ mutate(Production.sumE  = cumsum(Production.dayE))%>%  
+ mutate(Production.dayF = PARi*7.5)%>%                        ###RUE is 0.75 g/MJ
+ mutate(Production.sumF = cumsum(Production.dayF))%>%  
+ mutate(Production.dayG = PARi*8)%>%                          ###RUE is 0.8 g/MJ
+ mutate(Production.sumG = cumsum(Production.dayG))%>% 
+ mutate(Production.dayH = PARi*8.5)%>%                         ###RUE is 0.85 g/MJ
+ mutate(Production.sumH = cumsum(Production.dayH))%>% 
+ mutate(Production.dayI = PARi*9 )%>%                            ###RUE is 0.9 g/MJ
+ mutate(Production.sumI = cumsum(Production.dayI))%>% 
+ mutate(Production.dayJ = PARi*9.5)%>%                           ###RUE is 0.95g/MJ
+ mutate(Production.sumJ = cumsum(Production.dayJ))%>%
+ mutate(Production.dayK = PARi*10)%>%                            ###RUE is 1 g/MJ
+ mutate(Production.sumK = cumsum(Production.dayK))%>%
+ mutate(Production.dayL = PARi*10.5)%>%                         ###RUE is 1.05g/MJ
+ mutate(Production.sumL = cumsum(Production.dayL))%>%
+ mutate(Production.dayM = PARi*11)%>%                            ###RUE is 1.1g/MJ
+ mutate(Production.sumM = cumsum(Production.dayM))%>%
+ mutate(AccPARi=cumsum(PARi))
+
+ fPAR.df.Inc<- rbind( fPAR.df.Inc, fPAR.data.Inc)
+
+}
+
+summary(fPAR.df.Inc)
+fPAR.df.Inc
+write.csv(fPAR.df.Inc,"D:/R/fPAR.df.Inc.csv", row.names = FALSE)
+
+
+```
+
+####Increasing Pp
+###RUE testing for all treatment in LL
+
+```{r,width=8, height=8}
+
+ShootInc.LL <- fPAR.df.Inc %>%
+  filter(Defoliation=="LL")%>%
+  filter(shootbiomass!="NA")%>%
+  filter(shootbiomass!=0)%>%
+  filter(Trend=="Inc")%>%
+  filter(Stage!="Seedling")%>%
+  filter(fPAR!=0)%>%
+  dplyr::select(ExperimentID,TreatmentID,ID,Clock.Today,ExpName,shootbiomass, Tearth,Trend,Production.sum0,Production.sum1,Production.sum2,Production.sum3,Production.sum4,Production.sum5,Production.sum6,Production.sum7,Production.sum8,Production.sum9,Production.sum10,Production.sum11,Production.sum12,Production.sum13,Production.sum14,Production.sum15,Production.sum16,Production.sum17,Production.sum18,Production.sum19,Production.sum20,Production.sumA,Production.sumB,Production.sumC,Production.sumD,Production.sumE,Production.sumF,Production.sumG,Production.sumH,Production.sumI,Production.sumJ,Production.sumK,Production.sumL,Production.sumM) %>%
+  tidyr::gather("Variable","Predicted",Production.sum0:Production.sumM)
+
+
+ShootInc.LL $Variable<-factor(ShootInc.LL$Variable, levels=c("Production.sum0","Production.sum1","Production.sum2","Production.sum3","Production.sum4","Production.sum5","Production.sum6","Production.sum7","Production.sum8","Production.sum9","Production.sum10","Production.sum11","Production.sum12","Production.sum13","Production.sum14","Production.sum15","Production.sum16","Production.sum17","Production.sum18","Production.sum19","Production.sum20","Production.sumA","Production.sumB","Production.sumC","Production.sumD","Production.sumE","Production.sumF","Production.sumG","Production.sumH","Production.sumI","Production.sumJ","Production.sumK","Production.sumL","Production.sumM"))
+
+ShootInc.LL%>%
+  ggplot(aes(x=shootbiomass, y= Predicted, colour= factor(ID))) +
+  geom_point(size=2)+theme_bw()+
+  geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="darkgrey") +
+  geom_abline(intercept = 0, slope = 1) +
+  coord_fixed(ratio = 1)+
+  ggtitle("Shoot biomass (Inc)")+
+  facet_wrap(~Variable, ncol = 6)+
+  theme_bw()+mytheme3+
+   scale_x_continuous(breaks = seq(2000,8000, by =3000), limits=c(0,8000))+
+  scale_y_continuous(breaks = seq(2000, 6000, by =2000), limits=c(0,8000))+
+  ylab("Predicted")+xlab("Observed") 
+  #theme(legend.title=element_blank(),legend.position = "blank")
+
+ ggsave("D:/R/Pictures/C5/Yield/RUEshootInc.LL.png", width=8, height=8, dpi=500)
+ 
+```
+###Stistic analysis for increasing Pp
+```{r}
+
+ShootInc.LL %>%
+  mutate(Observed=shootbiomass)%>%
+  filter()%>%
+  group_by(Variable) %>%
+  summarise(
+    n = n(),
+    r2 = gauchStats(Predicted,Observed)[5],
+  #  rmse = round(rmse(Predicted,Observed),0),
+    r_rmse = round(rmse(Predicted,Observed)/mean(Observed)*100,1),
+    nse = round(NSE(Predicted,Observed),1),
+    sb = gauchStats(Predicted,Observed)[1],
+  nu = gauchStats(Predicted,Observed)[2],
+  lc = gauchStats(Predicted,Observed)[3]
+  )
+
+```
+####Decreasing Pp
+###RUE testing for all treatment in LL
+
+```{r,width=8, height=8}
+
+ShootDec.LL <- fPAR.df.Inc %>%
+  filter(Defoliation=="LL")%>%
+  filter(shootbiomass!="NA")%>%
+  filter(shootbiomass!=0)%>%
+  filter(Trend=="Dec")%>%
+  filter(Stage!="Seedling")%>%
+  filter(fPAR!=0)%>%
+  dplyr::select(ExperimentID,TreatmentID,ID,Clock.Today,ExpName,shootbiomass, Tearth,Trend,Production.sum0,Production.sum1,Production.sum2,Production.sum3,Production.sum4,Production.sum5,Production.sum6,Production.sum7,Production.sum8,Production.sum9,Production.sum10,Production.sum11,Production.sum12,Production.sum13,Production.sum14,Production.sum15,Production.sum16,Production.sum17,Production.sum18,Production.sum19,Production.sum20,Production.sumA,Production.sumB,Production.sumC,Production.sumD,Production.sumE,Production.sumF,Production.sumG,Production.sumH,Production.sumI,Production.sumJ,Production.sumK,Production.sumL,Production.sumM) %>%
+  tidyr::gather("Variable","Predicted",Production.sum0:Production.sumM)
+
+
+ShootDec.LL $Variable<-factor(ShootDec.LL$Variable, levels=c("Production.sum0","Production.sum1","Production.sum2","Production.sum3","Production.sum4","Production.sum5","Production.sum6","Production.sum7","Production.sum8","Production.sum9","Production.sum10","Production.sum11","Production.sum12","Production.sum13","Production.sum14","Production.sum15","Production.sum16","Production.sum17","Production.sum18","Production.sum19","Production.sum20","Production.sumA","Production.sumB","Production.sumC","Production.sumD","Production.sumE","Production.sumF","Production.sumG","Production.sumH","Production.sumI","Production.sumJ","Production.sumK","Production.sumL","Production.sumM"))
+
+ShootDec.LL%>%
+  ggplot(aes(x=shootbiomass, y= Predicted, colour= factor(ID))) +
+  geom_point(size=2)+theme_bw()+
+  geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="darkgrey") +
+  geom_abline(intercept = 0, slope = 1) +
+  coord_fixed(ratio = 1)+
+  ggtitle("Shoot biomass (Inc)")+
+  facet_wrap(~Variable, ncol = 6)+
+  theme_bw()+mytheme3+
+   scale_x_continuous(breaks = seq(2000,8000, by =3000), limits=c(0,8000))+
+  scale_y_continuous(breaks = seq(2000, 6000, by =2000), limits=c(0,8000))+
+  ylab("Predicted")+xlab("Observed") 
+  #theme(legend.title=element_blank(),legend.position = "blank")
+
+ ggsave("D:/R/Pictures/C5/Yield/RUEshootDec.LL.png", width=8, height=8, dpi=500)
+ 
+```
+
+###Stistic analysis for Decreasing Pp
+```{r}
+
+ShootDec.LL %>%
+  mutate(Observed=shootbiomass)%>%
+  filter()%>%
+  group_by(Variable) %>%
+  summarise(
+    n = n(),
+    r2 = gauchStats(Predicted,Observed)[5],
+  #  rmse = round(rmse(Predicted,Observed),0),
+    r_rmse = round(rmse(Predicted,Observed)/mean(Observed)*100,1),
+    nse = round(NSE(Predicted,Observed),1),
+    sb = gauchStats(Predicted,Observed)[1],
+  nu = gauchStats(Predicted,Observed)[2],
+  lc = gauchStats(Predicted,Observed)[3]
+  )
+
+```
+
+####Increasing Pp
+###RUE testing for all treatment in DF
+
+```{r,width=8, height=8}
+
+ShootInc.DF <- fPAR.df.Inc %>%
+  filter(Defoliation!="LL")%>%
+  filter(Defoliation!="HH")%>%
+  filter(shootbiomass!="NA")%>%
+  filter(shootbiomass!=0)%>%
+  filter(Trend=="Inc")%>%
+  filter(Stage!="Seedling")%>%
+  filter(fPAR!=0)%>%
+  dplyr::select(ExperimentID,TreatmentID,ID,Clock.Today,ExpName,shootbiomass, Tearth,Trend,Production.sum0,Production.sum1,Production.sum2,Production.sum3,Production.sum4,Production.sum5,Production.sum6,Production.sum7,Production.sum8,Production.sum9,Production.sum10,Production.sum11,Production.sum12,Production.sum13,Production.sum14,Production.sum15,Production.sum16,Production.sum17,Production.sum18,Production.sum19,Production.sum20,Production.sumA,Production.sumB,Production.sumC,Production.sumD,Production.sumE,Production.sumF,Production.sumG,Production.sumH,Production.sumI,Production.sumJ,Production.sumK,Production.sumL,Production.sumM) %>%
+  tidyr::gather("Variable","Predicted",Production.sum0:Production.sumM)
+
+
+ShootInc.DF $Variable<-factor(ShootInc.DF$Variable, levels=c("Production.sum0","Production.sum1","Production.sum2","Production.sum3","Production.sum4","Production.sum5","Production.sum6","Production.sum7","Production.sum8","Production.sum9","Production.sum10","Production.sum11","Production.sum12","Production.sum13","Production.sum14","Production.sum15","Production.sum16","Production.sum17","Production.sum18","Production.sum19","Production.sum20","Production.sumA","Production.sumB","Production.sumC","Production.sumD","Production.sumE","Production.sumF","Production.sumG","Production.sumH","Production.sumI","Production.sumJ","Production.sumK","Production.sumL","Production.sumM"))
+
+ShootInc.DF%>%
+  ggplot(aes(x=shootbiomass, y= Predicted, colour= factor(ID))) +
+  geom_point(size=2)+theme_bw()+
+  geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="darkgrey") +
+  geom_abline(intercept = 0, slope = 1) +
+  coord_fixed(ratio = 1)+
+  ggtitle("Shoot biomass (Inc)")+
+  facet_wrap(~Variable, ncol = 6)+
+  theme_bw()+mytheme3+
+   scale_x_continuous(breaks = seq(2000,8000, by =3000), limits=c(0,8000))+
+  scale_y_continuous(breaks = seq(2000, 6000, by =2000), limits=c(0,8000))+
+  ylab("Predicted")+xlab("Observed") 
+  #theme(legend.title=element_blank(),legend.position = "blank")
+
+ ggsave("D:/R/Pictures/C5/Yield/RUEshootInc.DF.png", width=8, height=8, dpi=500)
+ 
+```
+###Stistic analysis for increasing Pp
+```{r}
+
+ShootInc.DF %>%
+  mutate(Observed=shootbiomass)%>%
+  filter()%>%
+  group_by(Variable) %>%
+  summarise(
+    n = n(),
+    r2 = gauchStats(Predicted,Observed)[5],
+  #  rmse = round(rmse(Predicted,Observed),0),
+    r_rmse = round(rmse(Predicted,Observed)/mean(Observed)*100,1),
+    nse = round(NSE(Predicted,Observed),1),
+    sb = gauchStats(Predicted,Observed)[1],
+  nu = gauchStats(Predicted,Observed)[2],
+  lc = gauchStats(Predicted,Observed)[3]
+  )
+
+```
+####Decreasing Pp
+###RUE testing for all treatment in DF
+
+```{r,width=8, height=8}
+
+ShootDec.DF <- fPAR.df.Inc %>%
+  filter(Defoliation!="LL")%>%
+  filter(Defoliation!="HH")%>%
+  filter(shootbiomass!="NA")%>%
+  filter(shootbiomass!=0)%>%
+  filter(Trend=="Dec")%>%
+  filter(Stage!="Seedling")%>%
+  filter(fPAR!=0)%>%
+  dplyr::select(ExperimentID,TreatmentID,ID,Clock.Today,ExpName,shootbiomass, Tearth,Trend,Production.sum0,Production.sum1,Production.sum2,Production.sum3,Production.sum4,Production.sum5,Production.sum6,Production.sum7,Production.sum8,Production.sum9,Production.sum10,Production.sum11,Production.sum12,Production.sum13,Production.sum14,Production.sum15,Production.sum16,Production.sum17,Production.sum18,Production.sum19,Production.sum20,Production.sumA,Production.sumB,Production.sumC,Production.sumD,Production.sumE,Production.sumF,Production.sumG,Production.sumH,Production.sumI,Production.sumJ,Production.sumK,Production.sumL,Production.sumM) %>%
+  tidyr::gather("Variable","Predicted",Production.sum0:Production.sumM)
+
+
+ShootDec.DF $Variable<-factor(ShootDec.DF$Variable, levels=c("Production.sum0","Production.sum1","Production.sum2","Production.sum3","Production.sum4","Production.sum5","Production.sum6","Production.sum7","Production.sum8","Production.sum9","Production.sum10","Production.sum11","Production.sum12","Production.sum13","Production.sum14","Production.sum15","Production.sum16","Production.sum17","Production.sum18","Production.sum19","Production.sum20","Production.sumA","Production.sumB","Production.sumC","Production.sumD","Production.sumE","Production.sumF","Production.sumG","Production.sumH","Production.sumI","Production.sumJ","Production.sumK","Production.sumL","Production.sumM"))
+
+ShootDec.DF%>%
+  ggplot(aes(x=shootbiomass, y= Predicted, colour= factor(ID))) +
+  geom_point(size=2)+theme_bw()+
+  geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="darkgrey") +
+  geom_abline(intercept = 0, slope = 1) +
+  coord_fixed(ratio = 1)+
+  ggtitle("Shoot biomass (Inc)")+
+  facet_wrap(~Variable, ncol = 6)+
+  theme_bw()+mytheme3+
+   scale_x_continuous(breaks = seq(2000,8000, by =3000), limits=c(0,8000))+
+  scale_y_continuous(breaks = seq(2000, 6000, by =2000), limits=c(0,8000))+
+  ylab("Predicted")+xlab("Observed") 
+  #theme(legend.title=element_blank(),legend.position = "blank")
+
+ ggsave("D:/R/Pictures/C5/Yield/RUEshootDec.DF.png", width=8, height=8, dpi=500)
+ 
+```
+
+###Stistic analysis for Decreasing Pp
+```{r}
+
+ShootDec.DF %>%
+  mutate(Observed=shootbiomass)%>%
+  filter()%>%
+  group_by(Variable) %>%
+  summarise(
+    n = n(),
+    r2 = gauchStats(Predicted,Observed)[5],
+  #  rmse = round(rmse(Predicted,Observed),0),
+    r_rmse = round(rmse(Predicted,Observed)/mean(Observed)*100,1),
+    nse = round(NSE(Predicted,Observed),1),
+    sb = gauchStats(Predicted,Observed)[1],
+  nu = gauchStats(Predicted,Observed)[2],
+  lc = gauchStats(Predicted,Observed)[3]
+  )
+
+```
+####Increasing Pp
+###RUE testing for all treatment in HH
+
+```{r,width=8, height=8}
+
+ShootInc.HH <- fPAR.df.Inc %>%
+  filter(Defoliation=="HH")%>%
+  filter(shootbiomass!="NA")%>%
+  filter(shootbiomass!=0)%>%
+  filter(Trend=="Inc")%>%
+  filter(Stage!="Seedling")%>%
+  filter(fPAR!=0)%>%
+  dplyr::select(ExperimentID,TreatmentID,ID,Clock.Today,ExpName,shootbiomass, Tearth,Trend,Production.sum0,Production.sum1,Production.sum2,Production.sum3,Production.sum4,Production.sum5,Production.sum6,Production.sum7,Production.sum8,Production.sum9,Production.sum10,Production.sum11,Production.sum12,Production.sum13,Production.sum14,Production.sum15,Production.sum16,Production.sum17,Production.sum18,Production.sum19,Production.sum20,Production.sumA,Production.sumB,Production.sumC,Production.sumD,Production.sumE,Production.sumF,Production.sumG,Production.sumH,Production.sumI,Production.sumJ,Production.sumK,Production.sumL,Production.sumM) %>%
+  tidyr::gather("Variable","Predicted",Production.sum0:Production.sumM)
+
+
+ShootInc.HH $Variable<-factor(ShootInc.HH$Variable, levels=c("Production.sum0","Production.sum1","Production.sum2","Production.sum3","Production.sum4","Production.sum5","Production.sum6","Production.sum7","Production.sum8","Production.sum9","Production.sum10","Production.sum11","Production.sum12","Production.sum13","Production.sum14","Production.sum15","Production.sum16","Production.sum17","Production.sum18","Production.sum19","Production.sum20","Production.sumA","Production.sumB","Production.sumC","Production.sumD","Production.sumE","Production.sumF","Production.sumG","Production.sumH","Production.sumI","Production.sumJ","Production.sumK","Production.sumL","Production.sumM"))
+
+ShootInc.HH%>%
+  ggplot(aes(x=shootbiomass, y= Predicted, colour= factor(ID))) +
+  geom_point(size=2)+theme_bw()+
+  geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="darkgrey") +
+  geom_abline(intercept = 0, slope = 1) +
+  coord_fixed(ratio = 1)+
+  ggtitle("Shoot biomass (Inc)")+
+  facet_wrap(~Variable, ncol = 6)+
+  theme_bw()+mytheme3+
+   scale_x_continuous(breaks = seq(2000,8000, by =3000), limits=c(0,8000))+
+  scale_y_continuous(breaks = seq(2000, 6000, by =2000), limits=c(0,8000))+
+  ylab("Predicted")+xlab("Observed") 
+  #theme(legend.title=element_blank(),legend.position = "blank")
+
+ ggsave("D:/R/Pictures/C5/Yield/RUEshootInc.HH.png", width=8, height=8, dpi=500)
+ 
+```
+
+###Stistic analysis for Decreasing Pp OF HH
+```{r}
+
+ShootInc.HH %>%
+  mutate(Observed=shootbiomass)%>%
+  filter()%>%
+  group_by(Variable) %>%
+  summarise(
+    n = n(),
+    r2 = gauchStats(Predicted,Observed)[5],
+  #  rmse = round(rmse(Predicted,Observed),0),
+    r_rmse = round(rmse(Predicted,Observed)/mean(Observed)*100,1),
+    nse = round(NSE(Predicted,Observed),1),
+    sb = gauchStats(Predicted,Observed)[1],
+  nu = gauchStats(Predicted,Observed)[2],
+  lc = gauchStats(Predicted,Observed)[3]
+  )
+
+```
+####Decreasing Pp
+###RUE testing for all treatment in HH
+
+```{r,width=8, height=8}
+
+ShootDec.HH <- fPAR.df.Inc %>%
+  filter(Defoliation=="HH")%>%
+  filter(shootbiomass!="NA")%>%
+  filter(shootbiomass!=0)%>%
+  filter(Trend=="Dec")%>%
+  filter(Stage!="Seedling")%>%
+  filter(fPAR!=0)%>%
+  dplyr::select(ExperimentID,TreatmentID,ID,Clock.Today,ExpName,shootbiomass, Tearth,Trend,Production.sum0,Production.sum1,Production.sum2,Production.sum3,Production.sum4,Production.sum5,Production.sum6,Production.sum7,Production.sum8,Production.sum9,Production.sum10,Production.sum11,Production.sum12,Production.sum13,Production.sum14,Production.sum15,Production.sum16,Production.sum17,Production.sum18,Production.sum19,Production.sum20,Production.sumA,Production.sumB,Production.sumC,Production.sumD,Production.sumE,Production.sumF,Production.sumG,Production.sumH,Production.sumI,Production.sumJ,Production.sumK,Production.sumL,Production.sumM) %>%
+  tidyr::gather("Variable","Predicted",Production.sum0:Production.sumM)
+
+
+ShootDec.HH $Variable<-factor(ShootDec.HH$Variable, levels=c("Production.sum0","Production.sum1","Production.sum2","Production.sum3","Production.sum4","Production.sum5","Production.sum6","Production.sum7","Production.sum8","Production.sum9","Production.sum10","Production.sum11","Production.sum12","Production.sum13","Production.sum14","Production.sum15","Production.sum16","Production.sum17","Production.sum18","Production.sum19","Production.sum20","Production.sumA","Production.sumB","Production.sumC","Production.sumD","Production.sumE","Production.sumF","Production.sumG","Production.sumH","Production.sumI","Production.sumJ","Production.sumK","Production.sumL","Production.sumM"))
+
+ShootDec.HH%>%
+  ggplot(aes(x=shootbiomass, y= Predicted, colour= factor(ID))) +
+  geom_point(size=2)+theme_bw()+
+  geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="darkgrey") +
+  geom_abline(intercept = 0, slope = 1) +
+  coord_fixed(ratio = 1)+
+  ggtitle("Shoot biomass (Inc)")+
+  facet_wrap(~Variable, ncol = 6)+
+  theme_bw()+mytheme3+
+   scale_x_continuous(breaks = seq(2000,8000, by =3000), limits=c(0,8000))+
+  scale_y_continuous(breaks = seq(2000, 6000, by =2000), limits=c(0,8000))+
+  ylab("Predicted")+xlab("Observed") 
+  #theme(legend.title=element_blank(),legend.position = "blank")
+
+ ggsave("D:/R/Pictures/C5/Yield/RUEshootDec.HH.png", width=8, height=8, dpi=500)
+ 
+```
+
+###Stistic analysis for Decreasing Pp OF HH
+```{r}
+
+ShootDec.HH %>%
+  mutate(Observed=shootbiomass)%>%
+  filter()%>%
+  group_by(Variable) %>%
+  summarise(
+    n = n(),
+    r2 = gauchStats(Predicted,Observed)[5],
+  #  rmse = round(rmse(Predicted,Observed),0),
+    r_rmse = round(rmse(Predicted,Observed)/mean(Observed)*100,1),
+    nse = round(NSE(Predicted,Observed),1),
+    sb = gauchStats(Predicted,Observed)[1],
+  nu = gauchStats(Predicted,Observed)[2],
+  lc = gauchStats(Predicted,Observed)[3]
+  )
+
+```
+
 
 ###calculated protential yield and remoblisation
 ###merge PARi and observed data
@@ -1844,6 +2310,7 @@ Biomass1<-Biomass%>%
   mutate(PT=Tt_fick_sum/Pp)%>%
   mutate(per=Partitioning/production.sum)%>%
   filter(ExperimentID=="E3")%>%
+  
   filter(Partitioning!="NA")
 
 Biomass1%>%
@@ -1856,6 +2323,53 @@ Biomass1%>%
 ggsave("D:/R/Pictures/C5/Yield/rootstorage.png", width=8, height=6, dpi=500)
 
 ```
+###shoot and total RUE
+```{r}
+RUEshoot<-Biomass%>%
+  dplyr::filter(shootbiomass!="NA")%>%
+  mutate(Shootbiomass1=shootbiomass*0.1)
+
+RUE.shoot<-RUEshoot%>%
+  group_by(GrowthSeason,Rotation,ID,ExperimentID,Tmean,Ppm, FD, Defoliation,Trend) %>%
+  do(mod = lm(Shootbiomass1~AccPARi,data=.)) %>%
+  mutate(RUE.shoot = summary(mod)$coeff[2]) %>%
+  dplyr::select(-mod)
+
+```
+###RUE
+```{r,width=8, height=8}
+RUE.shoot%>%
+  filter(RUE.shoot<2)%>%
+  filter(RUE.shoot>0)%>%
+  #filter(Defoliation=="LL")%>%
+  ggplot(aes(x=Tmean,y=RUE.shoot, color=Defoliation))+geom_point(size=2)+theme_bw()+
+  facet_grid(Defoliation~Trend)+
+ # geom_point(data=ObsR4, aes(x=Clock.Today1, y=Observed),colour="green",size=3)+
+  #theme(legend.title=element_blank(),legend.position = "blank")+
+  xlab("Mean temperature")+ylab("Shoot RUE (g/MJ)")+
+ #remove grid lines 
+   theme(
+     panel.spacing=unit(.01, "lines"),
+     panel.border = element_rect(colour = "black",size=1), 
+     panel.grid.major = element_blank(),
+     panel.grid.minor = element_blank(),
+     axis.line = element_line(colour = "black",size = 1),
+     axis.text.x = element_text(face = "plain", color = "black", size = 14, vjust=0.5, hjust = 1),
+     axis.text.y = element_text(face = "plain", color = "black", size = 14),
+     axis.title.x=element_text(face="bold",colour="black",size = 14),
+     axis.title.y=element_text(face="bold",colour="black",size = 14),
+     strip.background = element_rect(colour = "black", fill = "white",size=1),
+     strip.text.x = element_text(size=14, angle=0, face = "plain"), 
+     strip.text.y = element_text(size=14, face="plain"),
+     legend.title = element_text(colour="black", size=14, face="bold"),
+     axis.text = element_text(face = "bold", vjust = 0.5, size = 14))
+ggsave("D:/R/Pictures/c6/Yield/RUE.png", width=8, height=6, dpi=500)
+```
+
+
+
+
+
 ####Increasing Pp
 ###RUE testing
 

@@ -476,7 +476,7 @@ RUETotal <-RUE.RAW1%>%
 RUEshoot<-merge(obsSB,PARi.df1,by=c("Clock.Today","Name","ExpUnitCode"))
 RUEshootp<-merge(RUEshoot,StartGrazing1,by=c("Name","GrowthRotation"))
 RUEshoots<-RUEshootp%>%
-  group_by(Name,GrowthSeason,Rotation,GrowthRotation,Tmean,Ppm,Stage,Trend,ID,ExperimentID) %>%
+  group_by(Name,GrowthSeason,Rotation,GrowthRotation,Tmean,Ppm,Stage,Trend,ID,ExperimentID,StartDate,MidDate,FinishDate) %>%
   do(mod = lm(Shootbiomass~PARi.sum,data=.)) %>%
   mutate(RUEs = summary(mod)$coeff[2]) %>%
   dplyr::select(-mod)%>%
@@ -523,6 +523,25 @@ RUEshoot_Tt%>%
  theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
 
 ```
+####Plot RUE Shoot
+```{r}
+RUE.shoot<-RUEshoots%>%
+  mutate(StartDate=dmy(StartDate),MidDate=dmy(MidDate),FinishDate=dmy(FinishDate))
+
+RUE.shoot%>%
+  dplyr::filter(RUEs1>0)%>%
+  dplyr::filter(GrowthRotation!="17")%>%
+  ggplot(aes(y=RUEs1, x=Tmean,color=ID,label=GrowthRotation))+geom_text()+theme_bw()+ylab("Shoot RUE (g/MJ)")+xlab("Mean temperature")+mytheme3+
+ #geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="blue")+
+ facet_grid(Trend~Stage)+
+  theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
+ theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
+  
+
+
+```
+
+
 
 ###Root and shoot ratio
 ```{r}
@@ -1147,6 +1166,7 @@ str(mergedf)
 mergedf
 
 ```
+
 ###total biomass
 ###Time series
 ###observed vs predicted
@@ -1597,56 +1617,8 @@ ggplot(aes(x=Clock.Today,y=Predicted))+geom_line(size=1)+theme_bw()+
 ```
 
 
-# Statistic and Graph
-```{r,,fig.height=4, fig.width=10}
 
-mergedf
-summary(mergedf)
-str(mergedf)
 
-mergedf %>%
-    dplyr::filter(Variable== "RootWt") %>% 
-  dplyr::filter(Defoliation.x== "LL")%>%
-  dplyr::filter(Collection!="2010_2012")%>%
-  ggplot(aes(x=Observed, y= Predicted, colour= factor(Name))) +
-  geom_point(size=2)+theme_bw()+
-  geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="darkgrey") +
-  geom_abline(intercept = 0, slope = 1) +
-  coord_fixed(ratio = 1)+
-  ggtitle("Root biomass")+
-  facet_wrap(~Collection, ncol = 4)+
-  theme(legend.title=element_blank())+xlab("Observed")+ylab("Predicted")+
-  theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
-  theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
-```
-
-## RMSE
-
-```{r}
-str(mergedf)
-
-mergedf %>%
-  dplyr::filter(Variable== "RootWt") %>% 
-   dplyr::filter(Water.x== "irr")%>%
-  dplyr::filter(Defoliation.x== "LL")%>%
- #filter(Variable == "NodeNumber") %>%
-  filter(Collection!="2010_2012")%>%
-  mutate(Rotation= as.factor(Rotation.x))%>%
-  mutate(GrowthSeason=as.factor(GrowthSeason.x))%>%
-  group_by(Name) %>%
-  summarise(
-    n = n(),
-    r2 = gauchStats(Predicted,Observed)[5],
-  #  rmse = round(rmse(Predicted,Observed),0),
-    r_rmse = round(rmse(Predicted,Observed)/mean(Observed)*100,1),
-    nse = round(NSE(Predicted,Observed),1),
-    sb = gauchStats(Predicted,Observed)[1],
-  nu = gauchStats(Predicted,Observed)[2],
-  lc = gauchStats(Predicted,Observed)[3]
-  ) 
-
-  
-```
 ###Root respiration ##load soil temperture data ###Root Respriation analysis
 ```{r}
 ObsRoot.new<-rbind(obsRoot1,obsRoot2)

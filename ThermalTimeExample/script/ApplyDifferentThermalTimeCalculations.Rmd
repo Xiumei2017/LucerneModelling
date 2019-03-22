@@ -218,8 +218,6 @@ MetLincoln<-MetLincoln_worked%>%
 MetLincoln
 ```
 
-
-
 ## Method 3: broken stick and fick function 
 
 Based on: APSIM from Jones CA, Ritchie JT, Kiniry JR, Godwin DC (1986) Subroutine structure.In 'CERES-Maize: A simulation model of maize growth anddevelopment'. (Eds CA Jones, JR Kiniry) pp. 49-194. (Texas A&M University Press: Texas, USA
@@ -448,19 +446,22 @@ tt.df <- Met.sub %>%
          SowingDate=Exp.sub$SowingDate,
          FD=Exp.sub$FD,
          GrowthSeason=Exp.sub$GrowthSeason,
-         Rotation=Exp.sub$Rotation) %>%
+         Rotation=Exp.sub$Rotation,
+         StartDate=Exp.sub$StartDate,
+         MidDate=Exp.sub$MidDate,
+         FinishDate=Exp.sub$FinishDate) %>%
          ungroup.rowwise_df()%>%
          mutate( Tt_beta_sum = cumsum(TTbeta),
                   Tt_fick_sum =cumsum(TTfick),
                   Tt_broken_sum= cumsum(TTbroken))%>%
-         mutate(Ppm=mean(Pp), Tmean=mean(mean))
+         mutate(Ppm=mean(Pp), Tmean=mean(mean),Rad=mean(radn))
  df.all <- rbind(df.all,tt.df)
 
 }}
 
 summary(df.all)
 df.all
-#write.csv(df.all,"D:/R/TtAll/df.all.CSV", row.names = FALSE)
+write.csv(df.all,"D:/R/TtAll/df.all.CSV", row.names = FALSE)
 
 ```
 ```{r}
@@ -547,7 +548,7 @@ tt.df <- Met.sub %>%
          mutate( Tt_beta_sum = cumsum(TTbeta),
                   Tt_fick_sum =cumsum(TTfick),
                   Tt_broken_sum= cumsum(TTbroken))%>%
-         mutate(Ppm=mean(Pp), Tmean=mean(mean))
+         mutate(Ppm=mean(Pp), Tmean=mean(mean), Rad=mean(radn))
  df.all.root <- rbind(df.all.root,tt.df)
 
 }}

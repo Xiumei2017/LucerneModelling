@@ -20,13 +20,14 @@ library(scales)
 library(zoo)
 library(lme4)
 library(reshape2)
+library(polynom)
 ```
 ###load experiment data
 ```{r}
 upDir <- "D:/R/CombinedData/"
 obsData <- "D:/R/CombinedData/"
 
-obsAll <- read.table(paste0(obsData, "ObsAll.txt"),
+obsAll <- read.table(paste0(obsData, "ObsAll1.txt"),
                    header = TRUE)
 obsleaf<- obsAll %>%
   mutate(StartDate=dmy(StartDate),MidDate=dmy(MidDate),FinishDate=dmy(FinishDate),Clock.Today=dmy(Clock.Today)) %>%
@@ -49,7 +50,7 @@ obsleaf
 upDir <- "D:/R/CombinedData/"
 obsData <- "D:/R/CombinedData/"
 
-obsAll <- read.table(paste0(obsData, "ObsAll.txt"),
+obsAll <- read.table(paste0(obsData, "ObsAll1.txt"),
                    header = TRUE)
 obsShoot<- obsAll %>%
   mutate(StartDate=dmy(StartDate),MidDate=dmy(MidDate),FinishDate=dmy(FinishDate),Clock.Today=dmy(Clock.Today)) %>%
@@ -71,16 +72,19 @@ obsShoot
 upDir <- "D:/R/CombinedData/"
 obsData <- "D:/R/CombinedData/"
 
-obsAll <- read.table(paste0(obsData, "ObsAll.txt"),
-                   header = TRUE)
-obsLSR<- obsAll %>%
+obsAll <- read.table(paste0(obsData, "ObsAll1.txt"),
+                   header = TRUE)%>%
   mutate(StartDate=dmy(StartDate),MidDate=dmy(MidDate),FinishDate=dmy(FinishDate),Clock.Today=dmy(Clock.Today)) %>%
   #mutate(SowingDate=as.factor(ifelse(SowingDate=="no","Sd_No",paste0("Sd_",SowingDate)))) %>% # assume this is typo to be fixed?
   mutate(GrowthSeason1=as.factor(paste0("Gs_",GrowthSeason))) %>% # creating more intuitive labels here
   mutate(Rotation1=as.factor(paste0("Rt_",Rotation))) %>%
   mutate(ExpUnitCode=as.factor(paste0(Name,GrowthSeason1,Rotation1))) %>%
   mutate(Clock.Today1 = as.POSIXct(paste(Clock.Today,Time),format="%Y-%m-%d %H:%M:%S"))%>%
-  mutate(GrowthRotation=as.factor(paste0(GrowthSeason,Rotation)))%>%
+  mutate(GrowthRotation=as.factor(paste0(GrowthSeason,Rotation)))
+
+
+
+obsLSR<- obsAll %>%
   dplyr::filter(Water=="irr")%>%
   dplyr::filter(Defoliation=="LL")%>%
   dplyr::filter(FD=="FD5")%>%
@@ -88,6 +92,25 @@ obsLSR<- obsAll %>%
 summary(obsLSR)
 obsLSR
 ```
+#Load Tt and Join Observed data together
+##Select LAI variable
+```{r}
+upDir <- "D:/R/"
+obsData <- "D:/R/TtAll/"
+
+Tt<- read.table(paste0(obsData, "df.all.txt"),
+               header = TRUE)
+TtA <- Tt %>% mutate(Clock.Today=dmy(Clock.Today), ExpUnitCode=as.factor(ExpName))%>%
+  dplyr::filter(Tbb==1)
+TtA
+obs.All <-merge(obsAll,TtA,by=c("Clock.Today","ExpUnitCode"))
+
+obs.All
+  
+
+summary(obs.All)
+```
+
 ###mytheme for observed and predicted graphs
 ```{r}
 mytheme2<-theme(
@@ -174,8 +197,9 @@ LeafP%>%
  theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
 
 LeafP%>%
-   ggplot(aes(x=Shootbiomass, y=Pleaf,label=GrowthRotation,colour=Name))+geom_text()+theme_bw()+xlab("Shootbiomass")+ylab("Pleaf")+
-  geom_smooth(method = "lm", se = TRUE,linetype=1 , colour="black")+
+   ggplot(aes(x=LeafWt, y=StemWt,label=GrowthRotation,colour=Name))+geom_text()+theme_bw()+xlab("Leaf biomass")+ylab("Stem biomass")+
+   geom_smooth(method = "lm", se = TRUE, formula=y ~ poly(x, 2, raw=TRUE), colour="darkgrey")+
+  #geom_smooth(method = "lm", se = TRUE,linetype=1 , colour="black")+
  #facet_grid(GrowthSeason~Rotation)+
   ggtitle("Iversen_8Waterirr")+
   theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
@@ -191,10 +215,68 @@ StemP%>%
   
   
 ```
+####fit a polnimal function
+```{r}
+detach(package:dplyr)
+library(dplyr)
+library(plyr)
+
+my.formula  <- function(LeafP){
+  my.formula <-StemWt ~ poly(LeafWt, 2, raw = TRUE)
+  m <- lm(my.formula, LeafP)
+  my.eq <- as.character(signif(as.polynomial(coef(m)), 2))
+  label.text <- paste("y","'='",paste(gsub("y", "~italic(x)",my.eq, fixed = TRUE)),
+              paste("italic(R)^2",format(summary(m)$r.squared, digits = 2), 
+                    sep = "~`=`~"),
+                    sep = "~~~~")
+  as.character(as.expression(label.text));                 
+}
+
+my.eqstem <- ddply(LeafP,.(),my.formula)
+
+LeafP%>%
+   ggplot(aes(x=LeafWt, y=StemWt,label=GrowthRotation,colour=ID))+geom_text()+theme_bw()+xlab("Leaf biomass")+ylab("Stem biomass")+mytheme3+
+   geom_smooth(method = "lm", se = TRUE, formula=y ~ poly(x, 2, raw=TRUE), colour="darkgrey")+
+  #geom_smooth(method = "lm", se = TRUE,linetype=1 , colour="black")+
+ #facet_grid(GrowthSeason~Rotation)+
+  #ggtitle("Iversen_8Waterirr")+
+  theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
+ theme(axis.title.y=element_text(face="bold",colour="black",size = 12))+
+geom_text(data = my.eqstem, aes(x = 800, y = 3000, label = V1), 
+          color = 'black',  parse = TRUE, size=4)
+detach(package:plyr)
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ###Fit a power function
 ```{r}
 StemP1<-StemP%>%
   mutate(StemWt1=StemWt*0.1)%>%
+  
   mutate(Shootbiomass2=Shootbiomass1*0.1)
 
 m <- nls(StemWt1~ I(b*Shootbiomass2^power),data=StemP1,start = list(power=1.2321379,b=0.1452028),trace = T)
@@ -269,17 +351,16 @@ summary(m)
 ```
 
 ```{r}
-obsroot<-obsAll %>%
-  mutate(StartDate=dmy(StartDate),MidDate=dmy(MidDate),FinishDate=dmy(FinishDate),Clock.Today=dmy(Clock.Today)) %>%
+obsroot<-obs.All %>%
   #mutate(SowingDate=as.factor(ifelse(SowingDate=="no","Sd_No",paste0("Sd_",SowingDate)))) %>% # assume this is typo to be fixed?
-  mutate(GrowthSeason1=as.factor(paste0("Gs_",GrowthSeason))) %>% # creating more intuitive labels here
-  mutate(Rotation1=as.factor(paste0("Rt_",Rotation))) %>%
+  mutate(GrowthSeason1=as.factor(paste0("Gs_",GrowthSeason.x))) %>% # creating more intuitive labels here
+  mutate(Rotation1=as.factor(paste0("Rt_",Rotation.x))) %>%
   mutate(ExpUnitCode=as.factor(paste0(Name,GrowthSeason1,Rotation1))) %>%
   mutate(Clock.Today1 = as.POSIXct(paste(Clock.Today,Time),format="%Y-%m-%d %H:%M:%S"))%>%
-  mutate(GrowthRotation=as.factor(paste0(GrowthSeason,Rotation)))%>%
-  dplyr::filter(Water=="irr")%>%
-  dplyr::filter(Defoliation=="LL")%>%
-  dplyr::filter(FD=="FD5")%>%
+  mutate(GrowthRotation=as.factor(paste0(GrowthSeason.x,Rotation.x)))%>%
+  dplyr::filter(Water.x=="irr")%>%
+  dplyr::filter(Defoliation.x=="LL")%>%
+  dplyr::filter(FD.x=="FD5")%>%
   dplyr::filter(Variable=="RootWt")%>%
   mutate(RootWt=Observed)%>%
   mutate(StdDEVR=StdDEV)%>%
@@ -311,17 +392,15 @@ PartionPp%>%
 ###Leaf wt and specific leaf
 ```{r}
 
-obsLw<- obsAll %>%
-  mutate(StartDate=dmy(StartDate),MidDate=dmy(MidDate),FinishDate=dmy(FinishDate),Clock.Today=dmy(Clock.Today)) %>%
-  #mutate(SowingDate=as.factor(ifelse(SowingDate=="no","Sd_No",paste0("Sd_",SowingDate)))) %>% # assume this is typo to be fixed?
-  mutate(GrowthSeason1=as.factor(paste0("Gs_",GrowthSeason))) %>% # creating more intuitive labels here
-  mutate(Rotation1=as.factor(paste0("Rt_",Rotation))) %>%
+obsLw<- obs.All %>%
+  mutate(GrowthSeason1=as.factor(paste0("Gs_",GrowthSeason.x))) %>% # creating more intuitive labels here
+  mutate(Rotation1=as.factor(paste0("Rt_",Rotation.x))) %>%
   mutate(ExpUnitCode=as.factor(paste0(Name,GrowthSeason1,Rotation1))) %>%
   mutate(Clock.Today1 = as.POSIXct(paste(Clock.Today,Time),format="%Y-%m-%d %H:%M:%S"))%>%
-  mutate(GrowthRotation=as.factor(paste0(GrowthSeason,Rotation)))%>%
-  dplyr::filter(Water=="irr")%>%
-  dplyr::filter(Defoliation=="LL")%>%
-  dplyr::filter(FD=="FD5")%>%
+  mutate(GrowthRotation=as.factor(paste0(GrowthSeason.x,Rotation.x)))%>%
+  dplyr::filter(Water.x=="irr")%>%
+  dplyr::filter(Defoliation.x=="LL")%>%
+  dplyr::filter(FD.x=="FD5")%>%
   dplyr::filter(Variable=="LAI"|Variable=="LeafWt")%>%
   dplyr::filter(Name=="Iversen_91DefoliationLL"|Name=="Iversen_121DefoliationLLFDFD5")
 summary(obsLw)
@@ -334,7 +413,9 @@ obsLw1<-obsLw%>%
   dplyr::filter(ExpUnitCode!="Iversen_121DefoliationLLFDFD5Gs_2Rt_5")%>%
  dplyr::filter(ExpUnitCode!="Iversen_121DefoliationLLFDFD5Gs_3Rt_4")%>%
   dplyr::filter(ExpUnitCode!="Iversen_121DefoliationLLFDFD5Gs_1Rt_4")%>%
-  dplyr::filter(ExpUnitCode!="Iversen_121DefoliationLLFDFD5Gs_4Rt_3")
+  dplyr::filter(ExpUnitCode!="Iversen_121DefoliationLLFDFD5Gs_4Rt_3")%>%
+  dplyr::filter(ExpUnitCode!="Iversen_121DefoliationLLFDFD5Gs_1Rt_5")%>%
+dplyr::filter(ExpUnitCode!="Iversen_121DefoliationLLFDFD5Gs_2Rt_7")
   
   
 UniExp <- unique(obsLw1$ExpUnitCode)
@@ -366,12 +447,12 @@ LW.df
 ```
 ```{r}
 LW.df1<-LW.df%>%
-  mutate(LeafWt=LeafWt*0.1)%>%
-  dplyr::filter(Rotation!="1")
+  mutate(LeafWt=LeafWt*0.1)
+  #dplyr::filter(Rotation.x!="1")
 LW.df1%>%
-  ggplot(aes(y=LAI.y, x=LeafWt,label=GrowthRotation,colour=ID))+geom_text()+theme_bw()+ylab("LAI (m^2/m^2) ")+xlab("Leaf biomass (g/m^2)")+xlab(bquote(bold('Leaf DM ('*g~m^-2*')')))+ylab(bquote(bold('LAI ('*m^2~m^-2*')')))+
-  geom_smooth(method = "lm", se = TRUE,linetype=1 , colour="black")+mytheme3+theme(legend.title = element_blank())+
-  annotate("text", x=80, y=7, size = 5, label ="paste(y == 2.33+28.06*x,~~R^2==0.86)", parse=T)
+  ggplot(aes(x=LAI.y, y=LeafWt,label=GrowthRotation,colour=ID))+geom_text()+theme_bw()+ylab(bquote(bold('Leaf DM ('*g~m^-2*')')))+xlab(bquote(bold('LAI ('*m^2~m^-2*')')))+facet_grid(GrowthSeason1~Rotation1)+mytheme3+
+  geom_smooth(method = "lm", se = TRUE,linetype=1 , colour="black")+mytheme3+theme(legend.title = element_blank())
+  #annotate("text", x=80, y=7, size = 5, label ="paste(y == 2.33+28.06*x,~~R^2==0.86)", parse=T)
   
 x=LW.df1$LAI.y
 y=LW.df1$LeafWt
@@ -380,6 +461,69 @@ summary(M)
 ggsave("D:/R/Pictures/SL/SLA.png", width=8, height=4, dpi=500)
   
 ```
+###SLA 
+```{r}
+SLA<-LW.df1%>%
+  group_by(Name,GrowthSeason.x,Rotation.x,GrowthRotation,ID,ExperimentID,Tmean,Ppm,Stage,Rad) %>%
+  do(mod = lm(LeafWt~LAI.y,data=.)) %>%
+  mutate(SLA = summary(mod)$coeff[2]) %>%
+  dplyr::select(-mod)
+
+```
+###Specific leaf area against time
+
+```{r}
+detach(package:dplyr)
+library(plyr)
+library(dplyr)
+
+phyll <- "D:\\R\\"
+StartGrazing <- read.table(paste0(phyll, "ExperimentList.txt"), 
+                      header = TRUE)
+StartGrazing1<-StartGrazing %>%
+  mutate(GrowthRotation= as.factor(paste0(GrowthSeason,Rotation)))
+SLAPp<- merge(StartGrazing1,SLA,by=c("Name","GrowthRotation"))
+
+SLA1<-SLAPp %>%
+  dplyr::filter(GrowthRotation!="17")%>%
+  dplyr::filter(Name!="Iversen_121DefoliationLLFDFD5"|GrowthRotation!="32")%>%
+  dplyr::filter(Name!="Iversen_121DefoliationLLFDFD5"|GrowthRotation!="33")%>%
+  #dplyr::filter(Rotation.x!="7")%>%
+  dplyr::filter(Name!="Iversen_121DefoliationLLFDFD5"|GrowthRotation!="31")
+  #dplyr::filter(Name!="Iversen_121DefoliationLLFDFD5"|GrowthRotation!="26")%>%
+  #dplyr::filter(Name!="Iversen_121DefoliationLLFDFD5"|GrowthRotation!="23")%>%
+  #dplyr::filter(Name!="Iversen_121DefoliationLLFDFD5"|GrowthRotation!="42")
+
+
+lm_eqn2 <- function(SLA1){
+  m <- lm(SLA~Tmean,SLA1 );
+  eq <- substitute(italic(y) == Tmean + SLA %.% italic(Tmean)*","~~italic(R)^2~"="~r2, 
+                   list(Tmean = format(coef(m)[1], digits = 2), 
+                        SLA = format(coef(m)[2], digits = 2), 
+                        r2 = format(summary(m)$r.squared, digits = 3)))
+  as.character(as.expression(eq));                 
+}
+
+
+eqs1 <- ddply(SLA1,.(Trend),lm_eqn2)
+
+
+
+SLA1 %>%
+  #mutate(RT=Rad/Tmean)%>%
+  ggplot(aes(x=Tmean, y=SLA,label=GrowthRotation,colour=ID))+geom_text()+theme_bw()+xlab("T")+ylab("SLA (g/m^2)")+
+  geom_smooth(method = "lm", se = TRUE,linetype=1 , colour="black")+
+  facet_grid(~Trend)+
+  geom_text(data = eqs1, aes(y =60, x = 13.5, label = V1), 
+         color = 'black',  parse = TRUE)+
+  mytheme3+theme(legend.title = element_blank())+
+  theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
+ theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
+
+ detach(package:plyr)
+
+```
+
 ```{r}
 LW.df2<-LW.df%>%
   mutate(LeafWt=LeafWt*0.1)%>%
@@ -399,41 +543,13 @@ summary(M)
 ```
 
 
-###Specific leaf area against time
-
-```{r}
-SLA <- LW.df%>%
-  mutate(LeafWt=LeafWt*0.1)%>%
-  mutate(SLA=LeafWt/LAI.y)
-SLA%>%
-  dplyr::filter(Name=="Iversen_91DefoliationLL")%>%
-  dplyr::filter(Rotation!="1")%>%
-  ggplot(aes(x=Clock.Today, y=SLA,label=GrowthRotation,colour=Name))+geom_text()+theme_bw()+xlab("Clock.Today")+ylab("SLA (g/m^2)")+
-  geom_smooth(method = "lm", se = TRUE,linetype=1 , colour="black")+
-  ggtitle("Iversen_8Waterirr")+
-  theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
- theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
-
-```
-
-
-```{r}
-SLA%>%
-  dplyr::filter(Name=="Iversen_121DefoliationLLFDFD5")%>%
-  ggplot(aes(x=Clock.Today, y=SLA,label=GrowthRotation,colour=Name))+geom_text()+theme_bw()+xlab("Photoperiod (h)")+ylab("SLA (g/m^2)")+
-  geom_smooth(method = "lm", se = TRUE,linetype=1 , colour="black")+
-  ggtitle("Iversen_8Waterirr")+
-  theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
- theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
-
-```
 
 ###load experiment data of leaf and stem ratio
 ```{r}
 upDir <- "D:/R/CombinedData/"
 obsData <- "D:/R/CombinedData/"
 
-obsAll <- read.table(paste0(obsData, "ObsAll.txt"),
+obsAll <- read.table(paste0(obsData, "ObsAll1.txt"),
                    header = TRUE)
 obsLB<- obsAll %>%
   mutate(StartDate=dmy(StartDate),MidDate=dmy(MidDate),FinishDate=dmy(FinishDate),Clock.Today=dmy(Clock.Today)) %>%
@@ -609,7 +725,6 @@ obsLB1<-obsLB%>%
   dplyr::filter(Clock.Today>"1997-08-01")%>%
   dplyr::filter(Clock.Today<"2001-08-01")
   
-  
    
  simD1<-simD%>%
    mutate(Clock.Today = ymd_hms(Clock.Today))%>%
@@ -650,9 +765,6 @@ ggplot(aes(x=Clock.Today,y=Predicted))+geom_line(size=1)+theme_bw()+
  #geom_text(aes(x=ymd_hms("2003-07-24 12:00:00"), y=750, label="R_RMSD = 33.7%",size=5))
  ggsave("D:/R/Pictures/SL/Iversen_91DefoliationLLleaf1.png", width=8, height=4, dpi=500)
   
-  
-  
-
 
 ```
 
@@ -660,7 +772,6 @@ ggplot(aes(x=Clock.Today,y=Predicted))+geom_line(size=1)+theme_bw()+
 obsLB3<-obsLB%>%
   dplyr::filter(Collection=="2000_2002")%>%
   dplyr::filter(Variable=="LeafWt")
-
 
 simD3<-simD%>%
   mutate(Clock.Today = ymd_hms(Clock.Today))%>%
