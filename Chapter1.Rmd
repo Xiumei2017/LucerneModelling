@@ -268,7 +268,7 @@ phylloData1
 ```
 ```{r}
 phyll <- "D:\\R\\Data statistic\\"
-StartGrazing <- read.table(paste0(phyll, "Phyllo.txt"), 
+StartGrazing <- read.table(paste0(phyll, "Phyllo1.txt"), 
                       header = TRUE)
 StartGrazing1<-StartGrazing %>%
   mutate(Clock.Today = dmy(Clock.Today))%>%
@@ -285,6 +285,7 @@ ggplot(aes(x=Pp,y=Slope,color=factor(Name)))+geom_point(size=2)+theme_bw()+
   geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="darkgrey") +
   geom_abline(intercept = 0, slope = 1) 
 # PpTI and PpTD
+
 PhylloPpI<-PhylloPp%>%
   dplyr::filter(PpT=="I")
 PhylloPpD<-PhylloPp%>%
@@ -312,29 +313,29 @@ ggplot(aes(x=Pp, y= Slope,
           color= factor(Name))) +
   geom_point(size=3)+theme_bw() +
   #ggtitle("Phyllochron")  +
-  # facet_wrap(~Name, ncol = 3)+
-  facet_wrap(~Stage, ncol=2)+
+  facet_wrap(~Name, ncol = 3)+
+  #facet_wrap(~Stage, ncol=2)+
   geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="darkgrey") +
   geom_abline(intercept = 0, slope = 1) +
   #coord_fixed(ratio = 1) +
   theme(legend.title=element_blank(),legend.position = "blank")+xlab("Photoperiod")+ylab("Phyllochron")+
   theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
   theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
-# seedling and regrowth 
-PhylloPpS<-PhylloPp%>%
-  dplyr::filter(Stage=="seedling")
-PhylloPpR<-PhylloPp%>%
-  dplyr::filter(Stage=="regrowth")
-
-  cor.test(PhylloPpS$Pp,PhylloPpS$Slope,method="spearman")
-   cor.test(PhylloPpR$Pp,PhylloPpR$Slope,method="spearman")
-   
-phyppmodelS<-lm(Pp~Slope,data=PhylloPpS)
-phyppmodelR<-lm(Pp~Slope,data=PhylloPpR)
-
-summary(phyppmodelS)
-summary(phyppmodelR)
-   
+# # seedling and regrowth 
+# PhylloPpS<-PhylloPp%>%
+#   dplyr::filter(Stage=="seedling")
+# PhylloPpR<-PhylloPp%>%
+#   dplyr::filter(Stage=="regrowth")
+# 
+#   cor.test(PhylloPpS$Pp,PhylloPpS$Slope,method="spearman")
+#    cor.test(PhylloPpR$Pp,PhylloPpR$Slope,method="spearman")
+#    
+# phyppmodelS<-lm(Pp~Slope,data=PhylloPpS)
+# phyppmodelR<-lm(Pp~Slope,data=PhylloPpR)
+# 
+# summary(phyppmodelS)
+# summary(phyppmodelR)
+#    
   
 ```
 ##height analysis!!!

@@ -394,7 +394,7 @@ E3ISL%>%
      strip.text.y = element_text(size=14, face="plain"),
      legend.title = element_text(colour="black", size=14, face="bold"),
      axis.text = element_text(face = "bold", vjust = 0.5, size = 14))
-ggsave("D:/R/Pictures/C5/Yield//E3ISL.png", width=8, height=6, dpi=500)
+#ggsave("D:/R/Pictures/C5/Yield//E3ISL.png", width=8, height=6, dpi=500)
 ```
 ##E3ISS
 ```{r,fig.height=6, fig.width=8}
@@ -423,7 +423,7 @@ ggplot(aes(x=Clock.Today,y=Observed,color=Variable))+geom_line(size=1)+theme_bw(
      strip.text.y = element_text(size=14, face="plain"),
      legend.title = element_text(colour="black", size=14, face="bold"),
      axis.text = element_text(face = "bold", vjust = 0.5, size = 14))
-ggsave("D:/R/Pictures/C5/Yield//E3ISS.png", width=8, height=6, dpi=500)
+#ggsave("D:/R/Pictures/C5/Yield//E3ISS.png", width=8, height=6, dpi=500)
 ```
 
 ###E5ILLF5
@@ -463,7 +463,7 @@ ggplot(aes(x=Clock.Today,y=Observed,color=Variable))+geom_line(size=1)+theme_bw(
      strip.text.y = element_text(size=14, face="plain"),
      legend.title = element_text(colour="black", size=14, face="bold"),
      axis.text = element_text(face = "bold", vjust = 0.5, size = 14))
-ggsave("D:/R/Pictures/C5/Yield/E5ILLF5.png", width=8, height=6, dpi=500)
+#ggsave("D:/R/Pictures/C5/Yield/E5ILLF5.png", width=8, height=6, dpi=500)
 ```
 
 ##E5ISSF5
@@ -492,7 +492,7 @@ ggplot(aes(x=Clock.Today,y=Observed,color=Variable))+geom_line(size=1)+theme_bw(
      strip.text.y = element_text(size=14, face="plain"),
      legend.title = element_text(colour="black", size=14, face="bold"),
      axis.text = element_text(face = "bold", vjust = 0.5, size = 14))
-ggsave("D:/R/Pictures/C5/Yield/E5ISSF5.png", width=8, height=6, dpi=500)
+#ggsave("D:/R/Pictures/C5/Yield/E5ISSF5.png", width=8, height=6, dpi=500)
 ```
 
 ###load Root and shoot data for HH
@@ -523,7 +523,7 @@ ggplot(aes(x=Clock.Today,y=Observed,color=Variable))+geom_line(size=1)+theme_bw(
      strip.text.y = element_text(size=14, face="plain"),
      legend.title = element_text(colour="black", size=14, face="bold"),
      axis.text = element_text(face = "bold", vjust = 0.5, size = 14))
-ggsave("D:/R/Pictures/C5/Yield/E5IHHF5.png", width=8, height=6, dpi=500)
+#ggsave("D:/R/Pictures/C5/Yield/E5IHHF5.png", width=8, height=6, dpi=500)
 ```
 
 
@@ -564,7 +564,7 @@ ggplot(aes(x=Clock.Today,y=Observed,color=Variable))+geom_line(size=1)+theme_bw(
      strip.text.y = element_text(size=14, face="plain"),
      legend.title = element_text(colour="black", size=14, face="bold"),
      axis.text = element_text(face = "bold", vjust = 0.5, size = 14))
-ggsave("D:/R/Pictures/C5/Yield//E5ILLF2.png", width=8, height=6, dpi=500)
+#ggsave("D:/R/Pictures/C5/Yield//E5ILLF2.png", width=8, height=6, dpi=500)
 ```
 
 ###E5ILLF10
@@ -604,7 +604,7 @@ ggplot(aes(x=Clock.Today,y=Observed,color=Variable))+geom_line(size=1)+theme_bw(
      strip.text.y = element_text(size=14, face="plain"),
      legend.title = element_text(colour="black", size=14, face="bold"),
      axis.text = element_text(face = "bold", vjust = 0.5, size = 14))
-ggsave("D:/R/Pictures/C5/Yield//E5ILLF10.png", width=8, height=6, dpi=500)
+#ggsave("D:/R/Pictures/C5/Yield//E5ILLF10.png", width=8, height=6, dpi=500)
 ```
 
 
@@ -650,7 +650,7 @@ ggplot(aes(x=Clock.Today,y=Proot,color=ID,label=GrowthRotation))+geom_text()+
      strip.text.y = element_text(size=14, face="plain"),
      legend.title = element_text(colour="black", size=14, face="bold"),
      axis.text = element_text(face = "bold", vjust = 0.5, size = 14))
-ggsave("D:/R/Pictures/C5/Yield/E3Proot.png", width=8, height=6, dpi=500)
+#ggsave("D:/R/Pictures/C5/Yield/E3Proot.png", width=8, height=6, dpi=500)
 ```
 ```{r,height=4, fig.width=8}
 All%>%
@@ -675,7 +675,7 @@ ggplot(aes(x=Clock.Today,y=Proot,color=ID,label=GrowthRotation))+geom_text()+
      strip.text.y = element_text(size=14, face="plain"),
      legend.title = element_text(colour="black", size=14, face="bold"),
      axis.text = element_text(face = "bold", vjust = 0.5, size = 14))
-ggsave("D:/R/Pictures/C5/Yield/E5Proot.png", width=8, height=6, dpi=500)
+#ggsave("D:/R/Pictures/C5/Yield/E5Proot.png", width=8, height=6, dpi=500)
 ```
 
 ###Proot LL
@@ -718,7 +718,7 @@ ggplot(aes(x=Clock.Today,y=Proot,color=ID,label=GrowthRotation))+geom_text()+
      strip.text.y = element_text(size=14, face="plain"),
      legend.title = element_text(colour="black", size=14, face="bold"),
      axis.text = element_text(face = "bold", vjust = 0.5, size = 14))
-ggsave("D:/R/Pictures/C5/Yield/E3LLProot.png", width=8, height=6, dpi=500)
+#ggsave("D:/R/Pictures/C5/Yield/E3LLProot.png", width=8, height=6, dpi=500)
 
 ```
 ```{r,height=4, fig.width=8}
@@ -745,7 +745,7 @@ ggplot(aes(x=Clock.Today,y=Proot,color=ID,label=GrowthRotation))+geom_line(size=
      strip.text.y = element_text(size=14, face="plain"),
      legend.title = element_text(colour="black", size=14, face="bold"),
      axis.text = element_text(face = "bold", vjust = 0.5, size = 14))
-ggsave("D:/R/Pictures/C5/Yield/E5LLProot.png", width=8, height=6, dpi=500)
+#ggsave("D:/R/Pictures/C5/Yield/E5LLProot.png", width=8, height=6, dpi=500)
 ```
 
 
@@ -809,7 +809,7 @@ ggplot(aes(x=Clock.Today,y=Observed,color=Variable))+geom_line(size=1)+theme_bw(
      strip.text.y = element_text(size=14, face="plain"),
      legend.title = element_text(colour="black", size=14, face="bold"),
      axis.text = element_text(face = "bold", vjust = 0.5, size = 14))
-ggsave("D:/R/Pictures/C5/Yield//E5ISSF5.png", width=8, height=6, dpi=500)
+#ggsave("D:/R/Pictures/C5/Yield//E5ISSF5.png", width=8, height=6, dpi=500)
 ```
 ###load Root and shoot data for LL
 ```{r,fig.height=6, fig.width=8}
@@ -837,7 +837,7 @@ ggplot(aes(x=Clock.Today,y=Observed,color=Variable))+geom_line(size=1)+theme_bw(
      strip.text.y = element_text(size=14, face="plain"),
      legend.title = element_text(colour="black", size=14, face="bold"),
      axis.text = element_text(face = "bold", vjust = 0.5, size = 14))
-ggsave("D:/R/Pictures/C5/Yield//E5ILLF5.png", width=8, height=6, dpi=500)
+#ggsave("D:/R/Pictures/C5/Yield//E5ILLF5.png", width=8, height=6, dpi=500)
 ```
 ### load Root data analysis data frame
 ```{r}
@@ -871,7 +871,7 @@ Root.LL<-Root.dfA%>%
 Root.HH.graph<-Root.dfA%>%
   dplyr::filter(ID==c("E5IHHF5"))%>%
   ggplot(aes(x=Clock.Today,y=RootWt))+geom_line(size=1.5)+theme_bw()+mytheme3
-ggsave("D:/R/Pictures/C5/Yield//SimpleE3HH.png", width=8, height=4, dpi=500)
+#ggsave("D:/R/Pictures/C5/Yield//SimpleE3HH.png", width=8, height=4, dpi=500)
 ```
 ##remoblisation DM and structural DM
 ```{r,fig.height=4, fig.width=8}
@@ -1019,7 +1019,7 @@ Root.dfA1%>%
   geom_text(data = eqs11, aes(x =6000, y =0.75, label = V1), 
           color = 'black',  parse = TRUE)
  detach(package:plyr)
-ggsave("D:/R/Pictures/C5/Yield//RemoblisationALLper.png", width=8, height=6, dpi=500)
+#ggsave("D:/R/Pictures/C5/Yield//RemoblisationALLper.png", width=8, height=6, dpi=500)
 
 
 ```
@@ -1053,7 +1053,7 @@ b+geom_text(data = my.eqs, aes(x = 6000, y = 6000, label = V1),
           color = 'black',  parse = TRUE, size=4)
   
  detach(package:plyr)
-ggsave("D:/R/Pictures/C5/Yield/RemoblisationALLploy2.png", width=8, height=6, dpi=500)
+#ggsave("D:/R/Pictures/C5/Yield/RemoblisationALLploy2.png", width=8, height=6, dpi=500)
 
 
 ```
@@ -1084,7 +1084,7 @@ b+geom_text(data = my.eqs, aes(x = 6800, y = 6000, label = V1),
           color = 'black',  parse = TRUE, size=4)
   
  detach(package:plyr)
-ggsave("D:/R/Pictures/C5/Yield//RemoblisationALLploy3.png", width=8, height=6, dpi=500)
+#ggsave("D:/R/Pictures/C5/Yield//RemoblisationALLploy3.png", width=8, height=6, dpi=500)
 
 
 ```
@@ -1117,7 +1117,7 @@ ggplot(aes(x=IRW,y=Re.rate, color=ID))+geom_point(size=2)+theme_bw()+mytheme3+
   geom_text(data = eqs11, aes(x =6000, y =4, label = V1), 
           color = 'black',  parse = TRUE)
  detach(package:plyr)
-ggsave("D:/R/Pictures/C5/Yield//Remoblisation rate.png", width=8, height=6, dpi=500)
+#ggsave("D:/R/Pictures/C5/Yield//Remoblisation rate.png", width=8, height=6, dpi=500)
 
 
 ```
@@ -1292,6 +1292,11 @@ Root.dfper%>%
  #write.csv(Root.dfR,"D:/R/Respiration/Root.dfR.csv", row.names = FALSE)
 
  ###structural root biomass=2491.30
+ 
+Resp.lm<-lm(ChangeWt~IRW, data = Root.dfper)
+summary(Resp.lm)
+new.root <-data.frame(IRW=2570)
+predict(Resp.lm, newdata = new.root, interval='confidence') 
 
 ```
 
@@ -1698,47 +1703,47 @@ for(i in 1:length(UniExp))
     unique()%>%
      ##accmulated function
  mutate(Production.day0 = PARi*5.0*T.factor)%>%               ###RUE is 0.50g/MJ
- mutate(Production.sum0 = cumsum(Production.day0))%>%
+ mutate(RUE.0.5 = cumsum(Production.day0))%>%
  mutate(Production.day1 = PARi*5.5*T.factor)%>%               ###RUE is 0.55g/MJ
- mutate(Production.sum1 = cumsum(Production.day1))%>%
+ mutate(RUE.0.55 = cumsum(Production.day1))%>%
  mutate(Production.day2 = PARi*6.0*T.factor)%>%               ###RUE is 0.6g/MJ
- mutate(Production.sum2 = cumsum(Production.day2))%>%
+ mutate(RUE.0.6 = cumsum(Production.day2))%>%
  mutate(Production.day3 = PARi*6.5*T.factor)%>%               ###RUE is 0.65g/MJ
- mutate(Production.sum3 = cumsum(Production.day3))%>%
+ mutate(RUE.0.65 = cumsum(Production.day3))%>%
  mutate(Production.day4 = PARi*7*T.factor)%>%               ###RUE is 0.7 g/MJ
- mutate(Production.sum4 = cumsum(Production.day4))%>% 
+ mutate(RUE.0.7 = cumsum(Production.day4))%>% 
  mutate(Production.day5 = PARi*7.5*T.factor)%>%               ###RUE is 0.75g/MJ
- mutate(Production.sum5 = cumsum(Production.day5))%>%  
+ mutate(RUE.0.75 = cumsum(Production.day5))%>%  
  mutate(Production.day6 = PARi*8*T.factor)%>%               ###RUE is 0.8 g/MJ
- mutate(Production.sum6 = cumsum(Production.day6))%>%    
+ mutate(RUE.0.8 = cumsum(Production.day6))%>%    
  mutate(Production.day7 = PARi*8.5*T.factor)%>%               ###RUE is 0.85g/MJ
- mutate(Production.sum7 = cumsum(Production.day7))%>% 
+ mutate(RUE.0.85 = cumsum(Production.day7))%>% 
  mutate(Production.day8 = PARi*9*T.factor)%>%               ###RUE is 0.9g/MJ
- mutate(Production.sum8 = cumsum(Production.day8))%>%
+ mutate(RUE.0.9 = cumsum(Production.day8))%>%
  mutate(Production.day9 = PARi*9.5*T.factor)%>%               ###RUE is 0.95g/MJ
- mutate(Production.sum9 = cumsum(Production.day9))%>% 
+ mutate(RUE.0.95 = cumsum(Production.day9))%>% 
  mutate(Production.day10 = PARi*10*T.factor)%>%               ###RUE is 1 g/MJ
- mutate(Production.sum10 = cumsum(Production.day10))%>%  
+ mutate(RUE.1.0 = cumsum(Production.day10))%>%  
  mutate(Production.day11 = PARi*10.5*T.factor)%>%               ###RUE is 1.05g/MJ
- mutate(Production.sum11 = cumsum(Production.day11))%>%  
+ mutate(RUE.1.05 = cumsum(Production.day11))%>%  
  mutate(Production.day12 = PARi*11*T.factor)%>%               ###RUE is 1.1 g/MJ
- mutate(Production.sum12 = cumsum(Production.day12))%>%  
+ mutate(RUE.1.1 = cumsum(Production.day12))%>%  
  mutate(Production.day13 = PARi*11.5*T.factor)%>%               ###RUE is1.15 g/MJ
- mutate(Production.sum13 = cumsum(Production.day13))%>%
+ mutate(RUE.1.15 = cumsum(Production.day13))%>%
  mutate(Production.day14 = PARi*12*T.factor)%>%               ###RUE is 1.2 g/MJ
- mutate(Production.sum14 = cumsum(Production.day14))%>% 
+ mutate(RUE.1.2 = cumsum(Production.day14))%>% 
  mutate(Production.day15 = PARi*12.5*T.factor)%>%               ###RUE is 1.25g/MJ
- mutate(Production.sum15 = cumsum(Production.day15))%>%  
+ mutate(RUE.1.25 = cumsum(Production.day15))%>%  
  mutate(Production.day16 = PARi*13*T.factor)%>%               ###RUE is 1.3g/MJ
- mutate(Production.sum16 = cumsum(Production.day16))%>%  
+ mutate(RUE.1.3 = cumsum(Production.day16))%>%  
  mutate(Production.day17 = PARi*13.5*T.factor)%>%               ###RUE is 1.35g/MJ
- mutate(Production.sum17 = cumsum(Production.day17))%>% 
+ mutate(RUE.1.35 = cumsum(Production.day17))%>% 
  mutate(Production.day18 = PARi*14.0*T.factor)%>%               ###RUE is 1.4g/MJ
- mutate(Production.sum18 = cumsum(Production.day18))%>% 
+ mutate(RUE.1.4 = cumsum(Production.day18))%>% 
  mutate(Production.day19 = PARi*14.5*T.factor)%>%               ###RUE is 1.45g/MJ
- mutate(Production.sum19 = cumsum(Production.day19))%>% 
+ mutate(RUE.1.45 = cumsum(Production.day19))%>% 
  mutate(Production.day20 = PARi*15*T.factor)%>%                ###RUE is 1.5g/MJ
- mutate(Production.sum20 = cumsum(Production.day20))%>%
+ mutate(RUE.1.5 = cumsum(Production.day20))%>%
  mutate(Production.dayA = PARi*5)%>%                         ###RUE is 0.5 g/MJ
  mutate(Production.sumA = cumsum(Production.dayA))%>%  
  mutate(Production.dayB = PARi*5.5)%>%                       ###RUE is 0.55 g/MJ
@@ -1790,11 +1795,11 @@ ShootInc.LL <- fPAR.df.Inc %>%
   filter(Trend=="Inc")%>%
   filter(Stage!="Seedling")%>%
   filter(fPAR!=0)%>%
-  dplyr::select(ExperimentID,TreatmentID,ID,Clock.Today,ExpName,shootbiomass, Tearth,Trend,Production.sum0,Production.sum1,Production.sum2,Production.sum3,Production.sum4,Production.sum5,Production.sum6,Production.sum7,Production.sum8,Production.sum9,Production.sum10,Production.sum11,Production.sum12,Production.sum13,Production.sum14,Production.sum15,Production.sum16,Production.sum17,Production.sum18,Production.sum19,Production.sum20,Production.sumA,Production.sumB,Production.sumC,Production.sumD,Production.sumE,Production.sumF,Production.sumG,Production.sumH,Production.sumI,Production.sumJ,Production.sumK,Production.sumL,Production.sumM) %>%
-  tidyr::gather("Variable","Predicted",Production.sum0:Production.sumM)
+  dplyr::select(ExperimentID,TreatmentID,ID,Clock.Today,ExpName,shootbiomass, Tearth,Trend,RUE.0.7,RUE.0.75,RUE.0.8,RUE.0.85,RUE.0.9,RUE.0.95,RUE.1.0,RUE.1.05,RUE.1.1,RUE.1.15,RUE.1.2,RUE.1.25) %>%
+  tidyr::gather("Variable","Predicted",RUE.0.7:RUE.1.25)
 
 
-ShootInc.LL $Variable<-factor(ShootInc.LL$Variable, levels=c("Production.sum0","Production.sum1","Production.sum2","Production.sum3","Production.sum4","Production.sum5","Production.sum6","Production.sum7","Production.sum8","Production.sum9","Production.sum10","Production.sum11","Production.sum12","Production.sum13","Production.sum14","Production.sum15","Production.sum16","Production.sum17","Production.sum18","Production.sum19","Production.sum20","Production.sumA","Production.sumB","Production.sumC","Production.sumD","Production.sumE","Production.sumF","Production.sumG","Production.sumH","Production.sumI","Production.sumJ","Production.sumK","Production.sumL","Production.sumM"))
+ShootInc.LL $Variable<-factor(ShootInc.LL$Variable, levels=c("RUE.0.7","RUE.0.75","RUE.0.8","RUE.0.85","RUE.0.9","RUE.0.95","RUE.1.0","RUE.1.05","RUE.1.1","RUE.1.15","RUE.1.2","RUE.1.25"))
 
 ShootInc.LL%>%
   ggplot(aes(x=shootbiomass, y= Predicted, colour= factor(ID))) +
@@ -1803,9 +1808,11 @@ ShootInc.LL%>%
   geom_abline(intercept = 0, slope = 1) +
   coord_fixed(ratio = 1)+
   ggtitle("Shoot biomass (Inc)")+
-  facet_wrap(~Variable, ncol = 6)+
+  facet_wrap(~Variable, ncol = 4)+
+  theme(legend.title=element_blank())+
   theme_bw()+mytheme3+
-   scale_x_continuous(breaks = seq(2000,8000, by =3000), limits=c(0,8000))+
+  theme(legend.title=element_blank())+
+   scale_x_continuous(breaks = seq(2000, 6000, by =4000), limits=c(0,8000))+
   scale_y_continuous(breaks = seq(2000, 6000, by =2000), limits=c(0,8000))+
   ylab("Predicted")+xlab("Observed") 
   #theme(legend.title=element_blank(),legend.position = "blank")
@@ -2217,7 +2224,6 @@ write.csv(P.E3ISS,"D:/R/Respiration/P.E3ISS.csv", row.names = FALSE)
   #remove grid lines 
 #ggsave("D:/R/Pictures/C5/Yield//E5ILLF5.png", width=8, height=6, dpi=500)
 
-```
 ```{r}
 E5IHHF5S1<-E5IHHFD5%>%
   #filter(Tbb==1)%>%

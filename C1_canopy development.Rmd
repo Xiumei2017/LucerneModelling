@@ -26,7 +26,7 @@ library(reshape2)
 upDir <- "D:/R/CombinedData/"
 obsData <- "D:/R/CombinedData/"
 
-obsAll <- read.table(paste0(obsData, "ObsAll.txt"),
+obsAll <- read.table(paste0(obsData, "ObsAll1.txt"),
                    header = TRUE)
 obsA1<- obsAll %>%
   dplyr::filter(Collection=="2000_2002")%>%
@@ -114,7 +114,8 @@ ObsLF<-ObsL%>%
   dplyr::filter(Name!="Iversen_121DefoliationLLFDFD5"|GrowthRotation!="14")%>%
   dplyr::filter(Name!="Iversen_121DefoliationLLFDFD5"|GrowthRotation!="36")%>%
   dplyr::filter(Name!="Iversen_121DefoliationLLFDFD5"|GrowthRotation!="37")%>%
- #dplyr::filter(Name!="Iversen_121DefoliationLLFDFD5"|GrowthSeason.x!="4")%>%
+ dplyr::filter(ExpUnitCode!="Iversen_121DefoliationLLFDFD5Gs_1Rt_5")%>%
+   dplyr::filter(ExpUnitCode!="Iversen_121DefoliationLLFDFD5Gs_2Rt_7")%>%
  dplyr::filter(Name!="Iversen_9SowingDateSD1Waterirr"|GrowthRotation!="14")%>%
  dplyr::filter(Name!="Iversen_9SowingDateSD2Waterirr"|GrowthRotation!="21")%>%
  dplyr::filter(Name!="Iversen_9SowingDateSD2Waterirr"|GrowthRotation!="13")%>%
@@ -173,7 +174,7 @@ Inte.df.Pp<- merge(StartGrazing1,Inte.df,by=c("Name","Collection","GrowthRotatio
 
 
 Leaf_Node<-Inte.df.Pp%>%
-  dplyr::filter(Stage=="Regrowth")%>%
+  dplyr::filter(Stage.x=="Regrowth")%>%
   dplyr::filter(LAI!=is.na(LAI))%>%
   dplyr::filter(Collection!="2010_2012")%>%
   dplyr::filter(Name!="Iversen_121DefoliationLLFDFD5"|GrowthRotation!="13")
@@ -188,7 +189,7 @@ Leaf_Node%>%
   geom_point(size=2)+
   #geom_smooth(method = "lm", se = TRUE,linetype=1 , colour="black")+
   #geom_text()+
-  facet_wrap(~Stage,ncol=1)+
+  facet_wrap(~Stage.x,ncol=1)+
   #facet_grid(Trend~Stage)+
   theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
  theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
@@ -197,7 +198,7 @@ Leaf_Node%>%
 ```
 ```{r,fig.height=5, fig.width=10}
 Leaf_Node1<-Inte.df.Pp%>%
-  dplyr::filter(Stage=="Seedling")%>%
+  dplyr::filter(Stage.x=="Seedling")%>%
   dplyr::filter(LAI!=is.na(LAI))%>%
   dplyr::filter(Collection!="2010_2012")%>%
   dplyr::filter(Name!="Iversen_121DefoliationLLFDFD5"|GrowthRotation!="13")
@@ -212,7 +213,7 @@ Leaf_Node1%>%
   geom_point(size=2)+
   #geom_smooth(method = "lm", se = TRUE,linetype=1 , colour="black")+
   #geom_text()+
-  facet_wrap(~Stage,ncol=1)+
+  facet_wrap(~Stage.x,ncol=1)+
   #facet_grid(Trend~Stage)+
   theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
  theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
@@ -253,6 +254,8 @@ ObsLH<-ObsL%>%
   dplyr::filter(Name!="Iversen_8Waterirr"|GrowthRotation!="57")%>%
   dplyr::filter(Name!="Iversen_8Waterirr"|GrowthRotation!="61")%>%
   dplyr::filter(Collection!="2010_2012")%>%
+  dplyr::filter(ExpUnitCode!="Iversen_121DefoliationLLFDFD5Gs_1Rt_5")%>%
+   dplyr::filter(ExpUnitCode!="Iversen_121DefoliationLLFDFD5Gs_2Rt_7")%>%
   dplyr::filter(Name!="Iversen_121DefoliationLLFDFD5"|GrowthRotation!="14")%>%
   dplyr::filter(Name!="Iversen_121DefoliationLLFDFD5"|GrowthRotation!="36")%>%
   dplyr::filter(Name!="Iversen_121DefoliationLLFDFD5"|GrowthRotation!="37")%>%
@@ -315,7 +318,7 @@ Inte.df.Pp<- merge(StartGrazing1,Inte.df,by=c("Name","Collection","GrowthRotatio
 
 
 Leaf_height<-Inte.df.Pp%>%
-  dplyr::filter(Stage=="Regrowth")%>%
+  dplyr::filter(Stage.x=="Regrowth")%>%
   dplyr::filter(LAI!=is.na(LAI))%>%
   dplyr::filter(Name!="Iversen_121DefoliationLLFDFD5"|GrowthRotation!="13")%>%
   dplyr::filter(Collection!="2002_2004")%>%
@@ -323,7 +326,7 @@ Leaf_height<-Inte.df.Pp%>%
   mutate(Height.y=Height.y*10)
 
 Leaf_height2<-Inte.df.Pp%>%
-  dplyr::filter(Stage=="Regrowth")%>%
+  dplyr::filter(Stage.x=="Regrowth")%>%
   dplyr::filter(LAI!=is.na(LAI))%>%
   dplyr::filter(Name!="Iversen_121DefoliationLLFDFD5"|GrowthRotation!="13")%>%
   dplyr::filter(Collection!="2000_2002")%>%
@@ -343,7 +346,7 @@ LeafH%>%
   geom_point(size=2)+
   #geom_smooth(method = "lm", se = TRUE,linetype=1 , colour="black")+
   #geom_text()+
-  facet_wrap(~Stage,ncol=1)+
+  facet_wrap(~Stage.x,ncol=1)+
   #facet_grid(Trend~Stage)+
   theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
  theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
@@ -352,7 +355,7 @@ LeafH%>%
 ```
 ```{r,fig.height=5, fig.width=10}
 Leaf_height1<-Inte.df.Pp%>%
-  dplyr::filter(Stage=="Seedling")%>%
+  dplyr::filter(Stage.x=="Seedling")%>%
   dplyr::filter(LAI!=is.na(LAI))%>%
   dplyr::filter(Collection!="2010_2012")%>%
   dplyr::filter(Name!="Iversen_121DefoliationLLFDFD5"|GrowthRotation!="13")
@@ -367,7 +370,7 @@ Leaf_height1%>%
   geom_point(size=2)+
   #geom_smooth(method = "lm", se = TRUE,linetype=1 , colour="black")+
   #geom_text()+
-  facet_wrap(~Stage,ncol=1)+
+  facet_wrap(~Stage.x,ncol=1)+
   #facet_grid(Trend~Stage)+
   theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
  theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
@@ -377,7 +380,7 @@ Leaf_height1%>%
 ####analysis
 ```{r}
 Leaf_Node1<-Leaf_Node%>%
-  dplyr::filter(Stage!="Seedling")
+  dplyr::filter(Stage.x!="Seedling")
 x=Leaf_Node1$NodeNumber.y
 y=Leaf_Node1$LAI
 
@@ -401,7 +404,7 @@ result <-  melt(result, id.vars = "x", variable.name = "model",
                 value.name = "fitted")
 ggplot(result, aes(x = x, y = fitted)) +
   theme_bw() +
-  facet_wrap(~Stage,ncol=2)+
+  facet_wrap(~Stage.x,ncol=2)+
   geom_point(data = Leaf_Node1, aes(x = x, y = y)) +xlab("Main node number")+ylab("LAI (m^2/m^2)")+
   geom_line(aes(colour = model), size = 1)+
   theme(legend.title=element_blank(),legend.position = "blank")+
@@ -1504,7 +1507,7 @@ GetApsimNGTable <- function(dbLoc, table)
 # change date to corerct format 
 # explore the df
 ```{r}
-db.address <- "D:\\APSIMX2\\Prototypes\\Lucerne\\LucerneValidation.db"
+db.address <- "D:\\APSIMX2\\Prototypes\\Lucerne\\LucerneChapter4.db"
 tableName<-"Report"
 DbTable <- GetApsimNGTable(db.address,tableName)
 df <- as.data.frame(DbTable)
@@ -1577,12 +1580,12 @@ obsLAI1<-ObsL%>%
  ggplot(aes(x=Clock.Today,y=Predicted))+geom_line(size=1)+theme_bw()+
  facet_wrap(~ID,ncol = 2)+
    mytheme3+
- annotate("text", x=ymd_hms("1999-10-24 12:00:00"), y=8, size = 5, label ="paste(R_RMSD == 52.5,'%')", parse=T)+
+ annotate("text", x=ymd_hms("1999-10-24 12:00:00"), y=9, size = 5, label ="paste(R_RMSD == 63.9,'%')", parse=T)+
    #geom_text(aes(x=ymd_hms("1999-10-24 12:00:00"), y=750, label="R_RMSD = 37.6%",size=5))
  geom_point(data=obsLAI1, aes(x=Clock.Today1, y=Observed),colour="green",size=3)+
  theme(legend.title=element_blank(),legend.position = "blank")+xlab("Date")+ylab(bquote(bold('LAI ('*m^2~m^-2*')')))
  
- ggsave("D:/R/Pictures/LAI/Iversen_8WaterirrLAI1.png", width=8, height=4, dpi=500)
+ #ggsave("D:/R/Pictures/LAI/Iversen_8WaterirrLAI1.png", width=8, height=4, dpi=500)
 
 ```
 ##2002-2004
@@ -1605,8 +1608,8 @@ ggplot(aes(x=Clock.Today,y=Predicted))+geom_line(size=1)+theme_bw()+
   geom_point(data=obsLAI2, aes(x=Clock.Today1, y=Observed),colour="green",size=3)+
   theme(legend.title=element_blank(),legend.position = "blank")+xlab("Date")+ylab(bquote(bold('LAI ('*m^2~m^-2*')')))+
    mytheme3+
- annotate("text", x=ymd_hms("2003-07-24 12:00:00"), y=8, size = 5, label ="paste(R_RMSD == 43.2,'%')", parse=T)
-ggsave("D:/R/Pictures/LAI/Iversen_91DefoliationLLLAI1.png", width=8, height=4, dpi=500)
+ annotate("text", x=ymd_hms("2003-07-24 12:00:00"), y=8, size = 5, label ="paste(R_RMSD == 41.9,'%')", parse=T)
+#ggsave("D:/R/Pictures/LAI/Iversen_91DefoliationLLLAI1.png", width=8, height=4, dpi=500)
 ```
 
 ```{r,  fig.height=8, fig.width=8}
@@ -1635,13 +1638,13 @@ p1
 
 
 dat_text1 <- data.frame(
-  label = c("R_RMSE=34.4%","R_RMSE=45.9%","R_RMSE=31.5%", "R_RMSE=52.2%"),
+  label = c("R_RMSE=36.6%","R_RMSE=47.2%","R_RMSE=27.3%", "R_RMSE=44.2%"),
   ID= c("E2ILLS1","E2ILLS2","E2ILLS3","E2ILLS4"),
   x= ymd_hms("2001-01-24 12:00:00", "2001-01-24 12:00:00","2001-01-24 12:00:00","2001-01-24 12:00:00"),
-  y=c(9,9,9,9)) 
+  y=c(8,8,8,8)) 
 
  p1   +geom_text(data=dat_text1, mapping = aes(x=x,y=y, label = label),hjust   = -0.1,vjust   = -1,size=5)+
-   scale_y_continuous(breaks = seq(0, 9, by =2), limits=c(0,10))
+   scale_y_continuous(breaks = seq(0, 8, by =2), limits=c(0,9))
  
 ggsave("D:/R/Pictures/LAI/Iversen_9SowingDateLAI1.png", width=8, height=8, dpi=500)
   
@@ -1673,7 +1676,7 @@ ggplot(aes(x=Clock.Today,y=Predicted))+geom_line(size=1)+theme_bw()+
   geom_point(data=obsLAI4, aes(x=Clock.Today1, y=Observed),colour="green",size=3)+
   theme(legend.title=element_blank(),legend.position = "blank")+xlab("Date")+ylab(bquote(bold('LAI ('*m^2~m^-2*')')))+
    mytheme3+
-annotate("text", x=ymd_hms("2016-07-24 12:00:00"), y=9.5, size = 5, label ="paste(R_RMSD == 52.4,'%')", parse=T)
+annotate("text", x=ymd_hms("2016-07-24 12:00:00"), y=9.5, size = 5, label ="paste(R_RMSD == 58.7,'%')", parse=T)
 
 ggsave("D:/R/Pictures/LAI/Iversen_121DefoliationLLFDFD5LAI1.png", width=8, height=4, dpi=500)
 

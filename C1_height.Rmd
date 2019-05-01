@@ -613,7 +613,7 @@ GetApsimNGTable <- function(dbLoc, table)
 # change date to corerct format 
 # explore the df
 ```{r}
-db.address <- "D:\\APSIMX2\\Prototypes\\Lucerne\\LucerneValidation.db"
+db.address <- "D:\\APSIMX2\\Prototypes\\Lucerne\\LucerneChapter4.db"
 tableName<-"Report"
 DbTable <- GetApsimNGTable(db.address,tableName)
 df <- as.data.frame(DbTable)
@@ -699,10 +699,10 @@ obsheight1<-ObsH%>%dplyr::filter(Name=="Iversen_8Waterirr")
  geom_point(data=obsheight1, aes(x=Clock.Today1, y=Observed),colour="green",size=3)+
  theme(legend.title=element_blank(),legend.position = "blank")+xlab("Date")+ylab("Plant height (mm)")+
  mytheme2+
- annotate("text", x=ymd_hms("1999-10-24 12:00:00"), y=750, size = 5, label ="paste(R_RMSD == 37.6,'%')", parse=T)
+ annotate("text", x=ymd_hms("1999-10-24 12:00:00"), y=750, size = 5, label ="paste(R_RMSD == 37.5,'%')", parse=T)
    #geom_text(aes(x=ymd_hms("1999-10-24 12:00:00"), y=750, label="R_RMSD = 37.6%",size=5))
  
-# ggsave("D:/R/Pictures/Height/Iversen_8Waterirrheight1.png", width=8, height=4, dpi=500)
+ #ggsave("D:/R/Pictures/Height/Iversen_8Waterirrheight1.png", width=8, height=4, dpi=500)
 ```
 ##2002-2004
 ```{r,  fig.height=4, fig.width=8}
@@ -722,7 +722,7 @@ ggplot(aes(x=Clock.Today,y=Predicted))+geom_line(size=1)+theme_bw()+
   geom_point(data=obsheight2, aes(x=Clock.Today1, y=Observed),colour="green",size=3)+
   theme(legend.title=element_blank(),legend.position = "blank")+xlab("Date")+ylab("Plant height (mm)")+
   mytheme2+
-  annotate("text", x=ymd_hms("2003-07-24 12:00:00"), y=750, size = 5, label ="paste(R_RMSD == 27.6,'%')", parse=T)
+  annotate("text", x=ymd_hms("2003-07-24 12:00:00"), y=750, size = 5, label ="paste(R_RMSD == 22.5,'%')", parse=T)
  #geom_text(aes(x=ymd_hms("2003-07-24 12:00:00"), y=750, label="R_RMSD = 27.6%",size=5))
  #ggsave("D:/R/Pictures/Height/Iversen_91DefoliationLLheight1.png", width=8, height=4, dpi=500)
 
@@ -754,7 +754,7 @@ ggplot(aes(x=Clock.Today,y=Predicted))+geom_line(size=1)+theme_bw()+
   geom_point(data=obsheight2, aes(x=Clock.Today1, y=Observed),colour="green",size=3)+
   theme(legend.title=element_blank(),legend.position = "blank")+xlab("Date")+ylab("Plant height (mm)")+
    mytheme2+
-  annotate("text", x=ymd_hms("2016-07-24 12:00:00"), y=920, size = 5, label ="paste(R_RMSD == 40,'%')" , parse=T)
+  annotate("text", x=ymd_hms("2016-07-24 12:00:00"), y=920, size = 5, label ="paste(R_RMSD == 37.5,'%')" , parse=T)
  #ggsave("D:/R/Pictures/Height/Iversen_121DefoliationLLFDFD5height1.png", width=8, height=4, dpi=500)
   
   
@@ -786,14 +786,14 @@ ggplot(aes(x=Clock.Today,y=Predicted))+geom_line(size=1)+theme_bw()+
   mytheme2
 
 dat_text <- data.frame(
-  label = c("R_RMSE=28.2%","R_RMSE=33.2%","R_RMSE=48.6%", "R_RMSE=34.5%"),
+  label = c("R_RMSE=29.5%","R_RMSE=34.7%","R_RMSE=34.3%", "R_RMSE=25.8%"),
   ID= c("E2ILLS1","E2ILLS2","E2ILLS3","E2ILLS4"),
   x= ymd_hms("2001-01-24 12:00:00", "2001-01-24 12:00:00","2001-01-24 12:00:00","2001-01-24 12:00:00"),
-  y=c(750,750,750,750)) 
+  y=c(700,700,700,700)) 
 
  p1 +geom_text(data=dat_text, mapping = aes(x=x,y=y, label = label),hjust   = -0.1,vjust   = -1,size=5)  
  
-#ggsave("D:/R/Pictures/Height/Iversen_9SowingDateSDWaterheight1.png", width=8, height=8, dpi=500)
+ggsave("D:/R/Pictures/Height/Iversen_9SowingDateSDWaterheight1.png", width=8, height=8, dpi=500)
   
 ```
 

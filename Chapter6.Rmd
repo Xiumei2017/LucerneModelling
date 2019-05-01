@@ -1,4 +1,4 @@
----
+   ---
 title: "R Notebook"
 output: html_notebook
 ---
@@ -487,9 +487,7 @@ ggplot(aes(x=Clock.Today,y=Predicted))+geom_line(size=1)+theme_bw()+
   geom_point(data=obsYield3, aes(x=Clock.Today1, y=Observed),colour="green",size=3)+
   theme(legend.title=element_blank(),legend.position = "blank")+xlab("Date")+ylab(bquote(bold('Shoot DM ('*kg~ha^-1*')')))+
   mytheme3
-  #annotate("text", x=ymd_hms("2016-07-24 12:00:00"), y=8500, size = 5, label ="paste(R_RMSD == 77.4,'%')" , parse=T)
- #geom_text(aes(x=ymd_hms("2016-07-24 12:00:00"), y=920,label="R_RMSD = 40%",size=5))
- #ggsave("D:/R/Pictures/Shoot/Iversen_121DefoliationLLFDFD5shoot1.png", width=8, height=4, dpi=500)
+  
   
 ```
 
@@ -498,7 +496,7 @@ ggplot(aes(x=Clock.Today,y=Predicted))+geom_line(size=1)+theme_bw()+
 ##SS
 ##FD2
 ```{r,  fig.height=4, fig.width=8}
-obsYield5<-obsdf%>%
+obsYield5<-obsfd%>%
   dplyr::filter(Collection=="2014_2018")%>%
   dplyr::filter(Variable=="shootbiomass")%>%
   dplyr::filter(Name=="Iversen_121DefoliationSSFDFD2")
@@ -522,7 +520,7 @@ ggplot(aes(x=Clock.Today,y=Predicted))+geom_line(size=1)+theme_bw()+
 ##SS
 ##FD10
 ```{r,  fig.height=4, fig.width=8}
-obsYield6<-obsdf%>%
+obsYield6<-obsfd%>%
   dplyr::filter(Collection=="2014_2018")%>%
   dplyr::filter(Variable=="shootbiomass")%>%
   dplyr::filter(Name=="Iversen_121DefoliationSSFDFD10")
@@ -545,7 +543,7 @@ ggplot(aes(x=Clock.Today,y=Predicted))+geom_line(size=1)+theme_bw()+
 ```
 
 ##Shootbiomass
-```{r,,fig.height=4, fig.width=10}
+```{r,,fig.height=6, fig.width=8}
 
 mergedf
 summary(mergedf)
@@ -560,7 +558,7 @@ mergedf %>%
   coord_fixed(ratio = 1)+
   ggtitle("shoot biomass")+mytheme3+
   facet_wrap(~ID, ncol = 3)+
-  theme(legend.title=element_blank())+xlab("Observed")+ylab("Predicted")+
+  theme(legend.title=element_blank(),legend.position = "blank")+xlab("Observed")+ylab("Predicted")+
   theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
   theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
 ```
@@ -587,167 +585,41 @@ mergedf %>%
   
 ```
 ####leaf biomass
-##2002-2004
-##LS
-```{r,  fig.height=4, fig.width=8}
-ObsLeaf1<-obsdf%>% 
-  dplyr::filter(Collection=="2002_2004")%>%
-  dplyr::filter(Variable=="LeafWt")%>%
-  dplyr::filter(Name=="Iversen_91DefoliationLS")
-
-simD1<-simD%>%
-  mutate(Clock.Today = ymd_hms(Clock.Today))%>%
-  dplyr::filter(Clock.Today>"2002-06-01")%>%
-  dplyr::filter(Variable=="LeafWt")%>%
-  dplyr::filter(Name=="Iversen_91DefoliationLS")
-str(simD1)
-simD1$Variable<- factor(simD1$Variable, levels=c("LeafWt")) 
-
-simD1%>%
-ggplot(aes(x=Clock.Today,y=Predicted))+geom_line(size=1)+theme_bw()+
-  facet_grid(~ID)+ggtitle(paste0("E3ILS","(Iversen_91DefoliationLS)"))+
-  geom_point(data=ObsLeaf1, aes(x=Clock.Today1, y=Observed),colour="green",size=3)+
-  theme(legend.title=element_blank(),legend.position = "blank")+xlab("Date")+ylab("Leaf biomass (kg/ha)")+
-  #remove grid lines 
-   theme(
-     panel.spacing=unit(.01, "lines"),
-     panel.border = element_rect(colour = "black",size=1), 
-     panel.grid.major = element_blank(),
-     panel.grid.minor = element_blank(),
-     axis.line = element_line(colour = "black",size = 1),
-     axis.text.x = element_text(face = "plain", color = "black", size = 14, vjust=0.5, hjust = 1),
-     axis.text.y = element_text(face = "plain", color = "black", size = 14),
-     axis.title.x=element_text(face="bold",colour="black",size = 14),
-     axis.title.y=element_text(face="bold",colour="black",size = 14),
-     strip.background = element_rect(colour = "black", fill = "white",size=1),
-     strip.text.x = element_text(size=14, angle=0, face = "plain"), 
-     strip.text.y = element_text(size=14, face="plain"),
-     legend.title = element_text(colour="black", size=14, face="bold"),
-     axis.text = element_text(face = "bold", vjust = 0.5, size = 14))
-   #annotate("text", x=ymd_hms("2016-07-24 12:00:00"), y=18, size = 5, label ="paste(R_RMSD == 64.5,'%')", parse=T)
-   #ggsave("D:/R/Pictures/C5/Node/Iversen_121DefoliationLLFDFD5nodenumber1.png", width=8, height=4, dpi=500)
-#ggsave("D:/R/Pictures/C5/Yield/Iversen_91DefoliationLLyield.png", width=8, height=8, dpi=500)
-  
-```
-##SL
-```{r,  fig.height=4, fig.width=8}
-ObsLeaf2<-obsdf%>% 
-  dplyr::filter(Collection=="2002_2004")%>%
-  dplyr::filter(Variable=="LeafWt")%>%
-  dplyr::filter(Name=="Iversen_91DefoliationSL")
-
-simD2<-simD%>%
-  mutate(Clock.Today = ymd_hms(Clock.Today))%>%
-  dplyr::filter(Clock.Today>"2002-06-01")%>%
-  dplyr::filter(Variable=="LeafWt")%>%
-  dplyr::filter(Name=="Iversen_91DefoliationSL")
-str(simD2)
-simD2$Variable<- factor(simD2$Variable, levels=c("LeafWt")) 
-
-simD2%>%
-ggplot(aes(x=Clock.Today,y=Predicted))+geom_line(size=1)+theme_bw()+
-  facet_grid(~ID)+ggtitle(paste0("E3ISL","(Iversen_91DefoliationSL)"))+
-  geom_point(data=ObsLeaf2, aes(x=Clock.Today1, y=Observed),colour="green",size=3)+
-  theme(legend.title=element_blank(),legend.position = "blank")+xlab("Date")+ylab("Leaf biomass (kg/ha)")+
-  #remove grid lines 
-   theme(
-     panel.spacing=unit(.01, "lines"),
-     panel.border = element_rect(colour = "black",size=1), 
-     panel.grid.major = element_blank(),
-     panel.grid.minor = element_blank(),
-     axis.line = element_line(colour = "black",size = 1),
-     axis.text.x = element_text(face = "plain", color = "black", size = 14, vjust=0.5, hjust = 1),
-     axis.text.y = element_text(face = "plain", color = "black", size = 14),
-     axis.title.x=element_text(face="bold",colour="black",size = 14),
-     axis.title.y=element_text(face="bold",colour="black",size = 14),
-     strip.background = element_rect(colour = "black", fill = "white",size=1),
-     strip.text.x = element_text(size=14, angle=0, face = "plain"), 
-     strip.text.y = element_text(size=14, face="plain"),
-     legend.title = element_text(colour="black", size=14, face="bold"),
-     axis.text = element_text(face = "bold", vjust = 0.5, size = 14))
-   #annotate("text", x=ymd_hms("2016-07-24 12:00:00"), y=18, size = 5, label ="paste(R_RMSD == 64.5,'%')", parse=T)
-   #ggsave("D:/R/Pictures/C5/Node/Iversen_121DefoliationLLFDFD5nodenumber1.png", width=8, height=4, dpi=500)
-#ggsave("D:/R/Pictures/C5/Yield/Iversen_91DefoliationLLyield.png", width=8, height=8, dpi=500)
-  
-```
-##SS
-```{r,  fig.height=4, fig.width=8}
-ObsLeaf3<-obsdf%>% 
-  dplyr::filter(Collection=="2002_2004")%>%
-  dplyr::filter(Variable=="LeafWt")%>%
-  dplyr::filter(Name=="Iversen_91DefoliationSS")
-
-simD3<-simD%>%
-  mutate(Clock.Today = ymd_hms(Clock.Today))%>%
-  dplyr::filter(Clock.Today>"2002-06-01")%>%
-  dplyr::filter(Variable=="LeafWt")%>%
-  dplyr::filter(Name=="Iversen_91DefoliationSS")
-str(simD3)
-simD3$Variable<- factor(simD3$Variable, levels=c("LeafWt")) 
-
-simD3%>%
-ggplot(aes(x=Clock.Today,y=Predicted))+geom_line(size=1)+theme_bw()+
-  facet_grid(~ID)+ggtitle(paste0("E3ISS","(Iversen_91DefoliationSS)"))+
-  geom_point(data=ObsLeaf2, aes(x=Clock.Today1, y=Observed),colour="green",size=3)+
-  theme(legend.title=element_blank(),legend.position = "blank")+xlab("Date")+ylab("Leaf biomass (kg/ha)")+
-  #remove grid lines 
-   theme(
-     panel.spacing=unit(.01, "lines"),
-     panel.border = element_rect(colour = "black",size=1), 
-     panel.grid.major = element_blank(),
-     panel.grid.minor = element_blank(),
-     axis.line = element_line(colour = "black",size = 1),
-     axis.text.x = element_text(face = "plain", color = "black", size = 14, vjust=0.5, hjust = 1),
-     axis.text.y = element_text(face = "plain", color = "black", size = 14),
-     axis.title.x=element_text(face="bold",colour="black",size = 14),
-     axis.title.y=element_text(face="bold",colour="black",size = 14),
-     strip.background = element_rect(colour = "black", fill = "white",size=1),
-     strip.text.x = element_text(size=14, angle=0, face = "plain"), 
-     strip.text.y = element_text(size=14, face="plain"),
-     legend.title = element_text(colour="black", size=14, face="bold"),
-     axis.text = element_text(face = "bold", vjust = 0.5, size = 14))
-   #annotate("text", x=ymd_hms("2016-07-24 12:00:00"), y=18, size = 5, label ="paste(R_RMSD == 64.5,'%')", parse=T)
-   #ggsave("D:/R/Pictures/C5/Node/Iversen_121DefoliationLLFDFD5nodenumber1.png", width=8, height=4, dpi=500)
-#ggsave("D:/R/Pictures/C5/Yield/Iversen_91DefoliationLLyield.png", width=8, height=8, dpi=500)
-  
-```
-
-
 ##2014-2018
 ```{r,  fig.height=4, fig.width=8}
-ObsLeaf4<-obsdf%>% 
-  dplyr::filter(Collection=="2014_2018")%>%
-  dplyr::filter(Variable=="LeafWt")%>%
-  dplyr::filter(Name=="Iversen_121DefoliationHHFDFD5")
-
-simD4<-simD%>%
-  mutate(Clock.Today = ymd_hms(Clock.Today))%>%
-  dplyr::filter(Variable=="LeafWt")%>%
-  dplyr::filter(Name=="Iversen_121DefoliationHHFDFD5")
-
-simD4$Variable<- factor(simD4$Variable, levels=c("LeafWt"))
-str(simD4)
-simD4%>%
-ggplot(aes(x=Clock.Today,y=Predicted))+geom_line(size=1)+theme_bw()+
-  facet_grid(~ID)+ggtitle(paste0("E5IHHFD5","(Iversen_121DefoliationHHFDFD5)"))+
-  geom_point(data=ObsLeaf4, aes(x=Clock.Today1, y=Observed),colour="green",size=3)+
-  theme(legend.title=element_blank(),legend.position = "blank")+xlab("Date")+ylab("Leaf biomass(kg/ha)")+
- #remove grid lines 
-   theme(
-     panel.spacing=unit(.01, "lines"),
-     panel.border = element_rect(colour = "black",size=1), 
-     panel.grid.major = element_blank(),
-     panel.grid.minor = element_blank(),
-     axis.line = element_line(colour = "black",size = 1),
-     axis.text.x = element_text(face = "plain", color = "black", size = 14, vjust=0.5, hjust = 1),
-     axis.text.y = element_text(face = "plain", color = "black", size = 14),
-     axis.title.x=element_text(face="bold",colour="black",size = 14),
-     axis.title.y=element_text(face="bold",colour="black",size = 14),
-     strip.background = element_rect(colour = "black", fill = "white",size=1),
-     strip.text.x = element_text(size=14, angle=0, face = "plain"), 
-     strip.text.y = element_text(size=14, face="plain"),
-     legend.title = element_text(colour="black", size=14, face="bold"),
-     axis.text = element_text(face = "bold", vjust = 0.5, size = 14))
+# ObsLeaf4<-obsfd%>% 
+#   dplyr::filter(Collection=="2014_2018")%>%
+#   dplyr::filter(Variable=="LeafWt")%>%
+#   dplyr::filter(Name=="Iversen_121DefoliationHHFDFD5")
+# 
+# simD4<-simD%>%
+#   mutate(Clock.Today = ymd_hms(Clock.Today))%>%
+#   dplyr::filter(Variable=="LeafWt")%>%
+#   dplyr::filter(Name=="Iversen_121DefoliationHHFDFD5")
+# 
+# simD4$Variable<- factor(simD4$Variable, levels=c("LeafWt"))
+# str(simD4)
+# simD4%>%
+# ggplot(aes(x=Clock.Today,y=Predicted))+geom_line(size=1)+theme_bw()+
+#   facet_grid(~ID)+ggtitle(paste0("E5IHHFD5","(Iversen_121DefoliationHHFDFD5)"))+
+#   geom_point(data=ObsLeaf4, aes(x=Clock.Today1, y=Observed),colour="green",size=3)+
+#   theme(legend.title=element_blank(),legend.position = "blank")+xlab("Date")+ylab("Leaf biomass(kg/ha)")+
+#  #remove grid lines 
+#    theme(
+#      panel.spacing=unit(.01, "lines"),
+#      panel.border = element_rect(colour = "black",size=1), 
+#      panel.grid.major = element_blank(),
+#      panel.grid.minor = element_blank(),
+#      axis.line = element_line(colour = "black",size = 1),
+#      axis.text.x = element_text(face = "plain", color = "black", size = 14, vjust=0.5, hjust = 1),
+#      axis.text.y = element_text(face = "plain", color = "black", size = 14),
+#      axis.title.x=element_text(face="bold",colour="black",size = 14),
+#      axis.title.y=element_text(face="bold",colour="black",size = 14),
+#      strip.background = element_rect(colour = "black", fill = "white",size=1),
+#      strip.text.x = element_text(size=14, angle=0, face = "plain"), 
+#      strip.text.y = element_text(size=14, face="plain"),
+#      legend.title = element_text(colour="black", size=14, face="bold"),
+#      axis.text = element_text(face = "bold", vjust = 0.5, size = 14))
    #annotate("text", x=ymd_hms("2016-07-24 12:00:00"), y=18, size = 5, label ="paste(R_RMSD == 64.5,'%')", parse=T)
    #ggsave("D:/R/Pictures/C5/Node/Iversen_121DefoliationLLFDFD5nodenumber1.png", width=8, height=4, dpi=500)
 #ggsave("D:/R/Pictures/C5/Yield/Iversen_121DefoliationLLFDFD5yield.png", width=8, height=8, dpi=500)
@@ -757,39 +629,39 @@ ggplot(aes(x=Clock.Today,y=Predicted))+geom_line(size=1)+theme_bw()+
 ##2014-2018
 ##SS
 ```{r,  fig.height=4, fig.width=8}
-ObsLeaf5<-obsdf%>% 
-  dplyr::filter(Collection=="2014_2018")%>%
-  dplyr::filter(Variable=="LeafWt")%>%
-  dplyr::filter(Name=="Iversen_121DefoliationSSFDFD5")
-
-simD5<-simD%>%
-  mutate(Clock.Today = ymd_hms(Clock.Today))%>%
-  dplyr::filter(Variable=="LeafWt")%>%
-  dplyr::filter(Name=="Iversen_121DefoliationSSFDFD5")
-
-simD5$Variable<- factor(simD4$Variable, levels=c("LeafWt"))
-str(simD5)
-simD5%>%
-ggplot(aes(x=Clock.Today,y=Predicted))+geom_line(size=1)+theme_bw()+
-  facet_grid(~ID)+ggtitle(paste0("E5IHHFD5","(Iversen_121DefoliationHHFDFD5)"))+
-  geom_point(data=ObsLeaf5, aes(x=Clock.Today1, y=Observed),colour="green",size=3)+
-  theme(legend.title=element_blank(),legend.position = "blank")+xlab("Date")+ylab("Leaf biomass(kg/ha)")+
- #remove grid lines 
-   theme(
-     panel.spacing=unit(.01, "lines"),
-     panel.border = element_rect(colour = "black",size=1), 
-     panel.grid.major = element_blank(),
-     panel.grid.minor = element_blank(),
-     axis.line = element_line(colour = "black",size = 1),
-     axis.text.x = element_text(face = "plain", color = "black", size = 14, vjust=0.5, hjust = 1),
-     axis.text.y = element_text(face = "plain", color = "black", size = 14),
-     axis.title.x=element_text(face="bold",colour="black",size = 14),
-     axis.title.y=element_text(face="bold",colour="black",size = 14),
-     strip.background = element_rect(colour = "black", fill = "white",size=1),
-     strip.text.x = element_text(size=14, angle=0, face = "plain"), 
-     strip.text.y = element_text(size=14, face="plain"),
-     legend.title = element_text(colour="black", size=14, face="bold"),
-     axis.text = element_text(face = "bold", vjust = 0.5, size = 14))
+# ObsLeaf5<-obsdf%>% 
+#   dplyr::filter(Collection=="2014_2018")%>%
+#   dplyr::filter(Variable=="LeafWt")%>%
+#   dplyr::filter(Name=="Iversen_121DefoliationSSFDFD5")
+# 
+# simD5<-simD%>%
+#   mutate(Clock.Today = ymd_hms(Clock.Today))%>%
+#   dplyr::filter(Variable=="LeafWt")%>%
+#   dplyr::filter(Name=="Iversen_121DefoliationSSFDFD5")
+# 
+# simD5$Variable<- factor(simD4$Variable, levels=c("LeafWt"))
+# str(simD5)
+# simD5%>%
+# ggplot(aes(x=Clock.Today,y=Predicted))+geom_line(size=1)+theme_bw()+
+#   facet_grid(~ID)+ggtitle(paste0("E5IHHFD5","(Iversen_121DefoliationHHFDFD5)"))+
+#   geom_point(data=ObsLeaf5, aes(x=Clock.Today1, y=Observed),colour="green",size=3)+
+#   theme(legend.title=element_blank(),legend.position = "blank")+xlab("Date")+ylab("Leaf biomass(kg/ha)")+
+#  #remove grid lines 
+#    theme(
+#      panel.spacing=unit(.01, "lines"),
+#      panel.border = element_rect(colour = "black",size=1), 
+#      panel.grid.major = element_blank(),
+#      panel.grid.minor = element_blank(),
+#      axis.line = element_line(colour = "black",size = 1),
+#      axis.text.x = element_text(face = "plain", color = "black", size = 14, vjust=0.5, hjust = 1),
+#      axis.text.y = element_text(face = "plain", color = "black", size = 14),
+#      axis.title.x=element_text(face="bold",colour="black",size = 14),
+#      axis.title.y=element_text(face="bold",colour="black",size = 14),
+#      strip.background = element_rect(colour = "black", fill = "white",size=1),
+#      strip.text.x = element_text(size=14, angle=0, face = "plain"), 
+#      strip.text.y = element_text(size=14, face="plain"),
+#      legend.title = element_text(colour="black", size=14, face="bold"),
+#      axis.text = element_text(face = "bold", vjust = 0.5, size = 14))
    #annotate("text", x=ymd_hms("2016-07-24 12:00:00"), y=18, size = 5, label ="paste(R_RMSD == 64.5,'%')", parse=T)
    #ggsave("D:/R/Pictures/C5/Node/Iversen_121DefoliationLLFDFD5nodenumber1.png", width=8, height=4, dpi=500)
 #ggsave("D:/R/Pictures/C5/Yield/Iversen_121DefoliationLLFDFD5yield.png", width=8, height=8, dpi=500)
@@ -799,217 +671,83 @@ ggplot(aes(x=Clock.Today,y=Predicted))+geom_line(size=1)+theme_bw()+
 
 ##Leaf biomass
 ```{r,,fig.height=4, fig.width=10}
-
-mergedf
-summary(mergedf)
-str(mergedf)
-
-mergedf %>%
-    dplyr::filter(Variable== "LeafWt") %>% 
-  ggplot(aes(x=Observed, y= Predicted, colour= factor(ID))) +
-  geom_point(size=2)+theme_bw()+
-  geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="darkgrey") +
-  geom_abline(intercept = 0, slope = 1) +
-  coord_fixed(ratio = 1)+
-  ggtitle("Leaf biomass")+mytheme3+
-  facet_wrap(~ID, ncol = 3)+
-  theme(legend.title=element_blank())+xlab("Observed")+ylab("Predicted")+
-  theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
-  theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
+# 
+# mergedf
+# summary(mergedf)
+# str(mergedf)
+# 
+# mergedf %>%
+#     dplyr::filter(Variable== "LeafWt") %>% 
+#   ggplot(aes(x=Observed, y= Predicted, colour= factor(ID))) +
+#   geom_point(size=2)+theme_bw()+
+#   geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="darkgrey") +
+#   geom_abline(intercept = 0, slope = 1) +
+#   coord_fixed(ratio = 1)+
+#   ggtitle("Leaf biomass")+mytheme3+
+#   facet_wrap(~ID, ncol = 3)+
+#   theme(legend.title=element_blank())+xlab("Observed")+ylab("Predicted")+
+#   theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
+#   theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
 ```
 
 ## RMSE
 ###leaf
 ```{r}
-str(mergedf)
-
-mergedf %>%
-  dplyr::filter(Variable== "LeafWt") %>%
-  group_by(ID) %>%
-  summarise(
-    n = n(),
-    r2 = gauchStats(Predicted,Observed)[5],
-  #  rmse = round(rmse(Predicted,Observed),0),
-    r_rmse = round(rmse(Predicted,Observed)/mean(Observed)*100,1),
-    nse = round(NSE(Predicted,Observed),1),
-    sb = gauchStats(Predicted,Observed)[1],
-  nu = gauchStats(Predicted,Observed)[2],
-  lc = gauchStats(Predicted,Observed)[3]
-  ) 
+# str(mergedf)
+# 
+# mergedf %>%
+#   dplyr::filter(Variable== "LeafWt") %>%
+#   group_by(ID) %>%
+#   summarise(
+#     n = n(),
+#     r2 = gauchStats(Predicted,Observed)[5],
+#   #  rmse = round(rmse(Predicted,Observed),0),
+#     r_rmse = round(rmse(Predicted,Observed)/mean(Observed)*100,1),
+#     nse = round(NSE(Predicted,Observed),1),
+#     sb = gauchStats(Predicted,Observed)[1],
+#   nu = gauchStats(Predicted,Observed)[2],
+#   lc = gauchStats(Predicted,Observed)[3]
+#   ) 
 
   
 ```
 ####Stem biomass
-##2002-2004
-##LS
-```{r,  fig.height=4, fig.width=8}
-ObsStem1<-obsdf%>% 
-  dplyr::filter(Collection=="2002_2004")%>%
-  dplyr::filter(Variable=="StemWt")%>%
-  dplyr::filter(Name=="Iversen_91DefoliationLS")
-
-simD1<-simD%>%
-  mutate(Clock.Today = ymd_hms(Clock.Today))%>%
-  dplyr::filter(Clock.Today>"2002-06-01")%>%
-  dplyr::filter(Variable=="StemWt")%>%
-  dplyr::filter(Name=="Iversen_91DefoliationLS")
-str(simD1)
-simD1$Variable<- factor(simD1$Variable, levels=c("StemWt")) 
-
-simD1%>%
-ggplot(aes(x=Clock.Today,y=Predicted))+geom_line(size=1)+theme_bw()+
-  facet_grid(~ID)+ggtitle(paste0("E3ILS","(Iversen_91DefoliationLS)"))+
-  geom_point(data=ObsStem1, aes(x=Clock.Today1, y=Observed),colour="green",size=3)+
-  theme(legend.title=element_blank(),legend.position = "blank")+xlab("Date")+ylab("Stem biomass (kg/ha)")+
-  #remove grid lines 
-   theme(
-     panel.spacing=unit(.01, "lines"),
-     panel.border = element_rect(colour = "black",size=1), 
-     panel.grid.major = element_blank(),
-     panel.grid.minor = element_blank(),
-     axis.line = element_line(colour = "black",size = 1),
-     axis.text.x = element_text(face = "plain", color = "black", size = 14, vjust=0.5, hjust = 1),
-     axis.text.y = element_text(face = "plain", color = "black", size = 14),
-     axis.title.x=element_text(face="bold",colour="black",size = 14),
-     axis.title.y=element_text(face="bold",colour="black",size = 14),
-     strip.background = element_rect(colour = "black", fill = "white",size=1),
-     strip.text.x = element_text(size=14, angle=0, face = "plain"), 
-     strip.text.y = element_text(size=14, face="plain"),
-     legend.title = element_text(colour="black", size=14, face="bold"),
-     axis.text = element_text(face = "bold", vjust = 0.5, size = 14))
-   #annotate("text", x=ymd_hms("2016-07-24 12:00:00"), y=18, size = 5, label ="paste(R_RMSD == 64.5,'%')", parse=T)
-   #ggsave("D:/R/Pictures/C5/Node/Iversen_121DefoliationLLFDFD5nodenumber1.png", width=8, height=4, dpi=500)
-#ggsave("D:/R/Pictures/C5/Yield/Iversen_91DefoliationLLyield.png", width=8, height=8, dpi=500)
-  
-
-
-```
-####Stem biomass
-##2002-2004
-##LS
-```{r,  fig.height=4, fig.width=8}
-ObsStem2<-obsdf%>% 
-  dplyr::filter(Collection=="2002_2004")%>%
-  dplyr::filter(Variable=="StemWt")%>%
-  dplyr::filter(Name=="Iversen_91DefoliationSL")
-
-simD2<-simD%>%
-  mutate(Clock.Today = ymd_hms(Clock.Today))%>%
-  dplyr::filter(Clock.Today>"2002-06-01")%>%
-  dplyr::filter(Variable=="StemWt")%>%
-  dplyr::filter(Name=="Iversen_91DefoliationSL")
-str(simD2)
-simD2$Variable<- factor(simD2$Variable, levels=c("StemWt")) 
-
-simD2%>%
-ggplot(aes(x=Clock.Today,y=Predicted))+geom_line(size=1)+theme_bw()+
-  facet_grid(~ID)+ggtitle(paste0("E3ISL","(Iversen_91DefoliationSL)"))+
-  geom_point(data=ObsStem3, aes(x=Clock.Today1, y=Observed),colour="green",size=3)+
-  theme(legend.title=element_blank(),legend.position = "blank")+xlab("Date")+ylab("Stem biomass (kg/ha)")+
-  #remove grid lines 
-   theme(
-     panel.spacing=unit(.01, "lines"),
-     panel.border = element_rect(colour = "black",size=1), 
-     panel.grid.major = element_blank(),
-     panel.grid.minor = element_blank(),
-     axis.line = element_line(colour = "black",size = 1),
-     axis.text.x = element_text(face = "plain", color = "black", size = 14, vjust=0.5, hjust = 1),
-     axis.text.y = element_text(face = "plain", color = "black", size = 14),
-     axis.title.x=element_text(face="bold",colour="black",size = 14),
-     axis.title.y=element_text(face="bold",colour="black",size = 14),
-     strip.background = element_rect(colour = "black", fill = "white",size=1),
-     strip.text.x = element_text(size=14, angle=0, face = "plain"), 
-     strip.text.y = element_text(size=14, face="plain"),
-     legend.title = element_text(colour="black", size=14, face="bold"),
-     axis.text = element_text(face = "bold", vjust = 0.5, size = 14))
-   #annotate("text", x=ymd_hms("2016-07-24 12:00:00"), y=18, size = 5, label ="paste(R_RMSD == 64.5,'%')", parse=T)
-   #ggsave("D:/R/Pictures/C5/Node/Iversen_121DefoliationLLFDFD5nodenumber1.png", width=8, height=4, dpi=500)
-#ggsave("D:/R/Pictures/C5/Yield/Iversen_91DefoliationLLyield.png", width=8, height=8, dpi=500)
-  
-
-
-```
-##2002-2004
-##SS
-```{r,  fig.height=4, fig.width=8}
-ObsStem3<-obsdf%>% 
-  dplyr::filter(Collection=="2002_2004")%>%
-  dplyr::filter(Variable=="StemWt")%>%
-  dplyr::filter(Name=="Iversen_91DefoliationSS")
-
-simD3<-simD%>%
-  mutate(Clock.Today = ymd_hms(Clock.Today))%>%
-  dplyr::filter(Clock.Today>"2002-06-01")%>%
-  dplyr::filter(Variable=="StemWt")%>%
-  dplyr::filter(Name=="Iversen_91DefoliationSS")
-str(simD3)
-simD3$Variable<- factor(simD3$Variable, levels=c("StemWt")) 
-
-simD3%>%
-ggplot(aes(x=Clock.Today,y=Predicted))+geom_line(size=1)+theme_bw()+
-  facet_grid(~ID)+ggtitle(paste0("E3ISS","(Iversen_91DefoliationSS)"))+
-  geom_point(data=ObsStem3, aes(x=Clock.Today1, y=Observed),colour="green",size=3)+
-  theme(legend.title=element_blank(),legend.position = "blank")+xlab("Date")+ylab("Stem biomass (kg/ha)")+
-  #remove grid lines 
-   theme(
-     panel.spacing=unit(.01, "lines"),
-     panel.border = element_rect(colour = "black",size=1), 
-     panel.grid.major = element_blank(),
-     panel.grid.minor = element_blank(),
-     axis.line = element_line(colour = "black",size = 1),
-     axis.text.x = element_text(face = "plain", color = "black", size = 14, vjust=0.5, hjust = 1),
-     axis.text.y = element_text(face = "plain", color = "black", size = 14),
-     axis.title.x=element_text(face="bold",colour="black",size = 14),
-     axis.title.y=element_text(face="bold",colour="black",size = 14),
-     strip.background = element_rect(colour = "black", fill = "white",size=1),
-     strip.text.x = element_text(size=14, angle=0, face = "plain"), 
-     strip.text.y = element_text(size=14, face="plain"),
-     legend.title = element_text(colour="black", size=14, face="bold"),
-     axis.text = element_text(face = "bold", vjust = 0.5, size = 14))
-   #annotate("text", x=ymd_hms("2016-07-24 12:00:00"), y=18, size = 5, label ="paste(R_RMSD == 64.5,'%')", parse=T)
-   #ggsave("D:/R/Pictures/C5/Node/Iversen_121DefoliationLLFDFD5nodenumber1.png", width=8, height=4, dpi=500)
-#ggsave("D:/R/Pictures/C5/Yield/Iversen_91DefoliationLLyield.png", width=8, height=8, dpi=500)
-  
-
-
-```
 ###HH
-
 ##2014-2018
 ```{r,  fig.height=4, fig.width=8}
-ObsStem4<-obsdf%>% 
-  dplyr::filter(Collection=="2014_2018")%>%
-  dplyr::filter(Variable=="StemWt")%>%
-  dplyr::filter(Name=="Iversen_121DefoliationHHFDFD5")
-
-simD4<-simD%>%
-  mutate(Clock.Today = ymd_hms(Clock.Today))%>%
-  dplyr::filter(Variable=="StemWt")%>%
-  dplyr::filter(Name=="Iversen_121DefoliationHHFDFD5")
-
-simD4$Variable<- factor(simD4$Variable, levels=c("StemWt"))
-str(simD4)
-simD4%>%
-ggplot(aes(x=Clock.Today,y=Predicted))+geom_line(size=1)+theme_bw()+
-  facet_grid(~ID)+ggtitle(paste0("E5IHHFD5","(Iversen_121DefoliationHHFDFD5)"))+
-  geom_point(data=ObsStem4, aes(x=Clock.Today1, y=Observed),colour="green",size=3)+
-  theme(legend.title=element_blank(),legend.position = "blank")+xlab("Date")+ylab("Stem biomass(kg/ha)")+
- #remove grid lines 
-   theme(
-     panel.spacing=unit(.01, "lines"),
-     panel.border = element_rect(colour = "black",size=1), 
-     panel.grid.major = element_blank(),
-     panel.grid.minor = element_blank(),
-     axis.line = element_line(colour = "black",size = 1),
-     axis.text.x = element_text(face = "plain", color = "black", size = 14, vjust=0.5, hjust = 1),
-     axis.text.y = element_text(face = "plain", color = "black", size = 14),
-     axis.title.x=element_text(face="bold",colour="black",size = 14),
-     axis.title.y=element_text(face="bold",colour="black",size = 14),
-     strip.background = element_rect(colour = "black", fill = "white",size=1),
-     strip.text.x = element_text(size=14, angle=0, face = "plain"), 
-     strip.text.y = element_text(size=14, face="plain"),
-     legend.title = element_text(colour="black", size=14, face="bold"),
-     axis.text = element_text(face = "bold", vjust = 0.5, size = 14))
+# ObsStem4<-obsdf%>% 
+#   dplyr::filter(Collection=="2014_2018")%>%
+#   dplyr::filter(Variable=="StemWt")%>%
+#   dplyr::filter(Name=="Iversen_121DefoliationHHFDFD5")
+# 
+# simD4<-simD%>%
+#   mutate(Clock.Today = ymd_hms(Clock.Today))%>%
+#   dplyr::filter(Variable=="StemWt")%>%
+#   dplyr::filter(Name=="Iversen_121DefoliationHHFDFD5")
+# 
+# simD4$Variable<- factor(simD4$Variable, levels=c("StemWt"))
+# str(simD4)
+# simD4%>%
+# ggplot(aes(x=Clock.Today,y=Predicted))+geom_line(size=1)+theme_bw()+
+#   facet_grid(~ID)+ggtitle(paste0("E5IHHFD5","(Iversen_121DefoliationHHFDFD5)"))+
+#   geom_point(data=ObsStem4, aes(x=Clock.Today1, y=Observed),colour="green",size=3)+
+#   theme(legend.title=element_blank(),legend.position = "blank")+xlab("Date")+ylab("Stem biomass(kg/ha)")+
+#  #remove grid lines 
+#    theme(
+#      panel.spacing=unit(.01, "lines"),
+#      panel.border = element_rect(colour = "black",size=1), 
+#      panel.grid.major = element_blank(),
+#      panel.grid.minor = element_blank(),
+#      axis.line = element_line(colour = "black",size = 1),
+#      axis.text.x = element_text(face = "plain", color = "black", size = 14, vjust=0.5, hjust = 1),
+#      axis.text.y = element_text(face = "plain", color = "black", size = 14),
+#      axis.title.x=element_text(face="bold",colour="black",size = 14),
+#      axis.title.y=element_text(face="bold",colour="black",size = 14),
+#      strip.background = element_rect(colour = "black", fill = "white",size=1),
+#      strip.text.x = element_text(size=14, angle=0, face = "plain"), 
+#      strip.text.y = element_text(size=14, face="plain"),
+#      legend.title = element_text(colour="black", size=14, face="bold"),
+#      axis.text = element_text(face = "bold", vjust = 0.5, size = 14))
    #annotate("text", x=ymd_hms("2016-07-24 12:00:00"), y=18, size = 5, label ="paste(R_RMSD == 64.5,'%')", parse=T)
    #ggsave("D:/R/Pictures/C5/Node/Iversen_121DefoliationLLFDFD5nodenumber1.png", width=8, height=4, dpi=500)
 #ggsave("D:/R/Pictures/C5/Yield/Iversen_121DefoliationLLFDFD5yield.png", width=8, height=8, dpi=500)
@@ -1020,39 +758,39 @@ ggplot(aes(x=Clock.Today,y=Predicted))+geom_line(size=1)+theme_bw()+
 
 ##2014-2018
 ```{r,  fig.height=4, fig.width=8}
-ObsStem5<-obsdf%>% 
-  dplyr::filter(Collection=="2014_2018")%>%
-  dplyr::filter(Variable=="StemWt")%>%
-  dplyr::filter(Name=="Iversen_121DefoliationSSFDFD5")
-
-simD5<-simD%>%
-  mutate(Clock.Today = ymd_hms(Clock.Today))%>%
-  dplyr::filter(Variable=="StemWt")%>%
-  dplyr::filter(Name=="Iversen_121DefoliationSSFDFD5")
-
-simD5$Variable<- factor(simD5$Variable, levels=c("StemWt"))
-str(simD5)
-simD5%>%
-ggplot(aes(x=Clock.Today,y=Predicted))+geom_line(size=1)+theme_bw()+
-  facet_grid(~ID)+ggtitle(paste0("E5IHHFD5","(Iversen_121DefoliationHHFDFD5)"))+
-  geom_point(data=ObsStem5, aes(x=Clock.Today1, y=Observed),colour="green",size=3)+
-  theme(legend.title=element_blank(),legend.position = "blank")+xlab("Date")+ylab("Stem biomass(kg/ha)")+
- #remove grid lines 
-   theme(
-     panel.spacing=unit(.01, "lines"),
-     panel.border = element_rect(colour = "black",size=1), 
-     panel.grid.major = element_blank(),
-     panel.grid.minor = element_blank(),
-     axis.line = element_line(colour = "black",size = 1),
-     axis.text.x = element_text(face = "plain", color = "black", size = 14, vjust=0.5, hjust = 1),
-     axis.text.y = element_text(face = "plain", color = "black", size = 14),
-     axis.title.x=element_text(face="bold",colour="black",size = 14),
-     axis.title.y=element_text(face="bold",colour="black",size = 14),
-     strip.background = element_rect(colour = "black", fill = "white",size=1),
-     strip.text.x = element_text(size=14, angle=0, face = "plain"), 
-     strip.text.y = element_text(size=14, face="plain"),
-     legend.title = element_text(colour="black", size=14, face="bold"),
-     axis.text = element_text(face = "bold", vjust = 0.5, size = 14))
+# ObsStem5<-obsdf%>% 
+#   dplyr::filter(Collection=="2014_2018")%>%
+#   dplyr::filter(Variable=="StemWt")%>%
+#   dplyr::filter(Name=="Iversen_121DefoliationSSFDFD5")
+# 
+# simD5<-simD%>%
+#   mutate(Clock.Today = ymd_hms(Clock.Today))%>%
+#   dplyr::filter(Variable=="StemWt")%>%
+#   dplyr::filter(Name=="Iversen_121DefoliationSSFDFD5")
+# 
+# simD5$Variable<- factor(simD5$Variable, levels=c("StemWt"))
+# str(simD5)
+# simD5%>%
+# ggplot(aes(x=Clock.Today,y=Predicted))+geom_line(size=1)+theme_bw()+
+#   facet_grid(~ID)+ggtitle(paste0("E5IHHFD5","(Iversen_121DefoliationHHFDFD5)"))+
+#   geom_point(data=ObsStem5, aes(x=Clock.Today1, y=Observed),colour="green",size=3)+
+#   theme(legend.title=element_blank(),legend.position = "blank")+xlab("Date")+ylab("Stem biomass(kg/ha)")+
+#  #remove grid lines 
+#    theme(
+#      panel.spacing=unit(.01, "lines"),
+#      panel.border = element_rect(colour = "black",size=1), 
+#      panel.grid.major = element_blank(),
+#      panel.grid.minor = element_blank(),
+#      axis.line = element_line(colour = "black",size = 1),
+#      axis.text.x = element_text(face = "plain", color = "black", size = 14, vjust=0.5, hjust = 1),
+#      axis.text.y = element_text(face = "plain", color = "black", size = 14),
+#      axis.title.x=element_text(face="bold",colour="black",size = 14),
+#      axis.title.y=element_text(face="bold",colour="black",size = 14),
+#      strip.background = element_rect(colour = "black", fill = "white",size=1),
+#      strip.text.x = element_text(size=14, angle=0, face = "plain"), 
+#      strip.text.y = element_text(size=14, face="plain"),
+#      legend.title = element_text(colour="black", size=14, face="bold"),
+#      axis.text = element_text(face = "bold", vjust = 0.5, size = 14))
    #annotate("text", x=ymd_hms("2016-07-24 12:00:00"), y=18, size = 5, label ="paste(R_RMSD == 64.5,'%')", parse=T)
    #ggsave("D:/R/Pictures/C5/Node/Iversen_121DefoliationLLFDFD5nodenumber1.png", width=8, height=4, dpi=500)
 #ggsave("D:/R/Pictures/C5/Yield/Iversen_121DefoliationLLFDFD5yield.png", width=8, height=8, dpi=500)
@@ -1066,50 +804,50 @@ ggplot(aes(x=Clock.Today,y=Predicted))+geom_line(size=1)+theme_bw()+
 ##Stem biomass
 ```{r,,fig.height=4, fig.width=10}
 
-mergedf
-summary(mergedf)
-str(mergedf)
-
-mergedf %>%
-    dplyr::filter(Variable== "StemWt") %>% 
-  dplyr::filter(FD== "FD5")%>%
-  dplyr::filter(Collection!="2010_2012")%>%
-  ggplot(aes(x=Observed, y= Predicted, colour= factor(ID))) +
-  geom_point(size=2)+theme_bw()+
-  geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="darkgrey") +
-  geom_abline(intercept = 0, slope = 1) +
-  coord_fixed(ratio = 1)+
-  ggtitle("Stem biomass")+mytheme3+
-  facet_wrap(~Collection, ncol = 4)+
-  theme(legend.title=element_blank())+xlab("Observed")+ylab("Predicted")+
-  theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
-  theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
+# mergedf
+# summary(mergedf)
+# str(mergedf)
+# 
+# mergedf %>%
+#     dplyr::filter(Variable== "StemWt") %>% 
+#   dplyr::filter(FD== "FD5")%>%
+#   dplyr::filter(Collection!="2010_2012")%>%
+#   ggplot(aes(x=Observed, y= Predicted, colour= factor(ID))) +
+#   geom_point(size=2)+theme_bw()+
+#   geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="darkgrey") +
+#   geom_abline(intercept = 0, slope = 1) +
+#   coord_fixed(ratio = 1)+
+#   ggtitle("Stem biomass")+mytheme3+
+#   facet_wrap(~Collection, ncol = 4)+
+#   theme(legend.title=element_blank())+xlab("Observed")+ylab("Predicted")+
+#   theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
+#   theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
 ```
 
 ## RMSE
 ###Stem
 ```{r}
-str(mergedf)
-
-mergedf %>%
-  dplyr::filter(Variable== "StemWt") %>% 
-  dplyr::filter(FD== "FD5")%>%
-  # dplyr::filter(Defoliation.x== "LL")%>%
- #filter(Variable == "NodeNumber") %>%
-  filter(Collection!="2010_2012")%>%
-  #mutate(Rotation= as.factor(Rotation.x))%>%
-  #mutate(GrowthSeason=as.factor(GrowthSeason.x))%>%
-  group_by(Name) %>%
-  summarise(
-    n = n(),
-    r2 = gauchStats(Predicted,Observed)[5],
-  #  rmse = round(rmse(Predicted,Observed),0),
-    r_rmse = round(rmse(Predicted,Observed)/mean(Observed)*100,1),
-    nse = round(NSE(Predicted,Observed),1),
-    sb = gauchStats(Predicted,Observed)[1],
-  nu = gauchStats(Predicted,Observed)[2],
-  lc = gauchStats(Predicted,Observed)[3]
-  ) 
+# str(mergedf)
+# 
+# mergedf %>%
+#   dplyr::filter(Variable== "StemWt") %>% 
+#   dplyr::filter(FD== "FD5")%>%
+#   # dplyr::filter(Defoliation.x== "LL")%>%
+#  #filter(Variable == "NodeNumber") %>%
+#   filter(Collection!="2010_2012")%>%
+#   #mutate(Rotation= as.factor(Rotation.x))%>%
+#   #mutate(GrowthSeason=as.factor(GrowthSeason.x))%>%
+#   group_by(Name) %>%
+#   summarise(
+#     n = n(),
+#     r2 = gauchStats(Predicted,Observed)[5],
+#   #  rmse = round(rmse(Predicted,Observed),0),
+#     r_rmse = round(rmse(Predicted,Observed)/mean(Observed)*100,1),
+#     nse = round(NSE(Predicted,Observed),1),
+#     sb = gauchStats(Predicted,Observed)[1],
+#   nu = gauchStats(Predicted,Observed)[2],
+#   lc = gauchStats(Predicted,Observed)[3]
+#   ) 
 
   
 ```
@@ -1118,159 +856,24 @@ mergedf %>%
 
 
 ####Rootbiomass
-##2002-2004
-```{r,  fig.height=4, fig.width=8}
-ObsR1<-obsdf%>% 
-  dplyr::filter(Collection=="2002_2004")%>%
-  dplyr::filter(Variable=="RootWt")%>%
-  dplyr::filter(Name=="Iversen_91DefoliationLS")
-
-simD2<-simD%>%
-  mutate(Clock.Today = ymd_hms(Clock.Today))%>%
-  dplyr::filter(Clock.Today>"2002-06-01")%>%
-  dplyr::filter(Variable=="RootWt")%>%
-  dplyr::filter(Name=="Iversen_91DefoliationLS")
-str(simD2)
-simD2$Variable<- factor(simD2$Variable, levels=c("shootbiomass","RootWt")) 
-
-simD2%>%
-ggplot(aes(x=Clock.Today,y=Predicted))+geom_line(size=1)+theme_bw()+
-  facet_grid(~ID)+ggtitle(paste0("E3ILL","(Iversen_91DefoliationLL)"))+
-  geom_point(data=ObsR1, aes(x=Clock.Today1, y=Observed),colour="green",size=3)+
-  theme(legend.title=element_blank(),legend.position = "blank")+xlab("Date")+ylab("Biomass (kg/ha)")+
-  #remove grid lines 
-   theme(
-     panel.spacing=unit(.01, "lines"),
-     panel.border = element_rect(colour = "black",size=1), 
-     panel.grid.major = element_blank(),
-     panel.grid.minor = element_blank(),
-     axis.line = element_line(colour = "black",size = 1),
-     axis.text.x = element_text(face = "plain", color = "black", size = 14, vjust=0.5, hjust = 1),
-     axis.text.y = element_text(face = "plain", color = "black", size = 14),
-     axis.title.x=element_text(face="bold",colour="black",size = 14),
-     axis.title.y=element_text(face="bold",colour="black",size = 14),
-     strip.background = element_rect(colour = "black", fill = "white",size=1),
-     strip.text.x = element_text(size=14, angle=0, face = "plain"), 
-     strip.text.y = element_text(size=14, face="plain"),
-     legend.title = element_text(colour="black", size=14, face="bold"),
-     axis.text = element_text(face = "bold", vjust = 0.5, size = 14))
-   #annotate("text", x=ymd_hms("2016-07-24 12:00:00"), y=18, size = 5, label ="paste(R_RMSD == 64.5,'%')", parse=T)
-   #ggsave("D:/R/Pictures/C5/Node/Iversen_121DefoliationLLFDFD5nodenumber1.png", width=8, height=4, dpi=500)
-#ggsave("D:/R/Pictures/C5/Yield/Iversen_91DefoliationLLyield.png", width=8, height=8, dpi=500)
-  
-
-
-```
-####Rootbiomass
-##2002-2004
-```{r,  fig.height=4, fig.width=8}
-ObsR3<-obsdf%>% 
-  dplyr::filter(Collection=="2002_2004")%>%
-  dplyr::filter(Variable=="RootWt")%>%
-  dplyr::filter(Name=="Iversen_91DefoliationSL")
-
-simD3<-simD%>%
-  mutate(Clock.Today = ymd_hms(Clock.Today))%>%
-  dplyr::filter(Clock.Today>"2002-06-01")%>%
-  dplyr::filter(Variable=="RootWt")%>%
-  dplyr::filter(Name=="Iversen_91DefoliationSL")
-str(simD3)
-simD3$Variable<- factor(simD3$Variable, levels=c("shootbiomass","RootWt")) 
-
-simD3%>%
-ggplot(aes(x=Clock.Today,y=Predicted))+geom_line(size=1)+theme_bw()+
-  facet_grid(~ID)+ggtitle(paste0("E3ISL","(Iversen_91DefoliationSL)"))+
-  geom_point(data=ObsR3, aes(x=Clock.Today1, y=Observed),colour="green",size=3)+
-  theme(legend.title=element_blank(),legend.position = "blank")+xlab("Date")+ylab("Biomass (kg/ha)")+
-  #remove grid lines 
-   theme(
-     panel.spacing=unit(.01, "lines"),
-     panel.border = element_rect(colour = "black",size=1), 
-     panel.grid.major = element_blank(),
-     panel.grid.minor = element_blank(),
-     axis.line = element_line(colour = "black",size = 1),
-     axis.text.x = element_text(face = "plain", color = "black", size = 14, vjust=0.5, hjust = 1),
-     axis.text.y = element_text(face = "plain", color = "black", size = 14),
-     axis.title.x=element_text(face="bold",colour="black",size = 14),
-     axis.title.y=element_text(face="bold",colour="black",size = 14),
-     strip.background = element_rect(colour = "black", fill = "white",size=1),
-     strip.text.x = element_text(size=14, angle=0, face = "plain"), 
-     strip.text.y = element_text(size=14, face="plain"),
-     legend.title = element_text(colour="black", size=14, face="bold"),
-     axis.text = element_text(face = "bold", vjust = 0.5, size = 14))
-   #annotate("text", x=ymd_hms("2016-07-24 12:00:00"), y=18, size = 5, label ="paste(R_RMSD == 64.5,'%')", parse=T)
-   #ggsave("D:/R/Pictures/C5/Node/Iversen_121DefoliationLLFDFD5nodenumber1.png", width=8, height=4, dpi=500)
-#ggsave("D:/R/Pictures/C5/Yield/Iversen_91DefoliationLLyield.png", width=8, height=8, dpi=500)
-  
-
-
-```
-####Rootbiomass
-##2002-2004
-```{r,  fig.height=4, fig.width=8}
-ObsR4<-obsdf%>% 
-  dplyr::filter(Collection=="2002_2004")%>%
-  dplyr::filter(Variable=="RootWt")%>%
-  dplyr::filter(Name=="Iversen_91DefoliationSS")
-
-simD4<-simD%>%
-  mutate(Clock.Today = ymd_hms(Clock.Today))%>%
-  dplyr::filter(Clock.Today>"2002-06-01")%>%
-  dplyr::filter(Variable=="RootWt")%>%
-  dplyr::filter(Name=="Iversen_91DefoliationSS")
-str(simD4)
-simD4$Variable<- factor(simD4$Variable, levels=c("shootbiomass","RootWt")) 
-
-simD4%>%
-ggplot(aes(x=Clock.Today,y=Predicted))+geom_line(size=1)+theme_bw()+
-  facet_grid(~ID)+ggtitle(paste0("E3ISS","(Iversen_91DefoliationSS)"))+
-  geom_point(data=ObsR4, aes(x=Clock.Today1, y=Observed),colour="green",size=3)+
-  theme(legend.title=element_blank(),legend.position = "blank")+xlab("Date")+ylab("Biomass (kg/ha)")+
-  #remove grid lines 
-   theme(
-     panel.spacing=unit(.01, "lines"),
-     panel.border = element_rect(colour = "black",size=1), 
-     panel.grid.major = element_blank(),
-     panel.grid.minor = element_blank(),
-     axis.line = element_line(colour = "black",size = 1),
-     axis.text.x = element_text(face = "plain", color = "black", size = 14, vjust=0.5, hjust = 1),
-     axis.text.y = element_text(face = "plain", color = "black", size = 14),
-     axis.title.x=element_text(face="bold",colour="black",size = 14),
-     axis.title.y=element_text(face="bold",colour="black",size = 14),
-     strip.background = element_rect(colour = "black", fill = "white",size=1),
-     strip.text.x = element_text(size=14, angle=0, face = "plain"), 
-     strip.text.y = element_text(size=14, face="plain"),
-     legend.title = element_text(colour="black", size=14, face="bold"),
-     axis.text = element_text(face = "bold", vjust = 0.5, size = 14))
-   #annotate("text", x=ymd_hms("2016-07-24 12:00:00"), y=18, size = 5, label ="paste(R_RMSD == 64.5,'%')", parse=T)
-   #ggsave("D:/R/Pictures/C5/Node/Iversen_121DefoliationLLFDFD5nodenumber1.png", width=8, height=4, dpi=500)
-#ggsave("D:/R/Pictures/C5/Yield/Iversen_91DefoliationLLyield.png", width=8, height=8, dpi=500)
-  
-
-
-```
-
-
-
-
 ##2014-2018
-##HH
+##HHFD2
 ```{r,  fig.height=4, fig.width=8}
-ObsR5<-obsdf%>% 
+ObsR5<-obsfd%>% 
   dplyr::filter(Collection=="2014_2018")%>%
   dplyr::filter(Variable=="RootWt")%>%
-  dplyr::filter(Name=="Iversen_121DefoliationHHFDFD5")
+  dplyr::filter(Name=="Iversen_121DefoliationHHFDFD2")
 
 simD5<-simD%>%
   mutate(Clock.Today = ymd_hms(Clock.Today))%>%
   dplyr::filter(Variable=="RootWt")%>%
-  dplyr::filter(Name=="Iversen_121DefoliationHHFDFD5")
+  dplyr::filter(Name=="Iversen_121DefoliationHHFDFD2")
 
 simD5$Variable<- factor(simD5$Variable, levels=c("shootbiomass","RootWt"))
 str(simD5)
 simD5%>%
 ggplot(aes(x=Clock.Today,y=Predicted))+geom_line(size=1)+theme_bw()+
-  facet_grid(~ID)+ggtitle(paste0("E5ILLFD5","(Iversen_121DefoliationHHFDFD5)"))+
+  facet_grid(~ID)+ggtitle(paste0("E5IHHFD2","(Iversen_121DefoliationHHFDFD2)"))+
   geom_point(data=ObsR5, aes(x=Clock.Today1, y=Observed),colour="green",size=3)+
   theme(legend.title=element_blank(),legend.position = "blank")+xlab("Date")+ylab("Root biomass(kg/ha)")+
  #remove grid lines 
@@ -1295,25 +898,23 @@ ggplot(aes(x=Clock.Today,y=Predicted))+geom_line(size=1)+theme_bw()+
   
 
 ```
-
-##2014-2018
-##SS
+##HHFD10
 ```{r,  fig.height=4, fig.width=8}
-ObsR6<-obsdf%>% 
+ObsR6<-obsfd%>% 
   dplyr::filter(Collection=="2014_2018")%>%
   dplyr::filter(Variable=="RootWt")%>%
-  dplyr::filter(Name=="Iversen_121DefoliationSSFDFD5")
+  dplyr::filter(Name=="Iversen_121DefoliationHHFDFD10")
 
 simD6<-simD%>%
   mutate(Clock.Today = ymd_hms(Clock.Today))%>%
   dplyr::filter(Variable=="RootWt")%>%
-  dplyr::filter(Name=="Iversen_121DefoliationSSFDFD5")
+  dplyr::filter(Name=="Iversen_121DefoliationHHFDFD10")
 
 simD6$Variable<- factor(simD6$Variable, levels=c("shootbiomass","RootWt"))
 str(simD6)
 simD6%>%
 ggplot(aes(x=Clock.Today,y=Predicted))+geom_line(size=1)+theme_bw()+
-  facet_grid(~ID)+ggtitle(paste0("E5ILLFD5","(Iversen_121DefoliationHHFDFD5)"))+
+  facet_grid(~ID)+ggtitle(paste0("E5IHHFD10","(Iversen_121DefoliationHHFDFD10)"))+
   geom_point(data=ObsR6, aes(x=Clock.Today1, y=Observed),colour="green",size=3)+
   theme(legend.title=element_blank(),legend.position = "blank")+xlab("Date")+ylab("Root biomass(kg/ha)")+
  #remove grid lines 
@@ -1338,6 +939,178 @@ ggplot(aes(x=Clock.Today,y=Predicted))+geom_line(size=1)+theme_bw()+
   
 
 ```
+##LLFD10
+```{r,  fig.height=4, fig.width=8}
+ObsR7<-obsfd%>% 
+  dplyr::filter(Collection=="2014_2018")%>%
+  dplyr::filter(Variable=="RootWt")%>%
+  dplyr::filter(Name=="Iversen_121DefoliationLLFDFD10")
+
+simD7<-simD%>%
+  mutate(Clock.Today = ymd_hms(Clock.Today))%>%
+  dplyr::filter(Variable=="RootWt")%>%
+  dplyr::filter(Name=="Iversen_121DefoliationLLFDFD10")
+
+simD7$Variable<- factor(simD7$Variable, levels=c("shootbiomass","RootWt"))
+str(simD7)
+simD7%>%
+ggplot(aes(x=Clock.Today,y=Predicted))+geom_line(size=1)+theme_bw()+
+  facet_grid(~ID)+ggtitle(paste0("E5ILLFD10","(Iversen_121DefoliationLLFDFD10)"))+
+  geom_point(data=ObsR7, aes(x=Clock.Today1, y=Observed),colour="green",size=3)+
+  theme(legend.title=element_blank(),legend.position = "blank")+xlab("Date")+ylab("Root biomass(kg/ha)")+
+ #remove grid lines 
+   theme(
+     panel.spacing=unit(.01, "lines"),
+     panel.border = element_rect(colour = "black",size=1), 
+     panel.grid.major = element_blank(),
+     panel.grid.minor = element_blank(),
+     axis.line = element_line(colour = "black",size = 1),
+     axis.text.x = element_text(face = "plain", color = "black", size = 14, vjust=0.5, hjust = 1),
+     axis.text.y = element_text(face = "plain", color = "black", size = 14),
+     axis.title.x=element_text(face="bold",colour="black",size = 14),
+     axis.title.y=element_text(face="bold",colour="black",size = 14),
+     strip.background = element_rect(colour = "black", fill = "white",size=1),
+     strip.text.x = element_text(size=14, angle=0, face = "plain"), 
+     strip.text.y = element_text(size=14, face="plain"),
+     legend.title = element_text(colour="black", size=14, face="bold"),
+     axis.text = element_text(face = "bold", vjust = 0.5, size = 14))
+   #annotate("text", x=ymd_hms("2016-07-24 12:00:00"), y=18, size = 5, label ="paste(R_RMSD == 64.5,'%')", parse=T)
+   #ggsave("D:/R/Pictures/C5/Node/Iversen_121DefoliationLLFDFD5nodenumber1.png", width=8, height=4, dpi=500)
+#ggsave("D:/R/Pictures/C5/Yield/Iversen_121DefoliationLLFDFD5yield.png", width=8, height=8, dpi=500)
+  
+
+```
+##LLFD2
+```{r,  fig.height=4, fig.width=8}
+ObsR8<-obsfd%>% 
+  dplyr::filter(Collection=="2014_2018")%>%
+  dplyr::filter(Variable=="RootWt")%>%
+  dplyr::filter(Name=="Iversen_121DefoliationLLFDFD2")
+
+simD8<-simD%>%
+  mutate(Clock.Today = ymd_hms(Clock.Today))%>%
+  dplyr::filter(Variable=="RootWt")%>%
+  dplyr::filter(Name=="Iversen_121DefoliationLLFDFD2")
+
+simD8$Variable<- factor(simD8$Variable, levels=c("shootbiomass","RootWt"))
+str(simD8)
+simD8%>%
+ggplot(aes(x=Clock.Today,y=Predicted))+geom_line(size=1)+theme_bw()+
+  facet_grid(~ID)+ggtitle(paste0("E5ILLFD10","(Iversen_121DefoliationLLFDFD10)"))+
+  geom_point(data=ObsR8, aes(x=Clock.Today1, y=Observed),colour="green",size=3)+
+  theme(legend.title=element_blank(),legend.position = "blank")+xlab("Date")+ylab("Root biomass(kg/ha)")+
+ #remove grid lines 
+   theme(
+     panel.spacing=unit(.01, "lines"),
+     panel.border = element_rect(colour = "black",size=1), 
+     panel.grid.major = element_blank(),
+     panel.grid.minor = element_blank(),
+     axis.line = element_line(colour = "black",size = 1),
+     axis.text.x = element_text(face = "plain", color = "black", size = 14, vjust=0.5, hjust = 1),
+     axis.text.y = element_text(face = "plain", color = "black", size = 14),
+     axis.title.x=element_text(face="bold",colour="black",size = 14),
+     axis.title.y=element_text(face="bold",colour="black",size = 14),
+     strip.background = element_rect(colour = "black", fill = "white",size=1),
+     strip.text.x = element_text(size=14, angle=0, face = "plain"), 
+     strip.text.y = element_text(size=14, face="plain"),
+     legend.title = element_text(colour="black", size=14, face="bold"),
+     axis.text = element_text(face = "bold", vjust = 0.5, size = 14))
+   #annotate("text", x=ymd_hms("2016-07-24 12:00:00"), y=18, size = 5, label ="paste(R_RMSD == 64.5,'%')", parse=T)
+   #ggsave("D:/R/Pictures/C5/Node/Iversen_121DefoliationLLFDFD5nodenumber1.png", width=8, height=4, dpi=500)
+#ggsave("D:/R/Pictures/C5/Yield/Iversen_121DefoliationLLFDFD5yield.png", width=8, height=8, dpi=500)
+  
+
+```
+
+
+##2014-2018
+##SS
+##FD2
+```{r,  fig.height=4, fig.width=8}
+ObsR9<-obsfd%>% 
+  dplyr::filter(Collection=="2014_2018")%>%
+  dplyr::filter(Variable=="RootWt")%>%
+  dplyr::filter(Name=="Iversen_121DefoliationSSFDFD2")
+
+simD9<-simD%>%
+  mutate(Clock.Today = ymd_hms(Clock.Today))%>%
+  dplyr::filter(Variable=="RootWt")%>%
+  dplyr::filter(Name=="Iversen_121DefoliationSSFDFD2")
+
+simD9$Variable<- factor(simD9$Variable, levels=c("shootbiomass","RootWt"))
+str(simD9)
+simD9%>%
+ggplot(aes(x=Clock.Today,y=Predicted))+geom_line(size=1)+theme_bw()+
+  facet_grid(~ID)+ggtitle(paste0("E5ISSFD2","(Iversen_121DefoliationSSFDFD2)"))+
+  geom_point(data=ObsR9, aes(x=Clock.Today1, y=Observed),colour="green",size=3)+
+  theme(legend.title=element_blank(),legend.position = "blank")+xlab("Date")+ylab("Root biomass(kg/ha)")+
+ #remove grid lines 
+   theme(
+     panel.spacing=unit(.01, "lines"),
+     panel.border = element_rect(colour = "black",size=1), 
+     panel.grid.major = element_blank(),
+     panel.grid.minor = element_blank(),
+     axis.line = element_line(colour = "black",size = 1),
+     axis.text.x = element_text(face = "plain", color = "black", size = 14, vjust=0.5, hjust = 1),
+     axis.text.y = element_text(face = "plain", color = "black", size = 14),
+     axis.title.x=element_text(face="bold",colour="black",size = 14),
+     axis.title.y=element_text(face="bold",colour="black",size = 14),
+     strip.background = element_rect(colour = "black", fill = "white",size=1),
+     strip.text.x = element_text(size=14, angle=0, face = "plain"), 
+     strip.text.y = element_text(size=14, face="plain"),
+     legend.title = element_text(colour="black", size=14, face="bold"),
+     axis.text = element_text(face = "bold", vjust = 0.5, size = 14))
+   #annotate("text", x=ymd_hms("2016-07-24 12:00:00"), y=18, size = 5, label ="paste(R_RMSD == 64.5,'%')", parse=T)
+   #ggsave("D:/R/Pictures/C5/Node/Iversen_121DefoliationLLFDFD5nodenumber1.png", width=8, height=4, dpi=500)
+#ggsave("D:/R/Pictures/C5/Yield/Iversen_121DefoliationLLFDFD5yield.png", width=8, height=8, dpi=500)
+  
+
+```
+##SS
+##FD10
+```{r,  fig.height=4, fig.width=8}
+ObsR10<-obsfd%>% 
+  dplyr::filter(Collection=="2014_2018")%>%
+  dplyr::filter(Variable=="RootWt")%>%
+  dplyr::filter(Name=="Iversen_121DefoliationSSFDFD10")
+
+simD10<-simD%>%
+  mutate(Clock.Today = ymd_hms(Clock.Today))%>%
+  dplyr::filter(Variable=="RootWt")%>%
+  dplyr::filter(Name=="Iversen_121DefoliationSSFDFD10")
+
+simD10$Variable<- factor(simD9$Variable, levels=c("shootbiomass","RootWt"))
+str(simD10)
+simD9%>%
+ggplot(aes(x=Clock.Today,y=Predicted))+geom_line(size=1)+theme_bw()+
+  facet_grid(~ID)+ggtitle(paste0("E5ISSFD10","(Iversen_121DefoliationSSFDFD10)"))+
+  geom_point(data=ObsR10, aes(x=Clock.Today1, y=Observed),colour="green",size=3)+
+  theme(legend.title=element_blank(),legend.position = "blank")+xlab("Date")+ylab("Root biomass(kg/ha)")+
+ #remove grid lines 
+   theme(
+     panel.spacing=unit(.01, "lines"),
+     panel.border = element_rect(colour = "black",size=1), 
+     panel.grid.major = element_blank(),
+     panel.grid.minor = element_blank(),
+     axis.line = element_line(colour = "black",size = 1),
+     axis.text.x = element_text(face = "plain", color = "black", size = 14, vjust=0.5, hjust = 1),
+     axis.text.y = element_text(face = "plain", color = "black", size = 14),
+     axis.title.x=element_text(face="bold",colour="black",size = 14),
+     axis.title.y=element_text(face="bold",colour="black",size = 14),
+     strip.background = element_rect(colour = "black", fill = "white",size=1),
+     strip.text.x = element_text(size=14, angle=0, face = "plain"), 
+     strip.text.y = element_text(size=14, face="plain"),
+     legend.title = element_text(colour="black", size=14, face="bold"),
+     axis.text = element_text(face = "bold", vjust = 0.5, size = 14))
+   #annotate("text", x=ymd_hms("2016-07-24 12:00:00"), y=18, size = 5, label ="paste(R_RMSD == 64.5,'%')", parse=T)
+   #ggsave("D:/R/Pictures/C5/Node/Iversen_121DefoliationLLFDFD5nodenumber1.png", width=8, height=4, dpi=500)
+#ggsave("D:/R/Pictures/C5/Yield/Iversen_121DefoliationLLFDFD5yield.png", width=8, height=8, dpi=500)
+  
+
+```
+
+
+
 ##root biomass
 ```{r,,fig.height=4, fig.width=10}
 
@@ -1347,7 +1120,6 @@ str(mergedf)
 
 mergedf %>%
     dplyr::filter(Variable== "RootWt") %>% 
-  dplyr::filter(FD== "FD5")%>%
   dplyr::filter(Collection!="2010_2012")%>%
   ggplot(aes(x=Observed, y= Predicted, colour= factor(ID))) +
   geom_point(size=2)+theme_bw()+
@@ -1355,7 +1127,7 @@ mergedf %>%
   geom_abline(intercept = 0, slope = 1) +
   coord_fixed(ratio = 1)+
   ggtitle("Root biomass")+mytheme3+
-  facet_wrap(~ID, ncol = 4)+
+  facet_wrap(~ID, ncol = 3)+
   theme(legend.title=element_blank())+xlab("Observed")+ylab("Predicted")+
   theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
   theme(axis.title.y=element_text(face="bold",colour="black",size = 12))
@@ -1368,12 +1140,6 @@ str(mergedf)
 
 mergedf %>%
   dplyr::filter(Variable== "RootWt") %>% 
-  dplyr::filter(FD== "FD5")%>%
-  # dplyr::filter(Defoliation.x== "LL")%>%
- #filter(Variable == "NodeNumber") %>%
-  filter(Collection!="2010_2012")%>%
-  #mutate(Rotation= as.factor(Rotation.x))%>%
-  #mutate(GrowthSeason=as.factor(GrowthSeason.x))%>%
   group_by(ID) %>%
   summarise(
     n = n(),

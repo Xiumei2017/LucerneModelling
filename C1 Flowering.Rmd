@@ -18,6 +18,7 @@ library(RSQLite)
 library(agricolae)
 library(scales)
 library(zoo)
+library(polynom)
 ```
 ## Load metdata with Tt and Pmean for each experiment
 ```{r LoadSim, include = FALSE, echo=FALSE, warning=FALSE, fig.height=8, fig.width=8}
@@ -30,7 +31,6 @@ metTtData <- met %>% mutate(Clock.Today = dmy(Clock.Today))%>%
   mutate()
 metTtData
 str(metTtData)
-
 
 ```
 
@@ -204,16 +204,37 @@ merge.fls<-merge(merge.fl,metPp1, by="StartDate")%>%
 ```
 ####plot Buds visual data 
 ```{r}
-merge.BVs
+detach(package:dplyr)
+library(dplyr)
+library(plyr)
+
 BudsD<-merge.BVs%>%
   dplyr::filter(Water=="irr")
+
+my.formula  <- function(BudsD){
+  my.formula <- Tt_broken_sum_BV ~ poly(Pps, 2, raw = TRUE)
+  m <- lm(my.formula, BudsD)
+  my.eq <- as.character(signif(as.polynomial(coef(m)), 2))
+  label.text <- paste("y","'='",paste(gsub("y", "~italic(x)",my.eq, fixed = TRUE)),
+              paste("italic(R)^2",format(summary(m)$r.squared, digits = 2), 
+                    sep = "~`=`~"),
+                    sep = "~~~~")
+  as.character(as.expression(label.text));                 
+}
+
+my.eqs <- ddply(BudsD,.(Stage),my.formula)
+
+
 BudsD%>%
   ggplot(aes(x=Pps, y=Tt_broken_sum_BV, colour=factor(ID)))+geom_point(size=2)+theme_bw()+xlab("Photoperiod at start of regrowth (h) ")+ylab("Tt0-bv (°Cd)")+
  facet_wrap(~Stage)+theme(legend.title=element_blank())+
-  geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="darkgrey")+
+   geom_smooth(method = "lm", se = TRUE, formula=y ~ poly(x, 2, raw=TRUE), colour="darkgrey")+
   theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
  theme(axis.title.y=element_text(face="bold",colour="black",size = 12))+
-  mytheme3
+  mytheme3+
+  geom_text(data = my.eqs, aes(x = 13.4, y = 1400, label = V1), 
+          color = 'black',  parse = TRUE, size=4)
+detach(package:plyr)
 ggsave("D:/R/Pictures/Buds/Ttbuds.png", width=8, height=4, dpi=500)
 
 ```
@@ -284,6 +305,9 @@ summary(model2)
 ```
 
 ```{r,width=10, height=5}
+
+
+
 flowerD<-merge.fls%>%
   dplyr::filter(Water=="irr")
   #dplyr::filter(Defoliation=="LL")
@@ -317,9 +341,11 @@ flowerD%>%
   theme(axis.title.x=element_text(face="bold",colour="black",size = 12))+
  theme(axis.title.y=element_text(face="bold",colour="black",size = 12))+
   mytheme3
+  
 ggsave("D:/R/Pictures/Buds/Ttfl1.png", width=8, height=6, dpi=500)
 ```
 ```{r, width=12, height=4}
+
 BudsD1<-BudsD%>%
    mutate(GrowthRotation=paste0(GrowthSeason,Rotation))%>%
   dplyr::select(StartDate,ExpUnitCode,Tt_broken_sum_BV,Stage,Trend,Name,GrowthRotation,ID,ExperimentID)
@@ -328,7 +354,23 @@ flowerD1<-flowerD%>%
   dplyr::select(StartDate,Tt_broken_sum_fl)
 
 mergeBF<-merge(BudsD1,flowerD1, by="StartDate")
-  
+
+detach(package:dplyr)
+library(dplyr)
+library(plyr)
+
+my.formula  <- function(mergeBF){
+  m <- lm(Tt_broken_sum_fl~Tt_broken_sum_BV , mergeBF)
+   eq <- substitute(italic(y) == Tt_broken_sum_BV + Tt_broken_sum_fl %.% italic(Tt_broken_sum_BV)*","~~italic(R)^2~"="~r2, 
+                   list(Tt_broken_sum_BV= format(coef(m)[1], digits = 2), 
+                         Tt_broken_sum_fl = format(coef(m)[2], digits = 2), 
+                         r2 = format(summary(m)$r.squared, digits = 3)))
+   as.character(as.expression(eq));                 
+}
+
+my.eqs1 <- ddply(mergeBF,.(Stage),my.formula)
+
+
 
 mergeBF%>%
   dplyr::filter(Name!="Iversen_8Waterirr"|GrowthRotation!="54")%>%
@@ -338,7 +380,10 @@ mergeBF%>%
  facet_grid(~Stage)+ 
   theme(legend.title=element_blank())+
   geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="darkgrey")+
-  mytheme3
+  mytheme3+
+  geom_text(data = my.eqs1, aes(x = 650, y = 1400, label = V1), 
+          color = 'black',  parse = TRUE, size=4)
+detach(package:plyr)
 ggsave("D:/R/Pictures/Buds/budsflo.png", width=8, height=4, dpi=500)
 ```
 
@@ -361,7 +406,7 @@ GetApsimNGTable <- function(dbLoc, table)
 # change date to corerct format 
 # explore the df
 ```{r}
-db.address <- "D:\\APSIMX2\\Prototypes\\Lucerne\\LucerneValidation.db"
+db.address <- "D:\\APSIMX2\\Prototypes\\Lucerne\\LucerneValidationFlowering.db"
 tableName<-"Report"
 DbTable <- GetApsimNGTable(db.address,tableName)
 df <- as.data.frame(DbTable)

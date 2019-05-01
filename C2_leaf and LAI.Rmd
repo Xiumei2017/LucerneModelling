@@ -270,7 +270,8 @@ dplyr::filter(ExpUnitCode!="Iversen_121DefoliationSSFDFD5Gs_2Rt_7")%>%
   dplyr::filter(ExpUnitCode!="Iversen_121DefoliationSSFDFD5Gs_4Rt_2")%>%
    dplyr::filter(ExpUnitCode!="Iversen_121DefoliationSSFDFD5Gs_4Rt_3")%>%
   dplyr::filter(ExpUnitCode!="Iversen_121DefoliationSSFDFD5Gs_4Rt_4")%>%
-  dplyr::filter(ExpUnitCode!="Iversen_121DefoliationHHFDFD5Gs_4Rt_2")
+  dplyr::filter(ExpUnitCode!="Iversen_121DefoliationHHFDFD5Gs_4Rt_2")%>%
+   dplyr::filter(ExpUnitCode!="Iversen_121DefoliationSSFDFD5Gs_4Rt_5")
   
   
 UniExp <- unique(obsDLw1$ExpUnitCode)
@@ -445,7 +446,7 @@ summary(myDb)
 
 ```{r}
 simD <- myDb %>%
-  dplyr::select(Name,Clock.Today,LAI,SWC,Height,shootbiomass,RootWt, StemWt, LeafWt,NodeNumber) %>%
+  dplyr::select(Name,Clock.Today,LAI,Height,shootbiomass,RootWt, StemWt, LeafWt,NodeNumber) %>%
   tidyr::gather("Variable","Predicted",LAI:NodeNumber) %>%
   mutate(Name = as.factor(Name)) %>%
   mutate(Variable = as.factor(Variable)) %>%
@@ -456,7 +457,7 @@ summary(simD)
 
 
 
-mergedf<-merge(obsDLB,simD,by=c("Clock.Today","Name","Variable"))
+mergedf<-merge(obsDLS,simD,by=c("Clock.Today","Name","Variable"))
 summary(mergedf)
 str(mergedf)
 mergedf
@@ -464,7 +465,7 @@ mergedf
 ```
 ##2002-2004
 ```{r,  fig.height=4, fig.width=8}
-obsLB2<-obsLB%>% 
+obsLB2<-obsDLS%>% 
   dplyr::filter(Collection=="2002_2004")%>%
   dplyr::filter(Variable=="LeafWt")%>%
   dplyr::filter(Name=="Iversen_91DefoliationLL")

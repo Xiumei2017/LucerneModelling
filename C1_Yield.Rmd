@@ -3,6 +3,8 @@ title: "R Notebook"
 output: html_notebook
 ---
 
+
+
 ###Yield analysis
 
 ```{r Load, warning=FALSE, fig.height=8, fig.width=8}
@@ -170,6 +172,24 @@ mytheme1<-theme(
      strip.text.y = element_text(size=14, face="plain"),
      legend.title = element_text(colour="black", size=14, face="bold"),
      axis.text = element_text(face = "bold", vjust = 0.5, size = 14))
+
+mytheme3<-theme(
+     legend.title = element_text(colour="black", size=14, face="bold"),
+     legend.text = element_text(colour="black", size = 14,face="plain"),
+     panel.spacing=unit(.01, "lines"),
+     panel.border = element_rect(colour = "black",size=1), 
+     panel.grid.major = element_blank(),
+     panel.grid.minor = element_blank(),
+     axis.line = element_line(colour = "black",size = 1),
+     axis.text.x = element_text(face = "plain", color = "black", size = 14, vjust=0.5, hjust = 1),
+     axis.text.y = element_text(face = "plain", color = "black", size = 14),
+     axis.title.x=element_text(face="bold",colour="black",size = 14),
+     axis.title.y=element_text(face="bold",colour="black",size = 14),
+     strip.background = element_rect(colour = "black", fill = "white",size=1),
+     strip.text.x = element_text(size=14, angle=0, face = "plain"), 
+     strip.text.y = element_text(size=14, face="plain"),
+     axis.text = element_text(face = "bold", vjust = 0.5, size = 14),
+    legend.position = "right", legend.box = "vertical")
 ```
 
 ```{r,fig.height=8, fig.width=10}
@@ -902,8 +922,12 @@ RUETotala <- RUETotal%>%
   dplyr::filter(Name!="Iversen_91DefoliationLL"|GrowthRotation!="26")%>%
   dplyr::filter(Name!="Iversen_91DefoliationLL"|GrowthRotation!="27")
 
-model<-lm(RUETotala$RUEt1~RUETotala$Tmean)
-summary(model)
+###confidence intrvals of 95%
+
+RUE.lm<-lm(RUEt1~Tmean,data = RUETotala)
+summary(RUE.lm)
+new.data <-data.frame(Tmean=18)
+predict(RUE.lm, newdata = new.data, interval='confidence') 
 
 
 ```
@@ -1124,7 +1148,7 @@ GetApsimNGTable <- function(dbLoc, table)
 # change date to corerct format 
 # explore the df
 ```{r}
-db.address <- "D:\\APSIMX2\\Prototypes\\Lucerne\\LucerneValidation.db"
+db.address <- "D:\\APSIMX2\\Prototypes\\Lucerne\\LucerneChapter4.db"
 tableName<-"Report"
 DbTable <- GetApsimNGTable(db.address,tableName)
 df <- as.data.frame(DbTable)
@@ -1304,7 +1328,7 @@ obsYield1<-obsYield%>%
  geom_point(data=obsYield1, aes(x=Clock.Today1, y=Observed),colour="green",size=3)+
  theme(legend.title=element_blank(),legend.position = "blank")+xlab("Date")+ylab(bquote(bold('Shoot DM ('*kg~ha^-1*')')))+
  mytheme2+
- annotate("text", x=ymd_hms("1999-10-24 12:00:00"), y=6500, size = 5, label ="paste(R_RMSD == 55.1,'%')", parse=T)
+ annotate("text", x=ymd_hms("1999-10-24 12:00:00"), y=6500, size = 5, label ="paste(R_RMSD == 53.7,'%')", parse=T)
 
  ggsave("D:/R/Pictures/shoot/Iversen_8Waterirrshootbiomass.png", width=8, height=4, dpi=500)
 ```
@@ -1327,9 +1351,9 @@ ggplot(aes(x=Clock.Today,y=Predicted))+geom_line(size=1)+theme_bw()+
   geom_point(data=obsYield2, aes(x=Clock.Today1, y=Observed),colour="green",size=3)+
   theme(legend.title=element_blank(),legend.position = "blank")+xlab("Date")+ylab(bquote(bold('Shoot DM ('*kg~ha^-1*')')))+
  mytheme2+
-  annotate("text", x=ymd_hms("2003-07-24 12:00:00"), y=6000, size = 5, label ="paste(R_RMSD == 22.6,'%')", parse=T)
- #geom_text(aes(x=ymd_hms("2003-07-24 12:00:00"), y=750, label="R_RMSD = 27.6%",size=5))
- ggsave("D:/R/Pictures/Shoot/Iversen_91DefoliationLLheight1.png", width=8, height=4, dpi=500)
+  annotate("text", x=ymd_hms("2003-07-24 12:00:00"), y=6000, size = 5, label ="paste(R_RMSD == 27.1,'%')", parse=T)
+ #geom_text(aes(x=ymd_hms("2003-07-24 12:00:00"), y=750, label="R_RMSD = 27.1%",size=5))
+ ggsave("D:/R/Pictures/Shoot/Iversen_91DefoliationLLshoot1.png", width=8, height=4, dpi=500)
 
 
 ```
@@ -1359,13 +1383,13 @@ ggplot(aes(x=Clock.Today,y=Predicted))+geom_line(size=1)+theme_bw()+
 
 
 dat_text3 <- data.frame(
-  label = c("R_RMSE=38.9%","R_RMSE=46.2%","R_RMSE=52.9%", "R_RMSE=54.9%"),
+  label = c("R_RMSE=41.1%","R_RMSE=39.4%","R_RMSE=53.2%", "R_RMSE=59.2%"),
   ID= c("E2ILLS1","E2ILLS2","E2ILLS3","E2ILLS4"),
-  x= ymd_hms("2001-05-24 12:00:00", "2001-05-24 12:00:00","2001-05-24 12:00:00","2001-05-24 12:00:00"),
-   y=c(6500,6500,6500,6500)) 
+  x= ymd_hms("2001-01-24 12:00:00", "2001-01-24 12:00:00","2001-01-24 12:00:00","2001-01-24 12:00:00"),
+   y=c(5500,5500,5500,5500)) 
 
- p1a  +geom_text(data=dat_text3, mapping = aes(x=x,y=y, label = label),hjust   = -0.1,vjust   = -1,size=5)+mytheme3
- 
+ f<-p1a  +geom_text(data=dat_text3, mapping = aes(x=x,y=y, label = label),hjust   = -0.1,vjust   = -1,size=5)+mytheme3
+ f
 ggsave("D:/R/Pictures/Shoot/Iversen_9SowingDateSDWatershoot.png", width=8, height=8, dpi=500)
   
   
@@ -1388,13 +1412,10 @@ ggplot(aes(x=Clock.Today,y=Predicted))+geom_line(size=1)+theme_bw()+
   geom_point(data=obsYield4, aes(x=Clock.Today1, y=Observed),colour="green",size=3)+
   theme(legend.title=element_blank(),legend.position = "blank")+xlab("Date")+ylab(bquote(bold('Shoot DM ('*kg~ha^-1*')')))+
   mytheme2+
-  annotate("text", x=ymd_hms("2016-07-24 12:00:00"), y=8500, size = 5, label ="paste(R_RMSD == 77.4,'%')" , parse=T)
+  annotate("text", x=ymd_hms("2016-07-24 12:00:00"), y=8500, size = 5, label ="paste(R_RMSD == 92.3,'%')" , parse=T)
  #geom_text(aes(x=ymd_hms("2016-07-24 12:00:00"), y=920,label="R_RMSD = 40%",size=5))
  ggsave("D:/R/Pictures/Shoot/Iversen_121DefoliationLLFDFD5shoot1.png", width=8, height=4, dpi=500)
   
-  
-
-
 ```
 
 
@@ -1408,8 +1429,8 @@ str(mergedf)
 mergedf %>%
     dplyr::filter(Variable== "shootbiomass") %>% 
   #dplyr::filter(Defoliation.x== "LL")%>%
-  dplyr::filter(Collection!="2010_2012")%>%
-  dplyr::filter(Clock.Today>"1997-08-01")%>%
+  #dplyr::filter(Collection=="2014_2018")%>%
+  #dplyr::filter(Clock.Today<"2015-05-01")%>%
   ggplot(aes(x=Observed, y= Predicted, colour= factor(Name))) +
   geom_point(size=2)+theme_bw()+
   geom_smooth(method = "lm", se = TRUE, linetype = 1, colour="darkgrey") +
@@ -1468,7 +1489,7 @@ GetApsimNGTable <- function(dbLoc, table)
 # change date to corerct format 
 # explore the df
 ```{r}
-db.address <- "D:\\APSIMX2\\Prototypes\\Lucerne\\LucerneValidation.db"
+db.address <- "D:\\APSIMX2\\Prototypes\\Lucerne\\LucerneChapter4.db"
 tableName<-"Report"
 DbTable <- GetApsimNGTable(db.address,tableName)
 df <- as.data.frame(DbTable)
@@ -1492,7 +1513,7 @@ head(myDb)
 
 ```{r}
 simD <- myDb %>%
-  dplyr::select(Name,Clock.Today,LAIC,Height,shootbiomass,RootWt, StemWt, LeafWt,NodeNumber) %>%
+  dplyr::select(Name,Clock.Today,LAI,Height,shootbiomass,RootWt, StemWt, LeafWt,NodeNumber) %>%
   tidyr::gather("Variable","Predicted",LAI:NodeNumber) %>%
   mutate(Name = as.factor(Name)) %>%
   mutate(Variable = as.factor(Variable)) %>%
@@ -1503,10 +1524,10 @@ summary(simD)
 
 
 head(ObsR)
-mergedf<-merge(ObsR,simD,by=c("Clock.Today","Name","Variable"))
-summary(mergedf)
-str(mergedf)
-mergedf
+mergedfroot<-merge(ObsR,simD,by=c("Clock.Today","Name","Variable"))
+summary(mergedfroot)
+str(mergedfroot)
+mergedfroot
 
 ```
 ## root biomass
@@ -1532,7 +1553,7 @@ summary(ObsRS)
 
 
 ##2002-2004
-```{r,  fig.height=4, fig.width=8}
+```{r,  fig.height=5, fig.width=8}
 ObsR2<-ObsRS%>% 
   dplyr::filter(Collection=="2002_2004")%>%
   #dplyr::filter(Variable=="RootWt")%>%
@@ -1548,9 +1569,10 @@ simD2$Variable<- factor(simD2$Variable, levels=c("shootbiomass","RootWt"))
 
 simD2%>%
 ggplot(aes(x=Clock.Today,y=Predicted))+geom_line(size=1)+theme_bw()+
-  facet_grid(Variable~ID)+ggtitle(paste0("E3ILL","(Iversen_91DefoliationLL)"))+
+  facet_grid(Variable~ID)+
+  #ggtitle(paste0("E3ILL","(Iversen_91DefoliationLL)"))+
   geom_point(data=ObsR2, aes(x=Clock.Today1, y=Observed),colour="green",size=3)+
-  theme(legend.title=element_blank(),legend.position = "blank")+xlab("Date")+ylab("Biomass (kg/ha)")+
+  theme(legend.title=element_blank(),legend.position = "blank")+xlab("Date")+ylab(bquote(bold(' Biomass ('*kg~ha^-1*')')))+
   #remove grid lines 
    theme(
      panel.spacing=unit(.01, "lines"),
@@ -1568,7 +1590,7 @@ ggplot(aes(x=Clock.Today,y=Predicted))+geom_line(size=1)+theme_bw()+
      legend.title = element_text(colour="black", size=14, face="bold"),
      axis.text = element_text(face = "bold", vjust = 0.5, size = 14))
    #annotate("text", x=ymd_hms("2016-07-24 12:00:00"), y=18, size = 5, label ="paste(R_RMSD == 64.5,'%')", parse=T)
-   #ggsave("D:/R/Pictures/C5/Node/Iversen_121DefoliationLLFDFD5nodenumber1.png", width=8, height=4, dpi=500)
+   ggsave("D:/R/Pictures/Shoot/rootshoot1.png", width=8, height=5, dpi=500)
 #ggsave("D:/R/Pictures/C5/Yield/Iversen_91DefoliationLLyield.png", width=8, height=8, dpi=500)
   
 
@@ -1590,9 +1612,10 @@ simD4$Variable<- factor(simD4$Variable, levels=c("shootbiomass","RootWt"))
 str(simD4)
 simD4%>%
 ggplot(aes(x=Clock.Today,y=Predicted))+geom_line(size=1)+theme_bw()+
-  facet_grid(Variable~ID)+ggtitle(paste0("E5ILLFD5","(Iversen_121DefoliationLLFDFD5)"))+
+  facet_grid(Variable~ID)+
+  #ggtitle(paste0("E5ILLFD5","(Iversen_121DefoliationLLFDFD5)"))+
   geom_point(data=ObsR4, aes(x=Clock.Today1, y=Observed),colour="green",size=3)+
-  theme(legend.title=element_blank(),legend.position = "blank")+xlab("Date")+ylab("Biomass(kg/ha)")+
+  theme(legend.title=element_blank(),legend.position = "blank")+xlab("Date")+ylab(bquote(bold(' Biomass ('*kg~ha^-1*')')))+
  #remove grid lines 
    theme(
      panel.spacing=unit(.01, "lines"),
@@ -1610,7 +1633,7 @@ ggplot(aes(x=Clock.Today,y=Predicted))+geom_line(size=1)+theme_bw()+
      legend.title = element_text(colour="black", size=14, face="bold"),
      axis.text = element_text(face = "bold", vjust = 0.5, size = 14))
    #annotate("text", x=ymd_hms("2016-07-24 12:00:00"), y=18, size = 5, label ="paste(R_RMSD == 64.5,'%')", parse=T)
-   #ggsave("D:/R/Pictures/C5/Node/Iversen_121DefoliationLLFDFD5nodenumber1.png", width=8, height=4, dpi=500)
+   ggsave("D:/R/Pictures/Shoot/rootshoot2.png", width=8, height=5, dpi=500)
 #ggsave("D:/R/Pictures/C5/Yield/Iversen_121DefoliationLLFDFD5yield.png", width=8, height=8, dpi=500)
   
 

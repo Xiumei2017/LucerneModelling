@@ -232,7 +232,7 @@ dplyr::filter(ID!="E5IHHF5")%>%
  theme(axis.title.y=element_text(face="bold",colour="black",size = 12))+
   theme(legend.title=element_blank())+mytheme3
  detach(package:plyr)
-  ggsave("D:/R/Pictures/LAI/LEARPP.png", width=8.5, height=6, dpi=500) 
+  ggsave("D:/R/Pictures/C5/LAI/LEARPP.png", width=8.5, height=6, dpi=500) 
 ```
 ## Define stats function
 
